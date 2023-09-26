@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets/entities"
 	"gorm.io/gorm"
+	"net/http"
 )
 
 type (
@@ -14,6 +15,7 @@ type (
 	IWalletRepository interface {
 		PersonalAccount(email string) (data entities.WalletPersonalInformationEntity)
 		Add(model *entities.WalletEntity) (err error)
+		List(email string) (data []entities.WalletEntity, httpCode int, err error)
 	}
 )
 
@@ -35,4 +37,17 @@ func (r *WalletRepository) Add(model *entities.WalletEntity) (err error) {
 		return errors.New("can not add wallet")
 	}
 	return nil
+}
+
+func (r *WalletRepository) List(email string) (data []entities.WalletEntity, httpCode int, err error) {
+	result := r.db.Find(&data)
+	if result.RowsAffected == 0 {
+		return []entities.WalletEntity{}, http.StatusNotFound, errors.New("not found")
+	}
+
+	if result.Error != nil {
+		return []entities.WalletEntity{}, http.StatusInternalServerError, err
+	}
+
+	return data, http.StatusOK, nil
 }

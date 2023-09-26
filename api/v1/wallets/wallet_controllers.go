@@ -16,6 +16,7 @@ type (
 
 	IWalletController interface {
 		Add(ctx *gin.Context)
+		List(ctx *gin.Context)
 	}
 )
 
@@ -45,5 +46,11 @@ func (c *WalletController) Add(ctx *gin.Context) {
 	}
 
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
+	return
+}
+
+func (c *WalletController) List(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.List(ctx)
+	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }

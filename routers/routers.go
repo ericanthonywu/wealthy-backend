@@ -15,11 +15,14 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		{
 			accountGroup.POST("/signup", account.SignUp)
 			accountGroup.POST("/signin", account.SignIn)
+			// accountGroup.POST("/profile", account.SignIn) // get profile
+
 		}
 
 		walletGroup := v1group.Group("/wallet")
 		{
-			walletGroup.POST("/add", tokenSignature(), wallet.Add)
+			walletGroup.POST("/", tokenSignature(), wallet.Add)
+			walletGroup.GET("/", tokenSignature(), wallet.List)
 		}
 	}
 

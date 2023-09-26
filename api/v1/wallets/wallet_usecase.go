@@ -1,6 +1,8 @@
 package wallets
 
 import (
+	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets/entities"
@@ -15,6 +17,7 @@ type (
 
 	IWalletUseCase interface {
 		Add(request *dtos.WalletAddRequest, usrEmail string) (response dtos.WalletAddResponse, httpCode int, errInfo []errorsinfo.Errors)
+		List(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -77,4 +80,23 @@ func (s *WalletUseCase) Add(request *dtos.WalletAddRequest, usrEmail string) (re
 	}
 
 	return response, httpCode, errInfo
+}
+
+func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		err   error
+		email string
+	)
+
+	email = fmt.Sprintf("%v", ctx.MustGet("email"))
+	data, httpCode, err = s.repo.List(email)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+	}
+
+	if err == nil {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return data, httpCode, errInfo
 }
