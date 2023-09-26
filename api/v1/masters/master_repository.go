@@ -1,6 +1,9 @@
 package masters
 
-import "gorm.io/gorm"
+import (
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters/entities"
+	"gorm.io/gorm"
+)
 
 type (
 	MasterRepository struct {
@@ -8,9 +11,33 @@ type (
 	}
 
 	IMasterRepository interface {
+		TransactionType() (data []entities.TransactionType)
+		IncomeType() (data []entities.IncomeType)
+		ExpenseType() (data []entities.ExpenseType)
+		ReksadanaType() (data []entities.ReksadanaType)
 	}
 )
 
 func NewMasterRepository(db *gorm.DB) *MasterRepository {
 	return &MasterRepository{db: db}
+}
+
+func (r *MasterRepository) TransactionType() (data []entities.TransactionType) {
+	r.db.Find(&data)
+	return data
+}
+
+func (r *MasterRepository) IncomeType() (data []entities.IncomeType) {
+	r.db.Where("active = ?", true).Find(&data)
+	return data
+}
+
+func (r *MasterRepository) ExpenseType() (data []entities.ExpenseType) {
+	r.db.Find(&data)
+	return data
+}
+
+func (r *MasterRepository) ReksadanaType() (data []entities.ReksadanaType) {
+	r.db.Where("active = ?", true).Find(&data)
+	return data
 }
