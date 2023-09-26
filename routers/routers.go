@@ -23,6 +23,8 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		{
 			walletGroup.POST("/", tokenSignature(), wallet.Add)
 			walletGroup.GET("/", tokenSignature(), wallet.List)
+			walletGroup.PUT("/amount/:id-wallet", tokenSignature(), wallet.UpdateAmount)
+
 		}
 	}
 

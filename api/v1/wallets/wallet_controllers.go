@@ -17,6 +17,7 @@ type (
 	IWalletController interface {
 		Add(ctx *gin.Context)
 		List(ctx *gin.Context)
+		UpdateAmount(ctx *gin.Context)
 	}
 )
 
@@ -51,6 +52,28 @@ func (c *WalletController) Add(ctx *gin.Context) {
 
 func (c *WalletController) List(ctx *gin.Context) {
 	data, httpCode, errInfo := c.useCase.List(ctx)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *WalletController) UpdateAmount(ctx *gin.Context) {
+	var (
+		dtoRequest  dtos.WalletUpdateAmountRequest
+		dtoResponse dtos.WalletUpdateAmountResponse
+		httpCode    int
+		errInfo     []errorsinfo.Errors
+		data        interface{}
+	)
+
+	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
+		response.SendBack(ctx, dtoResponse, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	walletID := ctx.Param("id-wallet")
+	data, httpCode, errInfo = c.useCase.UpdateAmount(walletID, &dtoRequest)
+
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }

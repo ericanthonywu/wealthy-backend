@@ -18,6 +18,7 @@ type (
 	IWalletUseCase interface {
 		Add(request *dtos.WalletAddRequest, usrEmail string) (response dtos.WalletAddResponse, httpCode int, errInfo []errorsinfo.Errors)
 		List(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		UpdateAmount(IDWallet string, request *dtos.WalletUpdateAmountRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -98,5 +99,18 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 		errInfo = []errorsinfo.Errors{}
 	}
 
+	return data, httpCode, errInfo
+}
+
+func (s *WalletUseCase) UpdateAmount(IDWallet string, request *dtos.WalletUpdateAmountRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var err error
+
+	data, httpCode, err = s.repo.UpdateAmount(IDWallet, request.Amount)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return data, httpCode, errInfo
+	}
+
+	errInfo = []errorsinfo.Errors{}
 	return data, httpCode, errInfo
 }
