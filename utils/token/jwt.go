@@ -15,7 +15,7 @@ func JWTBuilder(email, role string) (tokenString string, err error) {
 	claims["authorized"] = true
 	claims["email"] = email
 	claims["role"] = role
-	claims["exp"] = time.Now().Add(time.Minute * 30).Unix()
+	claims["exp"] = time.Now().Add(time.Minute * 18000).Unix()
 
 	appSecret := os.Getenv("APP_SECRET")
 	tokenString, err = token.SignedString([]byte(appSecret))

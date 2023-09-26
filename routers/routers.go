@@ -19,7 +19,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 		walletGroup := v1group.Group("/wallet")
 		{
-			walletGroup.POST("/add", wallet.Add)
+			walletGroup.POST("/add", tokenSignature(), wallet.Add)
 		}
 	}
 
