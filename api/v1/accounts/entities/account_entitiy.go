@@ -32,6 +32,13 @@ type (
 		IDMasterRoles      uuid.UUID `gorm:"column:id_master_roles"`
 		IDPersonalAccounts uuid.UUID `gorm:"column:id_personal_accounts"`
 	}
+
+	AccountSignInAuthenticationEntity struct {
+		Email    string `gorm:"column:email"`
+		Password string `gorm:"column:password"`
+		Active   bool   `gorm:"column:active"`
+		Roles    string `gorm:"column:role"`
+	}
 )
 
 func (AccountMasterAccountType) TableName() string {

@@ -45,7 +45,22 @@ func (c *AccountController) SignUp(ctx *gin.Context) {
 }
 
 func (c *AccountController) SignIn(ctx *gin.Context) {
-	c.useCase.SignIn()
+	var (
+		dtoRequest  dtos.AccountSignInRequest
+		dtoResponse dtos.AccountSignInResponse
+		httpCode    int
+		errInfo     []errorsinfo.Errors
+	)
+
+	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
+		response.SendBack(ctx, dtos.AccountSignUpResponse{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	dtoResponse, httpCode, errInfo = c.useCase.SignIn(&dtoRequest)
+	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
+	return
 }
 
 func (c *AccountController) SignOut(ctx *gin.Context) {

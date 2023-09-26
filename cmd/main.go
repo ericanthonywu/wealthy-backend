@@ -5,7 +5,6 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/constants"
 	"github.com/semicolon-indonesia/wealthy-backend/docs"
 	"github.com/semicolon-indonesia/wealthy-backend/infrastructures/databases"
-	"github.com/semicolon-indonesia/wealthy-backend/infrastructures/instrumentations"
 	"github.com/semicolon-indonesia/wealthy-backend/routers"
 	"log"
 	"net/http"
@@ -18,8 +17,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/sdk/trace"
 )
 
 func init() {
@@ -27,9 +24,6 @@ func init() {
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.InfoLevel)
 
-	// ----------------------------------------------------------------------------------------------------------------
-	// READING ENV FILE
-	// ----------------------------------------------------------------------------------------------------------------
 	if err := godotenv.Load(constants.ENVPATH); err != nil {
 		logrus.Error(err.Error())
 		panic(err.Error())
@@ -50,8 +44,7 @@ func init() {
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
 func main() {
 	var (
-		portBuilder   strings.Builder
-		traceProvider *trace.TracerProvider
+		portBuilder strings.Builder
 	)
 
 	logrus.Info("starting application")
@@ -59,43 +52,24 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	// ----------------------------------------------------------------------------------------------------------------
-	// DATABASE SETUP
-	// ----------------------------------------------------------------------------------------------------------------
 	dbConnection, err := databases.NewDBConnection()
 	if err != nil {
 		logrus.Error("can not connected database. reason : ", err.Error())
 		return
 	}
 
-	// ----------------------------------------------------------------------------------------------------------------
-	// ROUTER SETUP
-	// ----------------------------------------------------------------------------------------------------------------
 	route := gin.Default()
 	route.Use(databases.DBInContext(dbConnection))
 	route.NoRoute(routers.NoRoute)
 	routers.RouterConfig(route)
 	routers.API(&route.RouterGroup, dbConnection)
 
-	// ----------------------------------------------------------------------------------------------------------------
-	// INSTRUMENTATION SETUP
-	// ----------------------------------------------------------------------------------------------------------------
-	traceProvider = instrumentations.OpenTelemetryExporter(os.Getenv("APP_NAME"), os.Getenv("APP_MODE"))
-	otel.SetTracerProvider(traceProvider)
-
-	// ----------------------------------------------------------------------------------------------------------------
-	// SWAGGER SETUP
-	// ----------------------------------------------------------------------------------------------------------------
 	docs.SwaggerInfo.Title = "Example API"
 	docs.SwaggerInfo.Description = "This is a sample documentation"
 	docs.SwaggerInfo.Version = "1.0"
 	docs.SwaggerInfo.Host = "localhost"
 	docs.SwaggerInfo.BasePath = "/v1"
 	docs.SwaggerInfo.Schemes = []string{"http", "https"}
-
-	// ----------------------------------------------------------------------------------------------------------------
-	// SERVER RUNNING
-	// ----------------------------------------------------------------------------------------------------------------
 
 	portBuilder.WriteString(":")
 	portBuilder.WriteString(os.Getenv("APP_PORT"))

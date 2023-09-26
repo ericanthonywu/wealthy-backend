@@ -21,6 +21,7 @@ type (
 		SignUp(personalEntity *entities.AccountSignUpPersonalAccountEntity, authEntity *entities.AccountSignUpAuthenticationsEntity) (role string, httpCode int, errInfo []errorsinfo.Errors)
 		SignUpPersonalAccount(model *entities.AccountSignUpPersonalAccountEntity) (IDPersonalAccount uuid.UUID, err error)
 		SignUpAuth(model *entities.AccountSignUpAuthenticationsEntity) (err error)
+		SignInAuth(model entities.AccountSignInAuthenticationEntity) (data entities.AccountSignInAuthenticationEntity)
 	}
 )
 
@@ -87,4 +88,13 @@ func (r *AccountRepository) SignUpAuth(model *entities.AccountSignUpAuthenticati
 		return err
 	}
 	return nil
+}
+
+func (r *AccountRepository) SignInAuth(model entities.AccountSignInAuthenticationEntity) (data entities.AccountSignInAuthenticationEntity) {
+	r.db.Raw("SELECT pa.email, a.active, a.password, mr.roles as role FROM tbl_personal_accounts pa "+
+		"INNER JOIN tbl_authentications a ON a.id_personal_accounts = pa.id "+
+		"INNER JOIN tbl_master_roles mr ON mr.id = a.id_master_roles "+
+		"WHERE email= ? AND a.active = true", model.Email).Scan(&data)
+
+	return data
 }

@@ -21,6 +21,12 @@ type (
 		Password string `json:"password"`
 	}
 
+	AccountSignInResponse struct {
+		Email string `json:"email"`
+		Role  string `json:"role"`
+		Token string `json:"token"`
+	}
+
 	AccountSignOutRequest struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
