@@ -27,5 +27,4 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 		}
 	}
-
 }
