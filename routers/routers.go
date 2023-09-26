@@ -7,6 +7,7 @@ import (
 
 func API(router *gin.RouterGroup, db *gorm.DB) {
 	account := Accounts(db)
+	wallet := Wallets(db)
 
 	v1group := router.Group("/v1")
 	{
@@ -14,9 +15,12 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		{
 			accountGroup.POST("/signup", account.SignUp)
 			accountGroup.POST("/signin", account.SignIn)
-			//accountGroup.POST("/profile", account.SignIn)
+		}
+
+		walletGroup := v1group.Group("/wallet")
+		{
+			walletGroup.POST("/add", wallet.Add)
 		}
 	}
 
-	//router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }

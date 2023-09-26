@@ -8,6 +8,7 @@ package routers
 
 import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets"
 	"gorm.io/gorm"
 )
 
@@ -18,4 +19,11 @@ func Accounts(db *gorm.DB) *accounts.AccountController {
 	accountUseCase := accounts.NewAccountUseCase(accountRepository)
 	accountController := accounts.NewAccountController(accountUseCase)
 	return accountController
+}
+
+func Wallets(db *gorm.DB) *wallets.WalletController {
+	walletRepository := wallets.NewWalletRepository(db)
+	walletUseCase := wallets.NewWalletUseCase(walletRepository)
+	walletController := wallets.NewWalletController(walletUseCase)
+	return walletController
 }
