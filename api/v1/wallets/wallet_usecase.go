@@ -30,13 +30,13 @@ func (s *WalletUseCase) Add(request *dtos.WalletAddRequest, usrEmail string) (re
 	var err error
 
 	walletEntity := entities.WalletEntity{
-		Active:           true,
-		InvestType:       request.InvestType,
-		InvestName:       request.InvestName,
-		InvestInstrument: request.InvestInstrument,
-		FeeInvestBuy:     request.FeeInvestBuy,
-		FeeInvestSell:    request.FeeInvestBuy,
-		Amount:           request.Amount,
+		Active:        true,
+		InvestType:    request.InvestType,
+		InvestName:    request.InvestName,
+		WalletType:    request.WalletType,
+		FeeInvestBuy:  request.FeeInvestBuy,
+		FeeInvestSell: request.FeeInvestBuy,
+		Amount:        request.Amount,
 	}
 
 	data := s.repo.PersonalAccount(usrEmail)
@@ -52,7 +52,7 @@ func (s *WalletUseCase) Add(request *dtos.WalletAddRequest, usrEmail string) (re
 
 	response.InvestType = request.InvestType
 	response.InvestName = request.InvestName
-	response.InvestInstrument = request.InvestInstrument
+	response.WalletType = request.WalletType
 	response.Amount = request.Amount
 	httpCode = http.StatusOK
 

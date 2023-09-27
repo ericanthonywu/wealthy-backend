@@ -11,15 +11,15 @@ type (
 	}
 
 	WalletEntity struct {
-		ID               uuid.UUID `gorm:"column:id" json:"id"`
-		IDAccount        uuid.UUID `gorm:"id_account" json:"id_account"`
-		InvestType       string    `gorm:"column:invest_type" json:"invest_type"`
-		InvestName       string    `gorm:"column:invest_name" json:"invest_name"`
-		InvestInstrument string    `gorm:"column:invest_instrument" json:"invest_instrument"`
-		Active           bool      `gorm:"column:active" json:"active"`
-		FeeInvestBuy     int64     `gorm:"column:fee_invest_buy" json:"fee_invest_buy"`
-		FeeInvestSell    int64     `gorm:"column:fee_invest_sell" json:"fee_invest_sell"`
-		Amount           int64     `gorm:"column:amount" json:"amount"`
+		ID            uuid.UUID `gorm:"column:id" json:"id"`
+		IDAccount     uuid.UUID `gorm:"id_account" json:"id_account"`
+		InvestType    string    `gorm:"column:invest_type" json:"invest_type"`
+		InvestName    string    `gorm:"column:invest_name" json:"invest_name"`
+		WalletType    string    `gorm:"column:id_master_wallet_types" json:"id_master_wallet_types"`
+		Active        bool      `gorm:"column:active" json:"active"`
+		FeeInvestBuy  int64     `gorm:"column:fee_invest_buy" json:"fee_invest_buy"`
+		FeeInvestSell int64     `gorm:"column:fee_invest_sell" json:"fee_invest_sell"`
+		Amount        int64     `gorm:"column:amount" json:"amount"`
 	}
 )
 

@@ -47,5 +47,5 @@ func (ReksadanaType) TableName() string {
 }
 
 func (WalletType) TableName() string {
-	return "tbl_master_wallet_type"
+	return "tbl_master_wallet_types"
 }

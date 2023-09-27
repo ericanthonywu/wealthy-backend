@@ -4,20 +4,19 @@ import "github.com/google/uuid"
 
 type (
 	WalletAddRequest struct {
-		InvestType       string `json:"invest_type"`
-		InvestName       string `json:"invest_name"`
-		InvestInstrument string `json:"invest_instrument"`
-		WalletType       string `json:"wallet_type"`
-		Amount           int64  `json:"amount"`
-		FeeInvestBuy     int64  `json:"fee_invest_buy"`
-		FeeInvestSell    int64  `json:"fee_invest_sell"`
+		InvestType    string `json:"invest_type"`
+		InvestName    string `json:"invest_name"`
+		WalletType    string `json:"id_master_wallet_type"`
+		Amount        int64  `json:"amount"`
+		FeeInvestBuy  int64  `json:"fee_invest_buy"`
+		FeeInvestSell int64  `json:"fee_invest_sell"`
 	}
 
 	WalletAddResponse struct {
-		InvestType       string `json:"invest_type,omitempty"`
-		InvestName       string `json:"invest_name,omitempty"`
-		InvestInstrument string `json:"invest_instrument,omitempty"`
-		Amount           int64  `json:"amount,omitempty"`
+		InvestType string `json:"invest_type,omitempty"`
+		InvestName string `json:"invest_name,omitempty"`
+		WalletType string `json:"id_master_wallet_type,omitempty"`
+		Amount     int64  `json:"amount,omitempty"`
 	}
 
 	WalletUpdateAmountRequest struct {
