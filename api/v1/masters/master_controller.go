@@ -17,6 +17,7 @@ type (
 		IncomeType(ctx *gin.Context)
 		ExpenseType(ctx *gin.Context)
 		ReksadanaType(ctx *gin.Context)
+		WalletType(ctx *gin.Context)
 	}
 )
 
@@ -44,6 +45,12 @@ func (c *MasterController) ExpenseType(ctx *gin.Context) {
 
 func (c *MasterController) ReksadanaType(ctx *gin.Context) {
 	data := c.useCase.ReksadanaType()
+	response.SendBack(ctx, data, []errorsinfo.Errors{}, http.StatusOK)
+	return
+}
+
+func (c *MasterController) WalletType(ctx *gin.Context) {
+	data := c.useCase.WalletType()
 	response.SendBack(ctx, data, []errorsinfo.Errors{}, http.StatusOK)
 	return
 }

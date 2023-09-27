@@ -7,6 +7,7 @@ type (
 		InvestType       string `json:"invest_type"`
 		InvestName       string `json:"invest_name"`
 		InvestInstrument string `json:"invest_instrument"`
+		WalletType       string `json:"wallet_type"`
 		Amount           int64  `json:"amount"`
 		FeeInvestBuy     int64  `json:"fee_invest_buy"`
 		FeeInvestSell    int64  `json:"fee_invest_sell"`

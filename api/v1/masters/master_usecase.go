@@ -10,6 +10,7 @@ type (
 		IncomeType() (data interface{})
 		ExpenseType() (data interface{})
 		ReksadanaType() (data interface{})
+		WalletType() (data interface{})
 	}
 )
 
@@ -31,4 +32,8 @@ func (s *MasterUseCase) ExpenseType() (data interface{}) {
 
 func (s *MasterUseCase) ReksadanaType() (data interface{}) {
 	return s.repo.ReksadanaType()
+}
+
+func (s *MasterUseCase) WalletType() (data interface{}) {
+	return s.repo.WalletType()
 }

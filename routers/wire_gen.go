@@ -9,6 +9,7 @@ package routers
 import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets"
 	"gorm.io/gorm"
 )
@@ -34,4 +35,11 @@ func Masters(db *gorm.DB) *masters.MasterController {
 	masterUseCase := masters.NewMasterUseCase(masterRepository)
 	masterController := masters.NewMasterController(masterUseCase)
 	return masterController
+}
+
+func Transactions(db *gorm.DB) *transactions.TransactionController {
+	transactionRepository := transactions.NewTransactionRepository(db)
+	transactionUseCase := transactions.NewTransactionUseCase(transactionRepository)
+	transactionController := transactions.NewTransactionController(transactionUseCase)
+	return transactionController
 }

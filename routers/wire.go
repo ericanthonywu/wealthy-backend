@@ -7,6 +7,7 @@ import (
 	"github.com/google/wire"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets"
 	"gorm.io/gorm"
 )
@@ -45,4 +46,16 @@ func Masters(db *gorm.DB) *masters.MasterController {
 		wire.Bind(new(masters.IMasterRepository), new(*masters.MasterRepository)),
 	)))
 	return &masters.MasterController{}
+}
+
+func Transactions(db *gorm.DB) *transactions.TransactionController {
+	panic(wire.Build(wire.NewSet(
+		transactions.NewTransactionRepository,
+		transactions.NewTransactionUseCase,
+		transactions.NewTransactionController,
+		wire.Bind(new(transactions.ITransactionController), new(*transactions.TransactionController)),
+		wire.Bind(new(transactions.ITransactionUseCase), new(*transactions.TransactionUseCase)),
+		wire.Bind(new(transactions.ITransactionRepository), new(*transactions.TransactionRepository)),
+	)))
+	return &transactions.TransactionController{}
 }

@@ -23,6 +23,11 @@ type (
 		ID   uuid.UUID `json:"id" gorm:"column:id"`
 		Type string    `json:"type" gorm:"column:types"`
 	}
+
+	WalletType struct {
+		ID         uuid.UUID `json:"" gorm:"column:id"`
+		WalletType string    `json:"" gorm:"column:wallet_type"`
+	}
 )
 
 func (TransactionType) TableName() string {
@@ -39,4 +44,8 @@ func (ExpenseType) TableName() string {
 
 func (ReksadanaType) TableName() string {
 	return "tbl_master_reksadana_types"
+}
+
+func (WalletType) TableName() string {
+	return "tbl_master_wallet_type"
 }
