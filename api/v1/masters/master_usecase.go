@@ -12,6 +12,7 @@ type (
 		ReksadanaType() (data interface{})
 		WalletType() (data interface{})
 		InvestType() (data interface{})
+		Broker() (data interface{})
 	}
 )
 
@@ -41,4 +42,8 @@ func (s *MasterUseCase) WalletType() (data interface{}) {
 
 func (s *MasterUseCase) InvestType() (data interface{}) {
 	return s.repo.InvestType()
+}
+
+func (s *MasterUseCase) Broker() (data interface{}) {
+	return s.repo.Broker()
 }

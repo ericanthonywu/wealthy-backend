@@ -32,6 +32,11 @@ type (
 		ID         uuid.UUID `json:"id" gorm:"column:id"`
 		InvestName string    `json:"invest_name" gorm:"column:invest_name"`
 	}
+
+	Broker struct {
+		ID         uuid.UUID `json:"id" gorm:"column:id"`
+		BrokerName string    `json:"broker_name" gorm:"column:broker_name"`
+	}
 )
 
 func (TransactionType) TableName() string {
@@ -56,4 +61,8 @@ func (WalletType) TableName() string {
 
 func (InvestType) TableName() string {
 	return "tbl_master_invest"
+}
+
+func (Broker) TableName() string {
+	return "tbl_master_broker"
 }

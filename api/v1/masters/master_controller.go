@@ -19,6 +19,7 @@ type (
 		ReksadanaType(ctx *gin.Context)
 		WalletType(ctx *gin.Context)
 		Invest(ctx *gin.Context)
+		Broker(ctx *gin.Context)
 	}
 )
 
@@ -58,6 +59,12 @@ func (c *MasterController) WalletType(ctx *gin.Context) {
 
 func (c *MasterController) Invest(ctx *gin.Context) {
 	data := c.useCase.InvestType()
+	response.SendBack(ctx, data, []errorsinfo.Errors{}, http.StatusOK)
+	return
+}
+
+func (c *MasterController) Broker(ctx *gin.Context) {
+	data := c.useCase.Broker()
 	response.SendBack(ctx, data, []errorsinfo.Errors{}, http.StatusOK)
 	return
 }
