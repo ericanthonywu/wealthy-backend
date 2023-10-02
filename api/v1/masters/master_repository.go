@@ -50,6 +50,6 @@ func (r *MasterRepository) WalletType() (data []entities.WalletType) {
 }
 
 func (r *MasterRepository) InvestType() (data []entities.InvestType) {
-	r.db.Find(&data)
+	r.db.Where("active=?", true).Find(&data)
 	return data
 }
