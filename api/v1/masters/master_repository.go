@@ -16,6 +16,7 @@ type (
 		ExpenseType() (data []entities.ExpenseType)
 		ReksadanaType() (data []entities.ReksadanaType)
 		WalletType() (data []entities.WalletType)
+		InvestType() (data []entities.InvestType)
 	}
 )
 
@@ -45,5 +46,10 @@ func (r *MasterRepository) ReksadanaType() (data []entities.ReksadanaType) {
 
 func (r *MasterRepository) WalletType() (data []entities.WalletType) {
 	r.db.Where("active=?", true).Find(&data)
+	return data
+}
+
+func (r *MasterRepository) InvestType() (data []entities.InvestType) {
+	r.db.Find(&data)
 	return data
 }
