@@ -13,6 +13,7 @@ type (
 		WalletType() (data interface{})
 		InvestType() (data interface{})
 		Broker() (data interface{})
+		TransactionPriority() (data interface{})
 	}
 )
 
@@ -46,4 +47,8 @@ func (s *MasterUseCase) InvestType() (data interface{}) {
 
 func (s *MasterUseCase) Broker() (data interface{}) {
 	return s.repo.Broker()
+}
+
+func (s *MasterUseCase) TransactionPriority() (data interface{}) {
+	return s.repo.TransactionPriority()
 }

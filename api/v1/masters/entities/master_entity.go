@@ -37,6 +37,11 @@ type (
 		ID         uuid.UUID `json:"id" gorm:"column:id"`
 		BrokerName string    `json:"broker_name" gorm:"column:broker_name"`
 	}
+
+	TransactionPriority struct {
+		ID       uuid.UUID `json:"id" gorm:"column:id"`
+		Priority string    `json:"priority" gorm:"column:priority"`
+	}
 )
 
 func (TransactionType) TableName() string {
@@ -65,4 +70,8 @@ func (InvestType) TableName() string {
 
 func (Broker) TableName() string {
 	return "tbl_master_broker"
+}
+
+func (TransactionPriority) TableName() string {
+	return "tbl_master_transaction_priorities"
 }

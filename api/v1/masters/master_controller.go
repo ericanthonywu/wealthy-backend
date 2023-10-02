@@ -20,6 +20,7 @@ type (
 		WalletType(ctx *gin.Context)
 		Invest(ctx *gin.Context)
 		Broker(ctx *gin.Context)
+		TransactionPriority(ctx *gin.Context)
 	}
 )
 
@@ -65,6 +66,12 @@ func (c *MasterController) Invest(ctx *gin.Context) {
 
 func (c *MasterController) Broker(ctx *gin.Context) {
 	data := c.useCase.Broker()
+	response.SendBack(ctx, data, []errorsinfo.Errors{}, http.StatusOK)
+	return
+}
+
+func (c *MasterController) TransactionPriority(ctx *gin.Context) {
+	data := c.useCase.TransactionPriority()
 	response.SendBack(ctx, data, []errorsinfo.Errors{}, http.StatusOK)
 	return
 }

@@ -18,6 +18,7 @@ type (
 		WalletType() (data []entities.WalletType)
 		InvestType() (data []entities.InvestType)
 		Broker() (data []entities.Broker)
+		TransactionPriority() (data []entities.TransactionPriority)
 	}
 )
 
@@ -58,4 +59,9 @@ func (r *MasterRepository) InvestType() (data []entities.InvestType) {
 func (r *MasterRepository) Broker() (data []entities.Broker) {
 	r.db.Where("active=?", true).Find(&data)
 	return data
+}
+
+func (r *MasterRepository) TransactionPriority() (data []entities.TransactionPriority) {
+	r.db.Where("active=?", true).Find(&data)
+	return
 }

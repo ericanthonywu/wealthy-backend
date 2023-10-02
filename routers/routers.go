@@ -29,6 +29,12 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				categoriesGroup.GET("/income", tokenSignature(), master.IncomeType)
 				categoriesGroup.GET("/expense", tokenSignature(), master.ExpenseType)
 			}
+
+			transactionGroup := masterGroup.Group("/transactions")
+			{
+				transactionGroup.GET("/priority", tokenSignature(), master.TransactionPriority)
+			}
+
 		}
 
 		accountGroup := v1group.Group("/accounts")
