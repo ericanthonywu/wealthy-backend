@@ -14,10 +14,7 @@ type (
 	}
 
 	ITransactionController interface {
-		Expense(ctx *gin.Context)
-		Income(ctx *gin.Context)
-		Transfer(ctx *gin.Context)
-		Invest(ctx *gin.Context)
+		Add(ctx *gin.Context)
 	}
 )
 
@@ -25,31 +22,21 @@ func NewTransactionController(useCase ITransactionUseCase) *TransactionControlle
 	return &TransactionController{useCase: useCase}
 }
 
-func (c *TransactionController) Expense(ctx *gin.Context) {
+func (c *TransactionController) Add(ctx *gin.Context) {
 	var (
-		dtoRequest dtos.TransactionExpenseRequest
+		dtoRequest dtos.TransactionRequest
 		errInfo    []errorsinfo.Errors
+		httpCode   int
+		data       interface{}
 	)
 
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
-		response.SendBack(ctx, dtos.TransactionExpenseRequest{}, errInfo, http.StatusBadRequest)
+		response.SendBack(ctx, dtos.TransactionRequest{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
-	c.useCase.Expense(&dtoRequest)
-	return
-}
-
-func (c *TransactionController) Income(ctx *gin.Context) {
-
-	return
-}
-
-func (c *TransactionController) Transfer(ctx *gin.Context) {
-	return
-}
-
-func (c *TransactionController) Invest(ctx *gin.Context) {
+	data, httpCode, errInfo = c.useCase.Add(&dtoRequest)
+	response.SendBack(ctx, data, []errorsinfo.Errors{}, httpCode)
 	return
 }

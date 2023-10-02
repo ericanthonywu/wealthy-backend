@@ -14,9 +14,8 @@ type (
 	}
 
 	ExpenseType struct {
-		ID                      uuid.UUID `json:"id" gorm:"column:id"`
-		ExpenseType             string    `json:"expense_type" gorm:"column:expense_types"`
-		IDMasterTransactionType uuid.UUID `json:"id_master_transaction_type" gorm:"column:id_master_transaction_types"`
+		ID          uuid.UUID `json:"id" gorm:"column:id"`
+		ExpenseType string    `json:"expense_type" gorm:"column:expense_types"`
 	}
 
 	ReksadanaType struct {
@@ -35,11 +34,11 @@ func (TransactionType) TableName() string {
 }
 
 func (IncomeType) TableName() string {
-	return "tbl_master_income_types"
+	return "tbl_master_income_categories"
 }
 
 func (ExpenseType) TableName() string {
-	return "tbl_master_expense_types"
+	return "tbl_master_expense_categories"
 }
 
 func (ReksadanaType) TableName() string {

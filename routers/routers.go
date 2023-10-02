@@ -15,11 +15,18 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 	{
 		masterGroup := v1group.Group("/masters")
 		{
-			masterGroup.GET("/transaction-type", tokenSignature(), master.TransactionType)
-			masterGroup.GET("/income-type", tokenSignature(), master.IncomeType)
-			masterGroup.GET("/expense-type", tokenSignature(), master.ExpenseType)
-			masterGroup.GET("/reksadana-type", tokenSignature(), master.ReksadanaType)
-			masterGroup.GET("/wallet-type", tokenSignature(), master.WalletType)
+			typeGroup := masterGroup.Group("/types")
+			{
+				typeGroup.GET("/transaction", tokenSignature(), master.TransactionType)
+				typeGroup.GET("/reksadana", tokenSignature(), master.ReksadanaType)
+				typeGroup.GET("/wallet", tokenSignature(), master.WalletType)
+			}
+
+			categoriesGroup := masterGroup.Group("/categories")
+			{
+				categoriesGroup.GET("/income", tokenSignature(), master.IncomeType)
+				categoriesGroup.GET("/expense", tokenSignature(), master.ExpenseType)
+			}
 		}
 
 		accountGroup := v1group.Group("/accounts")
@@ -38,12 +45,9 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 		}
 
-		transactionGroup := v1group.GET("/transactions")
+		transactionGroup := v1group.Group("/transactions")
 		{
-			transactionGroup.POST("/expense", tokenSignature(), transaction.Expense)
-			transactionGroup.POST("/income", tokenSignature(), transaction.Income)
-			transactionGroup.POST("/transfer", tokenSignature(), transaction.Transfer)
-			transactionGroup.POST("/invest", tokenSignature(), transaction.Invest)
+			transactionGroup.POST("/", tokenSignature(), transaction.Add)
 		}
 	}
 }
