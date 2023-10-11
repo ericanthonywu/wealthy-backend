@@ -6,6 +6,7 @@ package routers
 import (
 	"github.com/google/wire"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets"
@@ -58,4 +59,16 @@ func Transactions(db *gorm.DB) *transactions.TransactionController {
 		wire.Bind(new(transactions.ITransactionRepository), new(*transactions.TransactionRepository)),
 	)))
 	return &transactions.TransactionController{}
+}
+
+func Budgets(db *gorm.DB) *budgets.BudgetController {
+	panic(wire.Build(wire.NewSet(
+		budgets.NewBudgetRepository,
+		budgets.NewBudgetUseCase,
+		budgets.NewBudgetController,
+		wire.Bind(new(budgets.IBudgetController), new(*budgets.BudgetController)),
+		wire.Bind(new(budgets.IBudgetUseCase), new(*budgets.BudgetUseCase)),
+		wire.Bind(new(budgets.IBudgetRepository), new(*budgets.BudgetRepository)),
+	)))
+	return &budgets.BudgetController{}
 }
