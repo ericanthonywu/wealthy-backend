@@ -1,6 +1,8 @@
 package dtos
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+)
 
 type (
 	TransactionRequest struct {
@@ -22,5 +24,29 @@ type (
 		IDMasterReksanadaTypes        uuid.UUID `json:"id_master_reksadana_types,omitempty"`
 		IDMasterTransactionPriorities uuid.UUID `json:"id_master_transaction_priorities,omitempty"`
 		IDMasterTransactionTypes      uuid.UUID `json:"id_master_transaction_types,omitempty"`
+	}
+
+	TransactionTotalIncomeSpending struct {
+		Month int `json:"month"`
+	}
+
+	TransactionHistoryForIncomeExpenses struct {
+		Total  int         `json:"transaction_total"`
+		Detail interface{} `json:"detail"`
+	}
+
+	TransactionHistoryForTransfer struct {
+		TotalMoneyIn  int         `json:"total_money_in"`
+		TotalMoneyOut int         `json:"total_money_out"`
+		Detail        interface{} `json:"detail"`
+	}
+
+	TransactionHistoryForInvest struct {
+		Detail interface{} `json:"detail"`
+	}
+
+	TransactionIncomeSpendingInvestment struct {
+		Summary interface{} `json:"summary"`
+		Detail  interface{} `json:"detail"`
 	}
 )

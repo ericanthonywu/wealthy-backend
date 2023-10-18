@@ -40,7 +40,7 @@ func (c *WalletController) Add(ctx *gin.Context) {
 	}
 
 	usrEmail := fmt.Sprintf("%v", ctx.MustGet("email"))
-	dtoResponse, httpCode, errInfo = c.useCase.Add(&dtoRequest, usrEmail)
+	dtoResponse, httpCode, errInfo = c.useCase.Add(ctx, &dtoRequest, usrEmail)
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}

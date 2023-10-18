@@ -7,6 +7,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets/entities"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"net/http"
 )
 
@@ -16,7 +17,7 @@ type (
 	}
 
 	IWalletUseCase interface {
-		Add(request *dtos.WalletAddRequest, usrEmail string) (response dtos.WalletAddResponse, httpCode int, errInfo []errorsinfo.Errors)
+		Add(ctx *gin.Context, request *dtos.WalletAddRequest, usrEmail string) (response dtos.WalletAddResponse, httpCode int, errInfo []errorsinfo.Errors)
 		List(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		UpdateAmount(IDWallet string, request *dtos.WalletUpdateAmountRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
@@ -26,7 +27,7 @@ func NewWalletUseCase(repo IWalletRepository) *WalletUseCase {
 	return &WalletUseCase{repo: repo}
 }
 
-func (s *WalletUseCase) Add(request *dtos.WalletAddRequest, usrEmail string) (response dtos.WalletAddResponse, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest, usrEmail string) (response dtos.WalletAddResponse, httpCode int, errInfo []errorsinfo.Errors) {
 	var err error
 
 	walletEntity := entities.WalletEntity{
@@ -39,7 +40,7 @@ func (s *WalletUseCase) Add(request *dtos.WalletAddRequest, usrEmail string) (re
 		Amount:        request.Amount,
 	}
 
-	data := s.repo.PersonalAccount(usrEmail)
+	data := personalaccounts.Informations(ctx, usrEmail)
 
 	if data.ID == uuid.Nil {
 		httpCode = http.StatusNotFound

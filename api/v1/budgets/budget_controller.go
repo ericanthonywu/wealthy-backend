@@ -23,12 +23,11 @@ func NewBudgetController(useCase IBudgetUseCase) *BudgetController {
 }
 
 func (c *BudgetController) AllCategories(ctx *gin.Context) {
-	//data := c.useCase.AllCategories()
+	c.useCase.AllCategories(ctx)
 	response.SendBack(ctx, nil, []errorsinfo.Errors{}, http.StatusOK)
 }
 
 func (c *BudgetController) Set(ctx *gin.Context) {
 	var ()
 	c.useCase.Set()
-
 }

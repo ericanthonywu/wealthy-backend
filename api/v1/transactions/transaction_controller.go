@@ -15,6 +15,11 @@ type (
 
 	ITransactionController interface {
 		Add(ctx *gin.Context)
+		ExpenseTransactionHistory(ctx *gin.Context)
+		IncomeTransactionHistory(ctx *gin.Context)
+		TransferTransactionHistory(ctx *gin.Context)
+		IncomeSpending(ctx *gin.Context)
+		Investment(ctx *gin.Context)
 	}
 )
 
@@ -38,5 +43,71 @@ func (c *TransactionController) Add(ctx *gin.Context) {
 
 	data, httpCode, errInfo = c.useCase.Add(&dtoRequest)
 	response.SendBack(ctx, data, []errorsinfo.Errors{}, httpCode)
+	return
+}
+
+func (c *TransactionController) ExpenseTransactionHistory(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.ExpenseTransactionHistory(ctx)
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *TransactionController) IncomeTransactionHistory(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.IncomeTransactionHistory(ctx)
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *TransactionController) TransferTransactionHistory(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.TransferTransactionHistory(ctx)
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *TransactionController) InvestTransactionHistory(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.IncomeTransactionHistory(ctx)
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *TransactionController) IncomeSpending(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.IncomeSpending(ctx)
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *TransactionController) Investment(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.Investment(ctx)
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
