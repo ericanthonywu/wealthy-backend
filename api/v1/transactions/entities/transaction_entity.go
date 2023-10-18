@@ -107,6 +107,13 @@ type (
 		Lot       int    `gorm:"column:lot" json:"lot"`
 		StockCode string `gorm:"column:stock_code" json:"stock_code"`
 	}
+
+	TransactionByNotes struct {
+		MonthYear           string `gorm:"column:month_year" json:"month_year"`
+		Quantity            int    `gorm:"column:quantity" json:"quantity"`
+		TransactionNote     string `gorm:"column:transaction_note" json:"transaction_note"`
+		TransactionCategory string `gorm:"column:transaction_category" json:"transaction_category"`
+	}
 )
 
 func (TransactionEntity) TableName() string {

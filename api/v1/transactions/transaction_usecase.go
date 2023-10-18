@@ -23,6 +23,7 @@ type (
 		InvestTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		IncomeSpending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Investment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		ByNotes(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -300,4 +301,31 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 	dtoResponse.Detail = responseInvestmentDetail
 
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
+}
+
+func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+
+	month := ctx.Query("month")
+	year := ctx.Query("year")
+
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		httpCode = http.StatusNotFound
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		return response, httpCode, errInfo
+	}
+
+	if month == "" && year == "" {
+		httpCode = http.StatusBadGateway
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "need month and or year information")
+		return response, httpCode, errInfo
+	}
+
+	if month != "" && year != "" {
+		response = s.repo.ByNote(personalAccount.ID, month, year)
+	}
+
+	return response, http.StatusOK, []errorsinfo.Errors{}
 }

@@ -58,7 +58,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			transactionGroup.POST("/", tokenSignature(), transaction.Add)
 			transactionGroup.GET("/income-spending", tokenSignature(), transaction.IncomeSpending)
 			transactionGroup.GET("/investment", tokenSignature(), transaction.Investment)
-			//transactionGroup.GET("/notes", tokenSignature(), transaction)
+			transactionGroup.GET("/notes", tokenSignature(), transaction.ByNotes)
 
 			transactionHistory := transactionGroup.Group("/history")
 			{

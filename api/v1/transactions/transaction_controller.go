@@ -20,6 +20,7 @@ type (
 		TransferTransactionHistory(ctx *gin.Context)
 		IncomeSpending(ctx *gin.Context)
 		Investment(ctx *gin.Context)
+		ByNotes(ctx *gin.Context)
 	}
 )
 
@@ -103,6 +104,17 @@ func (c *TransactionController) IncomeSpending(ctx *gin.Context) {
 
 func (c *TransactionController) Investment(ctx *gin.Context) {
 	data, httpCode, errInfo := c.useCase.Investment(ctx)
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *TransactionController) ByNotes(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.ByNotes(ctx)
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
