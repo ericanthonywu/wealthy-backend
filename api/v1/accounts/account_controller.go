@@ -14,9 +14,10 @@ type (
 	}
 
 	IAccountController interface {
-		SignUp(c *gin.Context)
-		SignIn(c *gin.Context)
-		SignOut(c *gin.Context)
+		SignUp(ctx *gin.Context)
+		SignIn(ctx *gin.Context)
+		SignOut(ctx *gin.Context)
+		Profile(ctx *gin.Context)
 	}
 )
 
@@ -65,4 +66,15 @@ func (c *AccountController) SignIn(ctx *gin.Context) {
 
 func (c *AccountController) SignOut(ctx *gin.Context) {
 	c.useCase.SignOut()
+}
+
+func (c *AccountController) Profile(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.Profile(ctx)
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
 }

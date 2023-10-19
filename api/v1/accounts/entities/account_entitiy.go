@@ -39,6 +39,17 @@ type (
 		Active   bool   `gorm:"column:active"`
 		Roles    string `gorm:"column:role"`
 	}
+
+	AccountProfile struct {
+		ID          uuid.UUID `gorm:"column:id" json:"id"`
+		Username    string    `gorm:"column:username" json:"username"`
+		Name        string    `gorm:"column:name" json:"name"`
+		DOB         string    `gorm:"column:date_of_birth" json:"date_of_birth"`
+		ReferType   string    `gorm:"column:refer_type" json:"refer_type"`
+		AccountType string    `gorm:"column:account_type" json:"account_type"`
+		Gender      string    `gorm:"column:gender" json:"gender"`
+		UserRoles   string    `gorm:"column:user_roles" json:"user_roles"`
+	}
 )
 
 func (AccountMasterAccountType) TableName() string {

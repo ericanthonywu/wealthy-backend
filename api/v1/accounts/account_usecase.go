@@ -1,10 +1,13 @@
 package accounts
 
 import (
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts/entities"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/password"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/token"
 	"net/http"
 )
@@ -18,6 +21,7 @@ type (
 		SignIn(request *dtos.AccountSignInRequest) (response dtos.AccountSignInResponse, httpCode int, errInfo []errorsinfo.Errors)
 		SignUp(request *dtos.AccountSignUpRequest) (response dtos.AccountSignUpResponse, httpCode int, errInfo []errorsinfo.Errors)
 		SignOut()
+		Profile(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -92,4 +96,18 @@ func (s *AccountUseCase) SignIn(request *dtos.AccountSignInRequest) (response dt
 
 func (s *AccountUseCase) SignOut() {
 
+}
+
+func (s *AccountUseCase) Profile(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		httpCode = http.StatusNotFound
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		return response, httpCode, errInfo
+	}
+
+	response = s.repo.Profile(personalAccount.ID)
+	return response, http.StatusOK, []errorsinfo.Errors{}
 }

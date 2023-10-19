@@ -22,6 +22,7 @@ type (
 		SignUpPersonalAccount(model *entities.AccountSignUpPersonalAccountEntity) (IDPersonalAccount uuid.UUID, err error)
 		SignUpAuth(model *entities.AccountSignUpAuthenticationsEntity) (err error)
 		SignInAuth(model entities.AccountSignInAuthenticationEntity) (data entities.AccountSignInAuthenticationEntity)
+		Profile(IDPersonal uuid.UUID) (data entities.AccountProfile)
 	}
 )
 
@@ -96,5 +97,18 @@ func (r *AccountRepository) SignInAuth(model entities.AccountSignInAuthenticatio
 		"INNER JOIN tbl_master_roles mr ON mr.id = a.id_master_roles "+
 		"WHERE email= ? AND a.active = true", model.Email).Scan(&data)
 
+	return data
+}
+
+func (r *AccountRepository) Profile(IDPersonal uuid.UUID) (data entities.AccountProfile) {
+	if err := r.db.Raw(`SELECT pa.id,pa.username, pa.name, pa.dob as date_of_birth, pa.refer_code, tmat.account_type, tmg.gender_name as gender, tmr.roles as user_roles
+FROM tbl_personal_accounts pa
+INNER JOIN tbl_master_account_types tmat ON tmat.id = pa.id_master_account_types
+LEFT JOIN tbl_master_genders tmg ON tmg.id = pa.id_master_gender
+INNER JOIN tbl_authentications ta ON ta.id_personal_accounts = pa.id
+INNER JOIN tbl_master_roles tmr ON tmr.id = ta.id_master_roles
+WHERE pa.id=?`, IDPersonal).Scan(&data).Error; err != nil {
+		return entities.AccountProfile{}
+	}
 	return data
 }

@@ -43,6 +43,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		{
 			accountGroup.POST("/signup", account.SignUp)
 			accountGroup.POST("/signin", account.SignIn)
+			accountGroup.GET("/profile", tokenSignature(), account.Profile)
 			// accountGroup.POST("/profile", account.SignIn) // get profile
 
 		}
