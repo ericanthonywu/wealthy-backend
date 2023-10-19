@@ -12,7 +12,7 @@ type (
 	}
 
 	IBudgetRepository interface {
-		AllCategories(idPersonal uuid.UUID, month, year string) (budgetCategories []entities.BudgetAllCategoriesEntities)
+		All(idPersonal uuid.UUID, month, year string) (budgetCategories []entities.BudgetAllCategoriesEntities)
 		Overview(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetOverview)
 		Category(IDPersonal uuid.UUID, month string, year string, category uuid.UUID) (data []entities.BudgetCategory)
 		LatestSixMonths(IDPersonal uuid.UUID, category uuid.UUID) (data []entities.BudgetLatestSixMonth)
@@ -24,20 +24,19 @@ func NewBudgetRepository(db *gorm.DB) *BudgetRepository {
 	return &BudgetRepository{db: db}
 }
 
-func (r *BudgetRepository) AllCategories(idPersonal uuid.UUID, month, year string) (budgetCategories []entities.BudgetAllCategoriesEntities) {
-
+func (r *BudgetRepository) All(idPersonal uuid.UUID, month, year string) (budgetCategories []entities.BudgetAllCategoriesEntities) {
 	if err := r.db.Raw(`SELECT tmec.id,
        tmec.expense_types                                                          as categories,
        COALESCE(SUM(budget.amount)
-                FILTER ( WHERE budget.id_personal_accounts = '?' AND
-                               to_char(budget.created_at, 'MM') = '?' AND to_char(budget.created_at, 'YYYY') = '?'),
+                FILTER ( WHERE budget.id_personal_accounts = ? AND
+                               to_char(budget.created_at, 'MM') = ? AND to_char(budget.created_at, 'YYYY') = ?),
                 0)                                                                 as total,
        (SELECT json_agg(r)::jsonb as sub_categories
         FROM (SELECT tmes.subcategories::text as subcategory_name,
                      COALESCE(SUM(b.amount::numeric)
-                              FILTER ( WHERE b.id_personal_accounts = '?' AND
-                                             to_char(b.created_at, 'MM') = '?' AND
-                                             to_char(b.created_at, 'YYYY') = '?' ),
+                              FILTER ( WHERE b.id_personal_accounts = ? AND
+                                             to_char(b.created_at, 'MM') = ? AND
+                                             to_char(b.created_at, 'YYYY') = ? ),
                               0)              as limit_amount
               FROM tbl_master_expense_subcategories tmes
                        LEFT JOIN tbl_budgets b ON b.id_master_subcategories = tmes.id

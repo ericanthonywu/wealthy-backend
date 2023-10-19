@@ -11,6 +11,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 	wallet := Wallets(db)
 	transaction := Transactions(db)
 	budget := Budgets(db)
+	statistic := Statistics(db)
 
 	v1group := router.Group("/v1")
 	{
@@ -48,9 +49,18 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 		budgetGroup := v1group.Group("/budgets")
 		{
+			budgetGroup.GET("/all", tokenSignature(), budget.All)
 			budgetGroup.GET("/overview", tokenSignature(), budget.Overview)
 			budgetGroup.GET("/category", tokenSignature(), budget.Category)
 			budgetGroup.GET("/latest-six-months", tokenSignature(), budget.LatestSixMonths)
+		}
+
+		statisticGroup := v1group.Group("/statistics")
+		{
+			statisticGroup.GET("/", tokenSignature(), statistic.Statistic)
+			statisticGroup.GET("/priority", tokenSignature(), statistic.TransactionPriority)
+			statisticGroup.GET("/trend", tokenSignature(), statistic.Trend)
+			statisticGroup.GET("/category", tokenSignature(), statistic.Category)
 		}
 
 		transactionGroup := v1group.Group("/transactions")
