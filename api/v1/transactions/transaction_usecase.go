@@ -304,7 +304,6 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 }
 
 func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-
 	month := ctx.Query("month")
 	year := ctx.Query("year")
 
