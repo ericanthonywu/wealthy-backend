@@ -10,6 +10,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets"
 	"gorm.io/gorm"
@@ -50,4 +51,11 @@ func Budgets(db *gorm.DB) *budgets.BudgetController {
 	budgetUseCase := budgets.NewBudgetUseCase(budgetRepository)
 	budgetController := budgets.NewBudgetController(budgetUseCase)
 	return budgetController
+}
+
+func Statistics(db *gorm.DB) *statistics.StatisticController {
+	statisticRepository := statistics.NewStatisticRepository(db)
+	statisticUseCase := statistics.NewStatisticUseCase(statisticRepository)
+	statisticController := statistics.NewStatisticController(statisticUseCase)
+	return statisticController
 }

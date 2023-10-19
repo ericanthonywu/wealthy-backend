@@ -8,6 +8,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets"
 	"gorm.io/gorm"
@@ -71,4 +72,16 @@ func Budgets(db *gorm.DB) *budgets.BudgetController {
 		wire.Bind(new(budgets.IBudgetRepository), new(*budgets.BudgetRepository)),
 	)))
 	return &budgets.BudgetController{}
+}
+
+func Statistics(db *gorm.DB) *statistics.StatisticController {
+	panic(wire.Build(wire.NewSet(
+		statistics.NewStatisticRepository,
+		statistics.NewStatisticUseCase,
+		statistics.NewStatisticController,
+		wire.Bind(new(statistics.IStatisticController), new(*statistics.StatisticController)),
+		wire.Bind(new(statistics.IStatisticUseCase), new(*statistics.StatisticUseCase)),
+		wire.Bind(new(statistics.IStatisticRepository), new(*statistics.StatisticRepository)),
+	)))
+	return &statistics.StatisticController{}
 }
