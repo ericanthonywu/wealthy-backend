@@ -17,7 +17,8 @@ type (
 		SignUp(ctx *gin.Context)
 		SignIn(ctx *gin.Context)
 		SignOut(ctx *gin.Context)
-		Profile(ctx *gin.Context)
+		GetProfile(ctx *gin.Context)
+		SetProfile(ctx *gin.Context)
 	}
 )
 
@@ -68,8 +69,8 @@ func (c *AccountController) SignOut(ctx *gin.Context) {
 	c.useCase.SignOut()
 }
 
-func (c *AccountController) Profile(ctx *gin.Context) {
-	data, httpCode, errInfo := c.useCase.Profile(ctx)
+func (c *AccountController) GetProfile(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.GetProfile(ctx)
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
@@ -77,4 +78,23 @@ func (c *AccountController) Profile(ctx *gin.Context) {
 
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
+}
+
+func (c *AccountController) SetProfile(ctx *gin.Context) {
+	var (
+		dtoRequest  dtos.AccountSetProfileRequest
+		dtoResponse map[string]bool
+		errInfo     []errorsinfo.Errors
+		httpCode    int
+	)
+
+	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
+		response.SendBack(ctx, dtos.AccountSignUpResponse{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	dtoResponse, httpCode, errInfo = c.useCase.SetProfile(ctx, &dtoRequest)
+	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
+
 }

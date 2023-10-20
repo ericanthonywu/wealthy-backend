@@ -42,6 +42,7 @@ type (
 
 	AccountProfile struct {
 		ID          uuid.UUID `gorm:"column:id" json:"id"`
+		Email       string    `gorm:"column:email" json:"email"`
 		Username    string    `gorm:"column:username" json:"username"`
 		Name        string    `gorm:"column:name" json:"name"`
 		DOB         string    `gorm:"column:date_of_birth" json:"date_of_birth"`
@@ -50,7 +51,19 @@ type (
 		Gender      string    `gorm:"column:gender" json:"gender"`
 		UserRoles   string    `gorm:"column:user_roles" json:"user_roles"`
 	}
+
+	AccountSetProfileEntity struct {
+		Name     string    `gorm:"column:name"`
+		Username string    `gorm:"column:username"`
+		DOB      string    `gorm:"column:dob"`
+		Gender   uuid.UUID `gorm:"column:id_master_gender"`
+	}
 )
+
+func (AccountSetProfileEntity) TableName() string {
+	return "tbl_personal_accounts"
+
+}
 
 func (AccountMasterAccountType) TableName() string {
 	return "tbl_master_account_types"

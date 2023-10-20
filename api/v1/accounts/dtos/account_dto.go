@@ -31,4 +31,11 @@ type (
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
+
+	AccountSetProfileRequest struct {
+		Name     string `json:"name" copier:"must"`
+		Username string `json:"username" copier:"must"`
+		DOB      string `json:"date_of_birth" copier:"must"`
+		Gender   string `json:"id_master_gender" copier:"must"`
+	}
 )

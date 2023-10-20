@@ -22,7 +22,8 @@ type (
 		SignUpPersonalAccount(model *entities.AccountSignUpPersonalAccountEntity) (IDPersonalAccount uuid.UUID, err error)
 		SignUpAuth(model *entities.AccountSignUpAuthenticationsEntity) (err error)
 		SignInAuth(model entities.AccountSignInAuthenticationEntity) (data entities.AccountSignInAuthenticationEntity)
-		Profile(IDPersonal uuid.UUID) (data entities.AccountProfile)
+		GetProfile(IDPersonal uuid.UUID) (data entities.AccountProfile)
+		SetProfile(ID uuid.UUID, model *entities.AccountSetProfileEntity) (err error)
 	}
 )
 
@@ -100,8 +101,8 @@ func (r *AccountRepository) SignInAuth(model entities.AccountSignInAuthenticatio
 	return data
 }
 
-func (r *AccountRepository) Profile(IDPersonal uuid.UUID) (data entities.AccountProfile) {
-	if err := r.db.Raw(`SELECT pa.id,pa.username, pa.name, pa.dob as date_of_birth, pa.refer_code, tmat.account_type, tmg.gender_name as gender, tmr.roles as user_roles
+func (r *AccountRepository) GetProfile(IDPersonal uuid.UUID) (data entities.AccountProfile) {
+	if err := r.db.Raw(`SELECT pa.id,pa.username, pa.name, pa.dob as date_of_birth, pa.refer_code, pa.email, tmat.account_type, tmg.gender_name as gender, tmr.roles as user_roles
 FROM tbl_personal_accounts pa
 INNER JOIN tbl_master_account_types tmat ON tmat.id = pa.id_master_account_types
 LEFT JOIN tbl_master_genders tmg ON tmg.id = pa.id_master_gender
@@ -111,4 +112,11 @@ WHERE pa.id=?`, IDPersonal).Scan(&data).Error; err != nil {
 		return entities.AccountProfile{}
 	}
 	return data
+}
+
+func (r *AccountRepository) SetProfile(ID uuid.UUID, model *entities.AccountSetProfileEntity) (err error) {
+	if err := r.db.Table("tbl_personal_accounts").Where("id = ?", ID).Updates(map[string]interface{}{"name": model.Name, "id_master_gender": model.Gender, "dob": model.DOB, "username": model.Username}).Error; err != nil {
+		return err
+	}
+	return nil
 }

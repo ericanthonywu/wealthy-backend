@@ -3,6 +3,7 @@ package accounts
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jinzhu/copier"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts/entities"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
@@ -21,7 +22,8 @@ type (
 		SignIn(request *dtos.AccountSignInRequest) (response dtos.AccountSignInResponse, httpCode int, errInfo []errorsinfo.Errors)
 		SignUp(request *dtos.AccountSignUpRequest) (response dtos.AccountSignUpResponse, httpCode int, errInfo []errorsinfo.Errors)
 		SignOut()
-		Profile(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		GetProfile(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		SetProfile(ctx *gin.Context, request *dtos.AccountSetProfileRequest) (response map[string]bool, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -98,7 +100,7 @@ func (s *AccountUseCase) SignOut() {
 
 }
 
-func (s *AccountUseCase) Profile(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *AccountUseCase) GetProfile(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	usrEmail := ctx.MustGet("email").(string)
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
@@ -108,6 +110,41 @@ func (s *AccountUseCase) Profile(ctx *gin.Context) (response interface{}, httpCo
 		return response, httpCode, errInfo
 	}
 
-	response = s.repo.Profile(personalAccount.ID)
+	response = s.repo.GetProfile(personalAccount.ID)
 	return response, http.StatusOK, []errorsinfo.Errors{}
+}
+
+func (s *AccountUseCase) SetProfile(ctx *gin.Context, request *dtos.AccountSetProfileRequest) (response map[string]bool, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		model      entities.AccountSetProfileEntity
+		genderUUID uuid.UUID
+	)
+
+	dtoResponse := make(map[string]bool)
+
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		httpCode = http.StatusBadRequest
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "cannot access API. invalid personal ID")
+		return response, httpCode, errInfo
+	}
+
+	_ = copier.Copy(&model, &request)
+
+	if request.Gender != "" {
+		genderUUID, _ = uuid.Parse(request.Gender)
+		model.Gender = genderUUID
+	}
+
+	err := s.repo.SetProfile(personalAccount.ID, &model)
+	if err != nil {
+		httpCode = http.StatusInternalServerError
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return response, httpCode, errInfo
+	}
+
+	dtoResponse["success"] = true
+	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
