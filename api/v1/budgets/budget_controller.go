@@ -2,8 +2,10 @@ package budgets
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
+	"net/http"
 )
 
 type (
@@ -68,5 +70,19 @@ func (c *BudgetController) LatestSixMonths(ctx *gin.Context) {
 }
 
 func (c *BudgetController) Set(ctx *gin.Context) {
-	c.useCase.Set()
+	var (
+		dtoRequest  dtos.BudgetSetRequest
+		dtoResponse interface{}
+		errInfo     []errorsinfo.Errors
+		httpCode    int
+	)
+
+	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		response.SendBack(ctx, dtos.BudgetSetRequest{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	dtoResponse, httpCode, errInfo = c.useCase.Set(ctx, &dtoRequest)
+	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
 }

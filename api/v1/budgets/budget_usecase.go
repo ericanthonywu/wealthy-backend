@@ -22,7 +22,7 @@ type (
 		Overview(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Category(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		LatestSixMonths(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		Set()
+		Set(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -155,6 +155,36 @@ func (s *BudgetUseCase) LatestSixMonths(ctx *gin.Context) (response interface{},
 	return response, http.StatusOK, []errorsinfo.Errors{}
 }
 
-func (s *BudgetUseCase) Set() {
-	s.repo.Set()
+func (s *BudgetUseCase) Set(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		model       entities.BudgetSetEntities
+		dtoResponse dtos.BudgetSetResponse
+	)
+
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		httpCode = http.StatusNotFound
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		return response, httpCode, errInfo
+	}
+
+	model.Amount = dtoRequest.Amount
+	model.IDPersonalAccount = personalAccount.ID
+	model.IDCategory = dtoRequest.IDCategory
+	model.IDSubCategory = dtoRequest.IDSubCategory
+	model.ID = uuid.New()
+
+	err := s.repo.Set(&model)
+
+	if err != nil {
+		httpCode = http.StatusInternalServerError
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "problem while set budget")
+		return response, httpCode, errInfo
+	}
+
+	dtoResponse.ID = model.ID
+	dtoResponse.Status = true
+	return dtoResponse, httpCode, []errorsinfo.Errors{}
 }

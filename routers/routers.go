@@ -49,6 +49,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 		budgetGroup := v1group.Group("/budgets")
 		{
+			budgetGroup.POST("/", tokenSignature(), budget.Set)
 			budgetGroup.GET("/all", tokenSignature(), budget.All)
 			budgetGroup.GET("/overview", tokenSignature(), budget.Overview)
 			budgetGroup.GET("/category", tokenSignature(), budget.Category)

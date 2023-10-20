@@ -29,4 +29,20 @@ type (
 		BudgetLimit   int    `gorm:"column:budget_limit" json:"budget_limit"`
 		Percentage    string `gorm:"column:percentage" json:"percentage"`
 	}
+
+	BudgetSetEntities struct {
+		ID                uuid.UUID `gorm:"column:id"`
+		IDPersonalAccount uuid.UUID `gorm:"column:id_personal_accounts"`
+		IDCategory        uuid.UUID `gorm:"column:id_master_categories"`
+		IDSubCategory     uuid.UUID `gorm:"column:id_master_subcategories"`
+		Amount            int       `gorm:"column:amount"`
+	}
+
+	BudgetExistEntities struct {
+		ID uuid.UUID `gorm:"column:id"`
+	}
 )
+
+func (BudgetSetEntities) TableName() string {
+	return "tbl_budgets"
+}

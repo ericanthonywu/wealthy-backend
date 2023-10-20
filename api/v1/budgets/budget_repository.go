@@ -16,7 +16,7 @@ type (
 		Overview(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetOverview)
 		Category(IDPersonal uuid.UUID, month string, year string, category uuid.UUID) (data []entities.BudgetCategory)
 		LatestSixMonths(IDPersonal uuid.UUID, category uuid.UUID) (data []entities.BudgetLatestSixMonth)
-		Set()
+		Set(model *entities.BudgetSetEntities) (err error)
 	}
 )
 
@@ -125,6 +125,25 @@ ORDER BY period DESC`, IDPersonal, IDPersonal, IDPersonal, category).Scan(&data)
 	return data
 }
 
-func (r *BudgetRepository) Set() {
+func (r *BudgetRepository) Set(model *entities.BudgetSetEntities) (err error) {
+	var m entities.BudgetExistEntities
 
+	r.db.Raw(`SELECT * FROM tbl_budgets b
+WHERE b.id_master_subcategories=? AND b.id_personal_accounts=?
+AND to_char(b.created_at, 'MM') = EXTRACT(MONTH FROM current_timestamp)::text
+AND to_char(b.created_at, 'YYYY') = EXTRACT(YEAR FROM current_timestamp)::text`, model.IDSubCategory, model.IDPersonalAccount).Scan(&m)
+
+	if m.ID != uuid.Nil {
+		model.ID = m.ID
+		if err = r.db.Save(&model).Error; err != nil {
+			return err
+		}
+	}
+
+	if m.ID == uuid.Nil {
+		if err = r.db.Create(&model).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }

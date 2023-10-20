@@ -90,7 +90,7 @@ func (c *AccountController) SetProfile(ctx *gin.Context) {
 
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
-		response.SendBack(ctx, dtos.AccountSignUpResponse{}, errInfo, http.StatusBadRequest)
+		response.SendBack(ctx, dtos.AccountSetProfileRequest{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
