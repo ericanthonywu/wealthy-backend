@@ -23,7 +23,6 @@ func tokenSignature() gin.HandlerFunc {
 
 		claims := jwt.MapClaims{}
 		tokenAccess := c.Request.Header["Authorization"]
-		splitToken := strings.Split(tokenAccess[0], "Bearer ")
 
 		if len(tokenAccess) == 0 {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token required")
@@ -33,6 +32,7 @@ func tokenSignature() gin.HandlerFunc {
 			return
 		}
 
+		splitToken := strings.Split(tokenAccess[0], "Bearer ")
 		token, err := jwt.ParseWithClaims(splitToken[1], claims, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, errors.New("invalid token")

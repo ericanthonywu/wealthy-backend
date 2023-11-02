@@ -15,6 +15,7 @@ type (
 	IStatisticController interface {
 		Statistic(ctx *gin.Context)
 		Weekly(ctx *gin.Context)
+		Summary(ctx *gin.Context)
 		TransactionPriority(ctx *gin.Context)
 		Trend(ctx *gin.Context)
 		Category(ctx *gin.Context)
@@ -52,6 +53,31 @@ func (c *StatisticController) Weekly(ctx *gin.Context) {
 	}
 
 	data, statusCode, errInfo = c.useCase.Weekly(ctx, month, year)
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	response.SendBack(ctx, data, errInfo, statusCode)
+	return
+}
+
+func (c *StatisticController) Summary(ctx *gin.Context) {
+	var (
+		errInfo    []errorsinfo.Errors
+		data       interface{}
+		statusCode int
+	)
+	month := ctx.Query("month")
+	year := ctx.Query("year")
+
+	if month == "" || year == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month or year required in query url")
+		response.SendBack(ctx, nil, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	data, statusCode, errInfo = c.useCase.Summary(ctx, month, year)
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}

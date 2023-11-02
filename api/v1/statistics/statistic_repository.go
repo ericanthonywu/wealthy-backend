@@ -12,8 +12,7 @@ type (
 	}
 
 	IStatisticRepository interface {
-		StatCurrentMonth()
-		StatPreviousMonth()
+		SummaryMonthly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticSummaryMonthly, err error)
 		TransactionPriority(IDPersonal uuid.UUID) (data []entities.StatisticTransactionPriority)
 		Trend(IDPersonal uuid.UUID) (data entities.StatisticTrend)
 		Category(IDPersonal, category uuid.UUID) (data entities.StatisticTrend)
@@ -27,12 +26,17 @@ func NewStatisticRepository(db *gorm.DB) *StatisticRepository {
 	return &StatisticRepository{db: db}
 }
 
-func (r *StatisticRepository) StatCurrentMonth() {
-
-}
-
-func (r *StatisticRepository) StatPreviousMonth() {
-
+func (r *StatisticRepository) SummaryMonthly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticSummaryMonthly, err error) {
+	if err := r.db.Raw(`SELECT COALESCE(SUM(tt.amount) FILTER (WHERE tmtt.type = 'EXPENSE' ), 0)::numeric as total_expense,
+       COALESCE(SUM(tt.amount) FILTER (WHERE tmtt.type = 'INCOME' ), 0)::numeric as total_income,
+       COALESCE(SUM(tt.amount) FILTER (WHERE tmtt.type = 'TRANSFER' ), 0)::numeric as total_transfer,
+       COALESCE(SUM(tt.amount) FILTER (WHERE tmtt.type = 'INVEST' ), 0)::numeric as total_invest
+	   FROM tbl_transactions tt
+		LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
+			WHERE tt.id_personal_account=? AND to_char(tt.date_time_transaction::DATE, 'MM') = ? AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?`, IDPersonal, month, year).Scan(&data).Error; err != nil {
+		return entities.StatisticSummaryMonthly{}, err
+	}
+	return data, nil
 }
 
 func (r *StatisticRepository) TransactionPriority(IDPersonal uuid.UUID) (data []entities.StatisticTransactionPriority) {

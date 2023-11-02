@@ -66,6 +66,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			periodStatisticGroup := statisticGroup.Group("/transactions")
 			{
 				periodStatisticGroup.GET("/weekly", statistic.Weekly)
+				periodStatisticGroup.GET("/summary", statistic.Summary)
 			}
 		}
 

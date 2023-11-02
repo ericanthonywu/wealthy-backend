@@ -62,4 +62,11 @@ type (
 		DateRange1925 int `gorm:"column:date_range_19_25"`
 		DateRange2630 int `gorm:"column:date_range_26_30"`
 	}
+
+	StatisticSummaryMonthly struct {
+		TotalExpense  int `gorm:"column:total_expense"`
+		TotalIncome   int `gorm:"column:total_income"`
+		TotalTransfer int `gorm:"column:total_transfer"`
+		TotalInvest   int `gorm:"column:total_invest"`
+	}
 )
