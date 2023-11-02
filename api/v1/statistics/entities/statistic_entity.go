@@ -38,4 +38,28 @@ type (
 		TotalAverageWeekly int    `gorm:"column:total_average_weekly" json:"total_average_weekly"`
 		TotalAverageDaily  int    `gorm:"column:total_average_daily" json:"total_average_daily"`
 	}
+
+	StatisticExpenseWeekly struct {
+		DateRange0104 int `gorm:"column:date_range_01_04"`
+		DateRange0511 int `gorm:"column:date_range_05_11"`
+		DateRange1218 int `gorm:"column:date_range_12_18"`
+		DateRange1925 int `gorm:"column:date_range_19_25"`
+		DateRange2630 int `gorm:"column:date_range_26_30"`
+	}
+
+	StatisticIncomeWeekly struct {
+		DateRange0104 int `gorm:"column:date_range_01_04"`
+		DateRange0511 int `gorm:"column:date_range_05_11"`
+		DateRange1218 int `gorm:"column:date_range_12_18"`
+		DateRange1925 int `gorm:"column:date_range_19_25"`
+		DateRange2630 int `gorm:"column:date_range_26_30"`
+	}
+
+	StatisticInvestmentWeekly struct {
+		DateRange0104 int `gorm:"column:date_range_01_04"`
+		DateRange0511 int `gorm:"column:date_range_05_11"`
+		DateRange1218 int `gorm:"column:date_range_12_18"`
+		DateRange1925 int `gorm:"column:date_range_19_25"`
+		DateRange2630 int `gorm:"column:date_range_26_30"`
+	}
 )

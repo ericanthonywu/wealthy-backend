@@ -12,10 +12,14 @@ type (
 	}
 
 	IStatisticRepository interface {
-		Statistic(IDPersonal uuid.UUID) (data entities.Statistic)
+		StatCurrentMonth()
+		StatPreviousMonth()
 		TransactionPriority(IDPersonal uuid.UUID) (data []entities.StatisticTransactionPriority)
 		Trend(IDPersonal uuid.UUID) (data entities.StatisticTrend)
 		Category(IDPersonal, category uuid.UUID) (data entities.StatisticTrend)
+		expenseWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticExpenseWeekly, err error)
+		incomeWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticIncomeWeekly, err error)
+		investmentWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticInvestmentWeekly, err error)
 	}
 )
 
@@ -23,115 +27,12 @@ func NewStatisticRepository(db *gorm.DB) *StatisticRepository {
 	return &StatisticRepository{db: db}
 }
 
-func (r *StatisticRepository) Statistic(IDPersonal uuid.UUID) (data entities.Statistic) {
-	if err := r.db.Raw(`WITH temp AS (SELECT EXTRACT(YEAR FROM current_timestamp)::text  AS year,
-                     EXTRACT(MONTH FROM current_timestamp)::text AS month)
-SELECT COALESCE(SUM(tt.amount) FILTER
-    ( WHERE tmtt.type = 'EXPENSE' AND
-            tt.date_time_transaction BETWEEN
-                CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-01') AND
-                CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-04')),
-                0)                                                      AS "expense_01-04",
-       COALESCE(SUM(tt.amount) FILTER
-           ( WHERE tmtt.type = 'EXPENSE' AND
-                   tt.date_time_transaction BETWEEN
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-05') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-11')),
-                0)                                                      AS "expense_05-11",
-       COALESCE(SUM(tt.amount) FILTER
-           ( WHERE tmtt.type = 'EXPENSE' AND
-                   tt.date_time_transaction BETWEEN
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-12') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-18')),
-                0)                                                      AS "expense_12-18",
-       COALESCE(SUM(tt.amount) FILTER
-           ( WHERE tmtt.type = 'EXPENSE' AND
-                   tt.date_time_transaction BETWEEN
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-19') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-25')),
-                0)                                                      AS "expense_19-25",
-       COALESCE(SUM(tt.amount) FILTER
-           ( WHERE tmtt.type = 'EXPENSE' AND
-                   tt.date_time_transaction BETWEEN
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-26') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-30')),
-                0)                                                      as "expense_26-30",
-       COALESCE(SUM(tt.amount) FILTER
-           ( WHERE tmtt.type = 'INCOME' AND
-                   tt.date_time_transaction BETWEEN
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-01') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-04')),
-                0)                                                      AS "income_01-04",
-       COALESCE(SUM(tt.amount) FILTER
-           ( WHERE tmtt.type = 'INCOME' AND
-                   tt.date_time_transaction BETWEEN
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-05') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-11')),
-                0)                                                      AS "income_05-11",
-       COALESCE(SUM(tt.amount) FILTER
-           ( WHERE tmtt.type = 'INCOME' AND
-                   tt.date_time_transaction BETWEEN
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-12') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-18')),
-                0)                                                      AS "income_12-18",
-       COALESCE(SUM(tt.amount) FILTER
-           ( WHERE tmtt.type = 'INCOME' AND
-                   tt.date_time_transaction BETWEEN
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-19') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-25')),
-                0)                                                      AS "income_19-25",
-       COALESCE(SUM(tt.amount) FILTER
-           ( WHERE tmtt.type = 'INCOME' AND
-                   tt.date_time_transaction BETWEEN
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-26') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-30')),
-                0)                                                      as "income_26-30",
-       COALESCE(SUM(tt.amount) FILTER
-           ( WHERE tmtt.type = 'INVEST' AND
-                   tt.date_time_transaction BETWEEN
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-01') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-04')),
-                0)                                                      AS "invest_01-04",
-       COALESCE(SUM(tt.amount) FILTER
-           ( WHERE tmtt.type = 'INVEST' AND
-                   tt.date_time_transaction BETWEEN
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-05') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-11')),
-                0)                                                      AS "invest_05-11",
-       COALESCE(SUM(tt.amount) FILTER
-           ( WHERE tmtt.type = 'INVEST' AND
-                   tt.date_time_transaction BETWEEN
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-12') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-18')),
-                0)                                                      AS "invest_12-18",
-       COALESCE(SUM(tt.amount) FILTER
-           ( WHERE tmtt.type = 'INVEST' AND
-                   tt.date_time_transaction BETWEEN
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-19') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-25')),
-                0)                                                      AS "invest_19-25",
-       COALESCE(SUM(tt.amount) FILTER
-           ( WHERE tmtt.type = 'INVEST' AND
-                   tt.date_time_transaction BETWEEN
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-26') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-30')),
-                0)                                                      as "invest_26-30",
+func (r *StatisticRepository) StatCurrentMonth() {
 
-       COALESCE(SUM(tt.amount) FILTER ( WHERE  tt.id_master_income_categories IS NOT NULL AND to_char(tt.date_time_transaction::DATE, 'YYYY')='2023' AND to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
-               MONTH FROM current_timestamp)::text ), 0)::numeric       as total_income,
-        COALESCE(SUM(tt.amount) FILTER ( WHERE  tt.id_master_expense_categories IS NOT NULL  AND to_char(tt.date_time_transaction::DATE, 'YYYY')='2023'  AND to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
-               MONTH FROM current_timestamp)::text ), 0)::numeric       as total_expense,
-    COALESCE(SUM(tt.amount) FILTER ( WHERE  tt.id_master_income_categories IS NOT NULL AND to_char(tt.date_time_transaction::DATE, 'YYYY')='2023' AND to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
-               MONTH FROM current_timestamp)::text ), 0) - COALESCE(SUM(tt.amount) FILTER ( WHERE  tt.id_master_expense_categories IS NOT NULL  AND to_char(tt.date_time_transaction::DATE, 'YYYY')='2023'  AND to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
-               MONTH FROM current_timestamp)::text ), 0)::numeric       as total_net_income,
-     COALESCE(SUM(tt.amount) FILTER ( WHERE  tmtt.type='INVEST' AND to_char(tt.date_time_transaction::DATE, 'YYYY')='2023' AND to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
-               MONTH FROM current_timestamp)::text ), 0)::numeric       as total_invest
-FROM tbl_transactions tt
-         INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
-WHERE tt.id_personal_account = ?`, IDPersonal).Scan(&data).Error; err != nil {
-		return entities.Statistic{}
-	}
-	return data
+}
+
+func (r *StatisticRepository) StatPreviousMonth() {
+
 }
 
 func (r *StatisticRepository) TransactionPriority(IDPersonal uuid.UUID) (data []entities.StatisticTransactionPriority) {
@@ -244,4 +145,49 @@ WHERE tt.id_personal_account = ?
 	}
 
 	return data
+}
+
+func (r *StatisticRepository) expenseWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticExpenseWeekly, err error) {
+
+	sql := `SELECT COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + ` ', '-01') AND  CONCAT('` + year + `', '-', '` + month + `', '-04')), 0)::numeric as date_range_01_04,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-05') AND  CONCAT('` + year + `', '-', '` + month + `', '-11')), 0)::numeric as date_range_05_11,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-12') AND  CONCAT('` + year + `', '-', '` + month + `', '-18')), 0)::numeric as date_range_12_18,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-19') AND  CONCAT('` + year + `', '-', '` + month + `', '-25')), 0)::numeric as date_range_19_25,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-26') AND  CONCAT('` + year + `', '-', '` + month + `', '-30')), 0)::numeric as date_range_26_30
+FROM tbl_transactions tt LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types WHERE tt.id_personal_account=? AND tmtt.type = 'EXPENSE'`
+
+	if err := r.db.Raw(sql, IDPersonal).Scan(&data).Error; err != nil {
+		return entities.StatisticExpenseWeekly{}, err
+	}
+	return data, nil
+}
+
+func (r *StatisticRepository) incomeWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticIncomeWeekly, err error) {
+
+	sql := `SELECT COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + ` ', '-01') AND  CONCAT('` + year + `', '-', '` + month + `', '-04')), 0)::numeric as date_range_01_04,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-05') AND  CONCAT('` + year + `', '-', '` + month + `', '-11')), 0)::numeric as date_range_05_11,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-12') AND  CONCAT('` + year + `', '-', '` + month + `', '-18')), 0)::numeric as date_range_12_18,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-19') AND  CONCAT('` + year + `', '-', '` + month + `', '-25')), 0)::numeric as date_range_19_25,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-26') AND  CONCAT('` + year + `', '-', '` + month + `', '-30')), 0)::numeric as date_range_26_30
+FROM tbl_transactions tt LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types WHERE tt.id_personal_account=? AND tmtt.type = 'INCOME'`
+
+	if err := r.db.Raw(sql, IDPersonal).Scan(&data).Error; err != nil {
+		return entities.StatisticIncomeWeekly{}, err
+	}
+	return data, nil
+}
+
+func (r *StatisticRepository) investmentWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticInvestmentWeekly, err error) {
+
+	sql := `SELECT COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + ` ', '-01') AND  CONCAT('` + year + `', '-', '` + month + `', '-04')), 0)::numeric as date_range_01_04,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-05') AND  CONCAT('` + year + `', '-', '` + month + `', '-11')), 0)::numeric as date_range_05_11,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-12') AND  CONCAT('` + year + `', '-', '` + month + `', '-18')), 0)::numeric as date_range_12_18,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-19') AND  CONCAT('` + year + `', '-', '` + month + `', '-25')), 0)::numeric as date_range_19_25,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-26') AND  CONCAT('` + year + `', '-', '` + month + `', '-30')), 0)::numeric as date_range_26_30
+FROM tbl_transactions tt LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types WHERE tt.id_personal_account=? AND tmtt.type = 'INVEST'`
+
+	if err := r.db.Raw(sql, IDPersonal).Scan(&data).Error; err != nil {
+		return entities.StatisticInvestmentWeekly{}, err
+	}
+	return data, nil
 }

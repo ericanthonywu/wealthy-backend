@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
+	"net/http"
 )
 
 type (
@@ -13,6 +14,7 @@ type (
 
 	IStatisticController interface {
 		Statistic(ctx *gin.Context)
+		Weekly(ctx *gin.Context)
 		TransactionPriority(ctx *gin.Context)
 		Trend(ctx *gin.Context)
 		Category(ctx *gin.Context)
@@ -31,6 +33,31 @@ func (c *StatisticController) Statistic(ctx *gin.Context) {
 	}
 
 	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *StatisticController) Weekly(ctx *gin.Context) {
+	var (
+		errInfo    []errorsinfo.Errors
+		data       interface{}
+		statusCode int
+	)
+	month := ctx.Query("month")
+	year := ctx.Query("year")
+
+	if month == "" || year == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month or year required in query url")
+		response.SendBack(ctx, nil, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	data, statusCode, errInfo = c.useCase.Weekly(ctx, month, year)
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	response.SendBack(ctx, data, errInfo, statusCode)
 	return
 }
 
