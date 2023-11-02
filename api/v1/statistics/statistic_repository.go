@@ -14,7 +14,6 @@ type (
 	IStatisticRepository interface {
 		SummaryMonthly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticSummaryMonthly, err error)
 		TransactionPriority(IDPersonal uuid.UUID) (data []entities.StatisticTransactionPriority)
-		Trend(IDPersonal uuid.UUID) (data entities.StatisticTrend)
 		Category(IDPersonal, category uuid.UUID) (data entities.StatisticTrend)
 		expenseWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticExpenseWeekly, err error)
 		incomeWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticIncomeWeekly, err error)
@@ -55,51 +54,6 @@ SELECT (transaction_need / total_transaction_priorities) * 100::DECIMAL AS trans
        (transaction_want / total_transaction_priorities) * 100::DECIMAL AS transaction_want_percentage
 FROM temp`, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.StatisticTransactionPriority{}
-	}
-	return data
-}
-
-func (r *StatisticRepository) Trend(IDPersonal uuid.UUID) (data entities.StatisticTrend) {
-	if err := r.db.Raw(`WITH temp AS (SELECT EXTRACT(YEAR FROM current_timestamp)::text  AS year,
-                           EXTRACT(MONTH FROM current_timestamp)::text AS month)
-      SELECT COALESCE(SUM(tt.amount) FILTER
-          ( WHERE tt.id_master_expense_categories IS NOT NULL AND
-                  tt.date_time_transaction BETWEEN
-                      CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-01') AND
-                      CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-04')),
-                      0)::text                                             AS "01-04",
-             COALESCE(SUM(tt.amount) FILTER
-                 ( WHERE tt.id_master_expense_categories IS NOT NULL AND
-                         tt.date_time_transaction BETWEEN
-                             CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-05') AND
-                             CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-11')),
-                      0)::text                                             AS "05-11",
-             COALESCE(SUM(tt.amount) FILTER
-                 ( WHERE tt.id_master_expense_categories IS NOT NULL AND
-                         tt.date_time_transaction BETWEEN
-                             CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-12') AND
-                             CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-18')),
-                      0)::text                                             AS "12-18",
-             COALESCE(SUM(tt.amount) FILTER
-                 ( WHERE tt.id_master_expense_categories IS NOT NULL AND
-                         tt.date_time_transaction BETWEEN
-                             CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-19') AND
-                             CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-25')),
-                      0)::text                                             AS "19-25",
-             COALESCE(SUM(tt.amount) FILTER
-                 ( WHERE tt.id_master_expense_categories IS NOT NULL AND
-                         tt.date_time_transaction BETWEEN
-                             CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-26') AND
-                             CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-30')),
-                      0)::text                                             as "26-30",
-             COALESCE(SUM(tt.amount) FILTER ( WHERE to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
-                     MONTH FROM current_timestamp)::text ), 0)::numeric       as total_average_weekly,
-             ROUND(COALESCE(SUM(tt.amount) FILTER ( WHERE to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
-                     MONTH FROM current_timestamp)::text ) / 30, 0))::numeric as total_average_daily
-      FROM tbl_transactions tt
-      WHERE tt.id_personal_account = ?
-        AND tt.id_master_expense_categories IS NOT NULL`, IDPersonal).Scan(&data).Error; err != nil {
-		return entities.StatisticTrend{}
 	}
 	return data
 }

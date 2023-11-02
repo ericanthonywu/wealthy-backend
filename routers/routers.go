@@ -60,7 +60,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		{
 			statisticGroup.GET("/", statistic.Statistic)
 			statisticGroup.GET("/priority", statistic.TransactionPriority)
-			statisticGroup.GET("/trend", statistic.Trend)
+			statisticGroup.GET("/trends", statistic.Trend)
 			statisticGroup.GET("/category", statistic.Category)
 
 			periodStatisticGroup := statisticGroup.Group("/transactions")

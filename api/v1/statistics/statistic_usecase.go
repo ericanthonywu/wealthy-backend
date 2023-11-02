@@ -24,7 +24,7 @@ type (
 		Summary(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Statistic(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		TransactionPriority(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		Trend(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		Trend(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Category(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		expenseWeekly(IDPersonal uuid.UUID, month, year string) (data []dtos.ExpenseWeekly)
 		incomeWeekly(IDPersonal uuid.UUID, month, year string) (data []dtos.IncomeWeekly)
@@ -206,6 +206,7 @@ func (s *StatisticUseCase) Summary(ctx *gin.Context, month, year string) (respon
 		expensePercentage    int
 		investmentPercentage int
 		netIncomePercentage  int
+		stringBuilder        strings.Builder
 	)
 	usrEmail := ctx.MustGet("email").(string)
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
@@ -270,6 +271,12 @@ func (s *StatisticUseCase) Summary(ctx *gin.Context, month, year string) (respon
 	dtoResponse.NetIncome.TotalAmount = netIncome
 	dtoResponse.NetIncome.Percentage = fmt.Sprintf("%d", netIncomePercentage) + "%"
 
+	stringBuilder.WriteString(datecustoms.IntToMonthName(monthINT))
+	stringBuilder.WriteString(" ")
+	stringBuilder.WriteString(year)
+
+	dtoResponse.Period = stringBuilder.String()
+
 	return dtoResponse, http.StatusOK, errInfo
 
 }
@@ -288,7 +295,14 @@ func (s *StatisticUseCase) TransactionPriority(ctx *gin.Context) (response inter
 	return response, http.StatusOK, []errorsinfo.Errors{}
 }
 
-func (s *StatisticUseCase) Trend(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *StatisticUseCase) Trend(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		stringBuilder strings.Builder
+		dtoResponse   dtos.TrendsData
+		totalWeekly   int
+		totalDaily    int
+		looping       int
+	)
 	usrEmail := ctx.MustGet("email").(string)
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
@@ -298,8 +312,45 @@ func (s *StatisticUseCase) Trend(ctx *gin.Context) (response interface{}, httpCo
 		return response, httpCode, errInfo
 	}
 
-	response = s.repo.Trend(personalAccount.ID)
-	return response, http.StatusOK, []errorsinfo.Errors{}
+	monthINT, err := strconv.Atoi(month)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	stringBuilder.WriteString(datecustoms.IntToMonthName(monthINT))
+	stringBuilder.WriteString(" ")
+	stringBuilder.WriteString(year)
+
+	dataExpenseWeekly := s.expenseWeekly(personalAccount.ID, month, year)
+
+	looping = 1
+	for _, v := range dataExpenseWeekly {
+		totalWeekly = totalWeekly + v.Amount
+		looping++
+	}
+
+	looping = 1
+	for _, v := range dataExpenseWeekly {
+		if looping == 1 {
+			totalDaily += v.Amount / 4
+		}
+
+		if looping == 2 || looping == 3 || looping == 4 {
+			totalDaily += v.Amount / 7
+		}
+
+		if looping == 5 {
+			totalDaily += v.Amount / 5
+		}
+		looping++
+	}
+
+	dtoResponse.Period = stringBuilder.String()
+	dtoResponse.Expense = dataExpenseWeekly
+	dtoResponse.AverageWeekly = totalWeekly / looping
+	dtoResponse.AverageDaily = totalDaily / 30
+
+	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
 
 func (s *StatisticUseCase) Category(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {

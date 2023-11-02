@@ -38,4 +38,11 @@ type (
 			Percentage  string `json:"percentage"`
 		} `json:"net_income"`
 	}
+
+	TrendsData struct {
+		Period        string          `json:"period"`
+		AverageWeekly int             `json:"average_weekly"`
+		AverageDaily  int             `json:"average_daily"`
+		Expense       []ExpenseWeekly `json:"expense"`
+	}
 )

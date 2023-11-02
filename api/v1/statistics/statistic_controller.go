@@ -99,7 +99,20 @@ func (c *StatisticController) TransactionPriority(ctx *gin.Context) {
 }
 
 func (c *StatisticController) Trend(ctx *gin.Context) {
-	data, httpCode, errInfo := c.useCase.Trend(ctx)
+	var (
+		errInfo []errorsinfo.Errors
+	)
+
+	month := ctx.Query("month")
+	year := ctx.Query("year")
+
+	if month == "" || year == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month or year required in query url")
+		response.SendBack(ctx, nil, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	data, httpCode, errInfo := c.useCase.Trend(ctx, month, year)
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
