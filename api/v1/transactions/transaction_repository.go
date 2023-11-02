@@ -171,8 +171,6 @@ FROM tbl_transactions tt
 WHERE tmtt.type = 'INCOME'
   AND tt.id_personal_account = ?
   AND tt.date_time_transaction BETWEEN ? AND ?
-  AND to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
-        MONTH FROM current_timestamp)::text
 GROUP BY transaction_date, transaction_category, transaction_note
 ORDER BY transaction_date DESC`, IDPersonal, startDate, endDate).Scan(&data).Error; err != nil {
 		return []entities.TransactionDetailHistory{}
@@ -224,8 +222,6 @@ func (r *TransactionRepository) TransferDetailWithData(IDPersonal uuid.UUID, sta
                LEFT JOIN tbl_transaction_details td ON td.id_transactions = tt.id
       WHERE tmtt.type = 'TRANSFER'
         AND tt.id_personal_account = ?
-        AND to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
-              MONTH FROM current_timestamp)::text
         AND tt.date_time_transaction BETWEEN ? AND ?
       GROUP BY transaction_date, transaction_note, td."to", td."from"
       ORDER BY transaction_date DESC`, IDPersonal, startDate, endDate).Scan(&data).Error; err != nil {
