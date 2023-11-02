@@ -25,4 +25,11 @@ type (
 		ID     uuid.UUID `json:"id"`
 		Status bool      `json:"status"`
 	}
+
+	BudgetOverview struct {
+		TransactionCategory string `json:"transaction_category"`
+		BudgetLimit         int    `json:"budget_limit"`
+		TotalSpending       int    `json:"total_spending"`
+		NumberOfCategory    int    `json:"number_of_category"`
+	}
 )

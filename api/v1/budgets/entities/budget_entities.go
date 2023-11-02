@@ -10,10 +10,17 @@ type (
 		SubCategories string    `gorm:"column:sub_categories"`
 	}
 
-	BudgetOverview struct {
-		TransactionCategory string `gorm:"column:transaction_category" json:"transaction_category"`
-		BudgetLimit         int    `gorm:"column:budget_limit" json:"budget_limit"`
-		TotalSpending       int    `gorm:"column:total_spending" json:"total_spending"`
+	BudgetTotalSpendingAndNumberOfCategory struct {
+		ID               uuid.UUID `gorm:"column:id"`
+		Category         string    `gorm:"column:category"`
+		Spending         int       `gorm:"column:spending"`
+		NumberOfCategory int       `gorm:"column:number_of_category"`
+	}
+
+	BudgetLimit struct {
+		IDMasterExpense uuid.UUID `gorm:"column:id_master_expense"`
+		BudgetLimit     int       `gorm:"column:budget_limit"`
+		ExpenseType     string    `gorm:"column:expense_types"`
 	}
 
 	BudgetCategory struct {

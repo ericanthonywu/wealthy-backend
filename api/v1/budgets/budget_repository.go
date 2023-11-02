@@ -13,7 +13,8 @@ type (
 
 	IBudgetRepository interface {
 		All(idPersonal uuid.UUID, month, year string) (budgetCategories []entities.BudgetAllCategoriesEntities)
-		Overview(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetOverview)
+		TotalSpendingAndNumberOfCategory(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetTotalSpendingAndNumberOfCategory)
+		BudgetLimit(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetLimit)
 		Category(IDPersonal uuid.UUID, month string, year string, category uuid.UUID) (data []entities.BudgetCategory)
 		LatestSixMonths(IDPersonal uuid.UUID, category uuid.UUID) (data []entities.BudgetLatestSixMonth)
 		Set(model *entities.BudgetSetEntities) (err error)
@@ -53,20 +54,23 @@ GROUP BY tmec.expense_types, tmec.id`, idPersonal, month, year, idPersonal, mont
 	return budgetCategories
 }
 
-func (r *BudgetRepository) Overview(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetOverview) {
-	if err := r.db.Raw(`SELECT tmec.expense_types as transaction_category,
-       (SELECT COALESCE(SUM(b.amount), 0) FROM tbl_budgets b
-        WHERE b.id_master_categories = tmec.id
-          AND b.id_personal_accounts = ?
-          AND to_char(b.created_at, 'MM') = ?
-          AND to_char(b.created_at, 'YYYY') = ?)  as budget_limit,
-       (SELECT COALESCE(SUM(tt.amount), 0) FROM tbl_transactions tt
-        WHERE tt.id_personal_account = ?
-          AND tt.id_master_expense_categories = tmec.id
-          AND to_char(tt.created_at, 'MM') = ?
-          AND to_char(tt.created_at, 'YYYY') = ?) as total_spending FROM tbl_master_expense_categories tmec
-         LEFT JOIN tbl_transactions tt ON tt.id_master_expense_categories = tmec.id`, IDPersonal, month, year, IDPersonal, month, year).Scan(&data).Error; err != nil {
-		return []entities.BudgetOverview{}
+func (r *BudgetRepository) TotalSpendingAndNumberOfCategory(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetTotalSpendingAndNumberOfCategory) {
+	if err := r.db.Raw(`SELECT tmec.id,tmec.expense_types as category, COALESCE(SUM(tt.amount),0) as spending, COUNT(tt.id_master_expense_categories) as number_of_category
+								FROM tbl_master_expense_categories tmec
+    							LEFT JOIN tbl_transactions tt ON tt.id_master_expense_categories = tmec.id
+								WHERE tt.id_personal_account= ? AND to_char(tt.date_time_transaction::DATE, 'MM') = ? AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
+							 GROUP BY tmec.expense_types,tmec.id`, IDPersonal, month, year).Scan(&data).Error; err != nil {
+		return []entities.BudgetTotalSpendingAndNumberOfCategory{}
+	}
+	return data
+}
+
+func (r *BudgetRepository) BudgetLimit(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetLimit) {
+	if err := r.db.Raw(`SELECT tb.id_master_categories as id_master_expense ,COALESCE(SUM(tb.amount),0) as budget_limit, tmec.expense_types
+FROM tbl_budgets tb LEFT JOIN tbl_master_expense_categories tmec ON tb.id_master_categories = tmec.id
+WHERE tb.id_personal_accounts= ? AND to_char(tb.created_at, 'MM') = ? AND to_char(tb.created_at, 'YYYY') = ?
+GROUP BY tmec.expense_types, tb.id_master_categories`, IDPersonal, month, year).Scan(&data).Error; err != nil {
+		return []entities.BudgetLimit{}
 	}
 	return data
 }

@@ -75,6 +75,9 @@ func (s *BudgetUseCase) All(ctx *gin.Context) (response interface{}, httpCode in
 }
 
 func (s *BudgetUseCase) Overview(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+
+	var resp []dtos.BudgetOverview
+
 	month := ctx.Query("month")
 	year := ctx.Query("year")
 
@@ -93,8 +96,39 @@ func (s *BudgetUseCase) Overview(ctx *gin.Context) (response interface{}, httpCo
 		return response, httpCode, errInfo
 	}
 
-	response = s.repo.Overview(personalAccount.ID, month, year)
-	return response, http.StatusOK, []errorsinfo.Errors{}
+	dataTransaction := s.repo.TotalSpendingAndNumberOfCategory(personalAccount.ID, month, year)
+
+	if len(dataTransaction) > 0 {
+		dataLimit := s.repo.BudgetLimit(personalAccount.ID, month, year)
+		if len(dataLimit) > 0 {
+
+			budgetLimit := make(map[uuid.UUID]int)
+
+			for _, valueLimit := range dataLimit {
+				budgetLimit[valueLimit.IDMasterExpense] = valueLimit.BudgetLimit
+			}
+
+			for _, valueTransaction := range dataTransaction {
+
+				valueBudgetLimit, _ := budgetLimit[valueTransaction.ID]
+
+				resp = append(resp, dtos.BudgetOverview{
+					TransactionCategory: valueTransaction.Category,
+					BudgetLimit:         valueBudgetLimit,
+					TotalSpending:       valueTransaction.Spending,
+					NumberOfCategory:    valueTransaction.NumberOfCategory,
+				})
+			}
+
+			return resp, http.StatusOK, []errorsinfo.Errors{}
+		} else {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "server can not access budget limit table")
+			return response, http.StatusInternalServerError, errInfo
+		}
+	}
+
+	errInfo = errorsinfo.ErrorWrapper(errInfo, "", "data not found")
+	return response, http.StatusNotFound, errInfo
 }
 
 func (s *BudgetUseCase) Category(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
