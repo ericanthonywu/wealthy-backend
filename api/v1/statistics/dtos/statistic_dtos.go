@@ -47,8 +47,9 @@ type (
 	}
 
 	Priority struct {
-		Must string `json:"transaction_must_type"`
-		Want string `json:"transaction_want_type"`
-		Need string `json:"transaction_need_type"`
+		Period string `json:"period"`
+		Must   string `json:"transaction_must_type"`
+		Want   string `json:"transaction_want_type"`
+		Need   string `json:"transaction_need_type"`
 	}
 )

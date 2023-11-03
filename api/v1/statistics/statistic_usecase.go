@@ -283,7 +283,9 @@ func (s *StatisticUseCase) Summary(ctx *gin.Context, month, year string) (respon
 
 func (s *StatisticUseCase) Priority(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		dtoResponse dtos.Priority
+		stringBuilder strings.Builder
+		dtoResponse   dtos.Priority
+		monthINT      int
 	)
 
 	usrEmail := ctx.MustGet("email").(string)
@@ -296,6 +298,17 @@ func (s *StatisticUseCase) Priority(ctx *gin.Context, month, year string) (respo
 	}
 
 	dataPriority := s.repo.Priority(personalAccount.ID, month, year)
+
+	monthINT, err := strconv.Atoi(month)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	stringBuilder.WriteString(datecustoms.IntToMonthName(monthINT))
+	stringBuilder.WriteString(" ")
+	stringBuilder.WriteString(year)
+
+	dtoResponse.Period = stringBuilder.String()
 	dtoResponse.Must = fmt.Sprintf("%.f", (float64(dataPriority.PriorityMust)/float64(dataPriority.TotalTransaction))*100) + "%"
 	dtoResponse.Want = fmt.Sprintf("%.f", (float64(dataPriority.PriorityWant)/float64(dataPriority.TotalTransaction))*100) + "%"
 	dtoResponse.Need = fmt.Sprintf("%.f", (float64(dataPriority.PriorityNeed)/float64(dataPriority.TotalTransaction))*100) + "%"
