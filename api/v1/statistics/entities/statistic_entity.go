@@ -23,10 +23,11 @@ type (
 		TotalInvest      string `gorm:"column:total_invest" json:"total_invest"`
 	}
 
-	StatisticTransactionPriority struct {
-		TransactionNeedPercentage string `gorm:"column:transaction_need_percentage" json:"transaction_need_percentage"`
-		TransactionMustPercentage string `gorm:"column:transaction_must_percentage" json:"transaction_must_percentage"`
-		TransactionWantPercentage string `gorm:"column:transaction_want_percentage" json:"transaction_want_percentage"`
+	StatisticPriority struct {
+		TotalTransaction int `gorm:"column:total_transaction"`
+		PriorityNeed     int `gorm:"column:priority_need"`
+		PriorityWant     int `gorm:"column:priority_want""`
+		PriorityMust     int `gorm:"column:priority_must""`
 	}
 
 	StatisticTrend struct {

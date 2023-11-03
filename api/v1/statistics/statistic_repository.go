@@ -13,7 +13,7 @@ type (
 
 	IStatisticRepository interface {
 		SummaryMonthly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticSummaryMonthly, err error)
-		TransactionPriority(IDPersonal uuid.UUID) (data []entities.StatisticTransactionPriority)
+		Priority(IDPersonal uuid.UUID, month, year string) (data entities.StatisticPriority)
 		Category(IDPersonal, category uuid.UUID) (data entities.StatisticTrend)
 		expenseWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticExpenseWeekly, err error)
 		incomeWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticIncomeWeekly, err error)
@@ -38,22 +38,14 @@ func (r *StatisticRepository) SummaryMonthly(IDPersonal uuid.UUID, month, year s
 	return data, nil
 }
 
-func (r *StatisticRepository) TransactionPriority(IDPersonal uuid.UUID) (data []entities.StatisticTransactionPriority) {
-	if err := r.db.Raw(`WITH temp AS (SELECT COUNT(tt.id_master_transaction_priorities)::DECIMAL as total_transaction_priorities,
-                     COUNT(tt.id_master_transaction_priorities)
-                     FILTER ( WHERE tt.id_master_transaction_priorities = 'f05d9cb4-1ae4-4a1a-b566-a906900fdcad' ):: DECIMAL as transaction_need,
-                     COUNT(tt.id_master_transaction_priorities)
-                     FILTER ( WHERE tt.id_master_transaction_priorities = '9b96cdf8-8173-4d54-9142-e6ebd1f6aea3' ):: DECIMAL as transaction_must,
-                     COUNT(tt.id_master_transaction_priorities)
-                     FILTER ( WHERE tt.id_master_transaction_priorities = 'd68a049c-7f66-4ab3-a511-c492d3f200c4' ):: DECIMAL as transaction_want
-              FROM tbl_transactions tt INNER JOIN tbl_master_transaction_priorities tmtp ON tmtp.id = tt.id_master_transaction_priorities
-              WHERE tt.id_personal_account = ? AND to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(MONTH FROM current_timestamp)::text
-                AND tmtp.active = true)
-SELECT (transaction_need / total_transaction_priorities) * 100::DECIMAL AS transaction_need_percentage,
-       (transaction_must / total_transaction_priorities) * 100::DECIMAL AS transaction_must_percentage,
-       (transaction_want / total_transaction_priorities) * 100::DECIMAL AS transaction_want_percentage
-FROM temp`, IDPersonal).Scan(&data).Error; err != nil {
-		return []entities.StatisticTransactionPriority{}
+func (r *StatisticRepository) Priority(IDPersonal uuid.UUID, month, year string) (data entities.StatisticPriority) {
+	if err := r.db.Raw(`SELECT count(tt.id)::numeric as total_transaction,
+       count(tt.id)  FILTER (WHERE tmtp.priority = 'NEED')::numeric as priority_need,
+       count(tt.id) FILTER (WHERE tmtp.priority = 'WANT')::numeric as priority_want,
+       count(tt.id) FILTER (WHERE tmtp.priority = 'MUST')::numeric as priorityl_must
+FROM tbl_transactions tt LEFT JOIN tbl_master_transaction_priorities tmtp ON tt.id_master_transaction_priorities = tmtp.id
+WHERE tt.id_personal_account = ? AND to_char(tt.date_time_transaction::DATE, 'MM') = ? AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?`, IDPersonal, month, year).Scan(&data).Error; err != nil {
+		return entities.StatisticPriority{}
 	}
 	return data
 }

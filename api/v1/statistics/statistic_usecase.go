@@ -23,7 +23,7 @@ type (
 		Weekly(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Summary(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Statistic(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		TransactionPriority(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		Priority(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Trend(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Category(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		expenseWeekly(IDPersonal uuid.UUID, month, year string) (data []dtos.ExpenseWeekly)
@@ -281,7 +281,11 @@ func (s *StatisticUseCase) Summary(ctx *gin.Context, month, year string) (respon
 
 }
 
-func (s *StatisticUseCase) TransactionPriority(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *StatisticUseCase) Priority(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		dtoResponse dtos.Priority
+	)
+
 	usrEmail := ctx.MustGet("email").(string)
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
@@ -291,8 +295,12 @@ func (s *StatisticUseCase) TransactionPriority(ctx *gin.Context) (response inter
 		return response, httpCode, errInfo
 	}
 
-	response = s.repo.TransactionPriority(personalAccount.ID)
-	return response, http.StatusOK, []errorsinfo.Errors{}
+	dataPriority := s.repo.Priority(personalAccount.ID, month, year)
+	dtoResponse.Must = fmt.Sprintf("%.f", (float64(dataPriority.PriorityMust)/float64(dataPriority.TotalTransaction))*100) + "%"
+	dtoResponse.Want = fmt.Sprintf("%.f", (float64(dataPriority.PriorityWant)/float64(dataPriority.TotalTransaction))*100) + "%"
+	dtoResponse.Need = fmt.Sprintf("%.f", (float64(dataPriority.PriorityNeed)/float64(dataPriority.TotalTransaction))*100) + "%"
+
+	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
 
 func (s *StatisticUseCase) Trend(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {

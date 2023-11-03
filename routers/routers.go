@@ -59,7 +59,6 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		statisticGroup := v1group.Group("/statistics", tokenSignature())
 		{
 			statisticGroup.GET("/", statistic.Statistic)
-			statisticGroup.GET("/priority", statistic.TransactionPriority)
 			statisticGroup.GET("/trends", statistic.Trend)
 			statisticGroup.GET("/category", statistic.Category)
 
@@ -67,6 +66,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			{
 				periodStatisticGroup.GET("/weekly", statistic.Weekly)
 				periodStatisticGroup.GET("/summary", statistic.Summary)
+				periodStatisticGroup.GET("/priority", statistic.TransactionPriority)
 			}
 		}
 

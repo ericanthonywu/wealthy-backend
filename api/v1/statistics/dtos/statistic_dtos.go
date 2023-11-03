@@ -45,4 +45,10 @@ type (
 		AverageDaily  int             `json:"average_daily"`
 		Expense       []ExpenseWeekly `json:"expense"`
 	}
+
+	Priority struct {
+		Must string `json:"transaction_must_type"`
+		Want string `json:"transaction_want_type"`
+		Need string `json:"transaction_need_type"`
+	}
 )
