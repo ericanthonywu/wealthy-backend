@@ -22,32 +22,17 @@ type (
 	IStatisticUseCase interface {
 		Weekly(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Summary(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		Statistic(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Priority(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Trend(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		Category(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		expenseWeekly(IDPersonal uuid.UUID, month, year string) (data []dtos.ExpenseWeekly)
 		incomeWeekly(IDPersonal uuid.UUID, month, year string) (data []dtos.IncomeWeekly)
 		investmentWeekly(IDPersonal uuid.UUID, month, year string) (data []dtos.InvestmentWeekly)
+		ExpenseDetail(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
 func NewStatisticUseCase(repo IStatisticRepository) *StatisticUseCase {
 	return &StatisticUseCase{repo: repo}
-}
-
-func (s *StatisticUseCase) Statistic(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
-		return response, httpCode, errInfo
-	}
-
-	//response = s.repo.Statistic(personalAccount.ID)
-	return response, http.StatusOK, []errorsinfo.Errors{}
 }
 
 func (s *StatisticUseCase) Weekly(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
@@ -374,12 +359,14 @@ func (s *StatisticUseCase) Trend(ctx *gin.Context, month, year string) (response
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
 
-func (s *StatisticUseCase) Category(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	var categoryUUID uuid.UUID
+func (s *StatisticUseCase) ExpenseDetail(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		dtoResponse   dtos.ExpenseDetail
+		stringBuilder strings.Builder
+		totalExpense  int
+	)
 
-	category := ctx.Query("category")
 	usrEmail := ctx.MustGet("email").(string)
-
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
@@ -388,16 +375,36 @@ func (s *StatisticUseCase) Category(ctx *gin.Context) (response interface{}, htt
 		return response, httpCode, errInfo
 	}
 
-	if category == "" {
-		httpCode = http.StatusBadRequest
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "category required")
+	dataExpenseDetail, err := s.repo.ExpenseDetail(personalAccount.ID, month, year)
+	if err != nil {
+		httpCode = http.StatusInternalServerError
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		return response, httpCode, errInfo
 	}
 
-	if category != "" {
-		categoryUUID, _ = uuid.Parse(category)
+	for _, v := range dataExpenseDetail {
+		dtoResponse.Expense = append(dtoResponse.Expense, dtos.ExpDetail{
+			Amount:   v.Amount,
+			Category: v.Category,
+		})
+
+		totalExpense += v.Amount
 	}
 
-	response = s.repo.Category(personalAccount.ID, categoryUUID)
-	return response, http.StatusOK, []errorsinfo.Errors{}
+	monthINT, err := strconv.Atoi(month)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	stringBuilder.WriteString(datecustoms.IntToMonthName(monthINT))
+	stringBuilder.WriteString(" ")
+	stringBuilder.WriteString(year)
+
+	dtoResponse.Period = stringBuilder.String()
+	dtoResponse.TotalExpense = totalExpense
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+	return dtoResponse, http.StatusOK, errInfo
 }

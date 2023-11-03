@@ -29,7 +29,6 @@ type (
 		PriorityWant     int `gorm:"column:priority_want""`
 		PriorityMust     int `gorm:"column:priority_must""`
 	}
-
 	StatisticTrend struct {
 		WeekOne            string `gorm:"column:01-04" json:"week_one_01-04"`
 		WeekTwo            string `gorm:"column:05-11" json:"week_two_05-11"`
@@ -69,5 +68,10 @@ type (
 		TotalIncome   int `gorm:"column:total_income"`
 		TotalTransfer int `gorm:"column:total_transfer"`
 		TotalInvest   int `gorm:"column:total_invest"`
+	}
+
+	StatisticDetailExpense struct {
+		Category string `gorm:"column:category"`
+		Amount   int    `gorm:"column:amount"`
 	}
 )

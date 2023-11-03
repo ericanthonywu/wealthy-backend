@@ -52,4 +52,15 @@ type (
 		Want   string `json:"transaction_want_type"`
 		Need   string `json:"transaction_need_type"`
 	}
+
+	ExpenseDetail struct {
+		Period       string      `json:"period"`
+		TotalExpense int         `json:"total_expense"`
+		Expense      []ExpDetail `json:"detail"`
+	}
+
+	ExpDetail struct {
+		Category string `json:"category"`
+		Amount   int    `json:"amount"`
+	}
 )

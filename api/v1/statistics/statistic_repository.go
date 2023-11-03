@@ -18,6 +18,7 @@ type (
 		expenseWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticExpenseWeekly, err error)
 		incomeWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticIncomeWeekly, err error)
 		investmentWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticInvestmentWeekly, err error)
+		ExpenseDetail(IDPersonal uuid.UUID, month, year string) (data []entities.StatisticDetailExpense, err error)
 	}
 )
 
@@ -138,6 +139,16 @@ FROM tbl_transactions tt LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id 
 
 	if err := r.db.Raw(sql, IDPersonal).Scan(&data).Error; err != nil {
 		return entities.StatisticInvestmentWeekly{}, err
+	}
+	return data, nil
+}
+
+func (r *StatisticRepository) ExpenseDetail(IDPersonal uuid.UUID, month, year string) (data []entities.StatisticDetailExpense, err error) {
+	if err := r.db.Raw(`SELECT tmec.expense_types as category, COALESCE(SUM(tt.amount),0) as amount FROM tbl_transactions tt
+    INNER JOIN tbl_master_expense_categories tmec ON tmec.id = tt.id_master_expense_categories 
+    WHERE tt.id_personal_account=? AND to_char(tt.date_time_transaction::DATE, 'MM') = ? 
+    AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ? GROUP BY tmec.expense_types`, IDPersonal, month, year).Scan(&data).Error; err != nil {
+		return []entities.StatisticDetailExpense{}, err
 	}
 	return data, nil
 }
