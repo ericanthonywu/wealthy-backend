@@ -2,8 +2,10 @@ package statistics
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
+	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -18,6 +20,7 @@ type (
 		TransactionPriority(ctx *gin.Context)
 		Trend(ctx *gin.Context)
 		ExpenseDetail(ctx *gin.Context)
+		SubExpenseDetail(ctx *gin.Context)
 	}
 )
 
@@ -146,4 +149,34 @@ func (c *StatisticController) ExpenseDetail(ctx *gin.Context) {
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 
+}
+
+func (c *StatisticController) SubExpenseDetail(ctx *gin.Context) {
+	var (
+		errInfo []errorsinfo.Errors
+	)
+
+	month := ctx.Query("month")
+	year := ctx.Query("year")
+	IDCategory := ctx.Query("categoryid")
+
+	if month == "" || year == "" || IDCategory == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month, year and ID Category required in query url")
+		response.SendBack(ctx, nil, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	IDCat, err := uuid.Parse(IDCategory)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	data, httpCode, errInfo := c.useCase.SubExpenseDetail(ctx, month, year, IDCat)
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
 }

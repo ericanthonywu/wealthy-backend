@@ -19,6 +19,7 @@ type (
 		incomeWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticIncomeWeekly, err error)
 		investmentWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticInvestmentWeekly, err error)
 		ExpenseDetail(IDPersonal uuid.UUID, month, year string) (data []entities.StatisticDetailExpense, err error)
+		SubExpenseDetail(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.StatisticExpenseWeekly, err error)
 	}
 )
 
@@ -144,11 +145,31 @@ FROM tbl_transactions tt LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id 
 }
 
 func (r *StatisticRepository) ExpenseDetail(IDPersonal uuid.UUID, month, year string) (data []entities.StatisticDetailExpense, err error) {
-	if err := r.db.Raw(`SELECT tmec.expense_types as category, COALESCE(SUM(tt.amount),0) as amount FROM tbl_transactions tt
+	if err := r.db.Raw(`SELECT  tt.id_master_expense_categories as id, tmec.expense_types as category, COALESCE(SUM(tt.amount),0) as amount FROM tbl_transactions tt
     INNER JOIN tbl_master_expense_categories tmec ON tmec.id = tt.id_master_expense_categories 
     WHERE tt.id_personal_account=? AND to_char(tt.date_time_transaction::DATE, 'MM') = ? 
-    AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ? GROUP BY tmec.expense_types`, IDPersonal, month, year).Scan(&data).Error; err != nil {
+    AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ? GROUP BY tmec.expense_types, tt.id_master_expense_categories `, IDPersonal, month, year).Scan(&data).Error; err != nil {
 		return []entities.StatisticDetailExpense{}, err
 	}
+	return data, nil
+}
+
+func (r *StatisticRepository) SubExpenseDetail(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.StatisticExpenseWeekly, err error) {
+	if err := r.db.Raw(`SELECT tmec.expense_types as category_name, COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('2023', '-', '10', '-01') AND  CONCAT('2023', '-', '10', '-04')), 0)::numeric as date_range_01_04,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('2023', '-', '10', '-05') AND  CONCAT('2023', '-', '10', '-11')), 0)::numeric as date_range_05_11,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('2023', '-', '10', '-12') AND  CONCAT('2023', '-', '10', '-18')), 0)::numeric as date_range_12_18,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('2023', '-', '10', '-19') AND  CONCAT('2023', '-', '10', '-25')), 0)::numeric as date_range_19_25,
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('2023', '-', '10', '-26') AND  CONCAT('2023', '-', '10', '-30')), 0)::numeric as date_range_26_30
+FROM tbl_transactions tt
+LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
+INNER JOIN tbl_master_expense_categories tmec ON tmec.id = tt.id_master_expense_categories
+WHERE tt.id_personal_account=?
+  AND tmtt.type = 'EXPENSE' AND to_char(tt.date_time_transaction::DATE, 'MM') = ?
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
+ AND tt.id_master_expense_categories=? 
+ GROUP BY tmec.expense_types`, IDPersonal, month, year, IDCategory).Scan(&data).Error; err != nil {
+		return entities.StatisticExpenseWeekly{}, err
+	}
+
 	return data, nil
 }

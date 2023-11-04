@@ -1,42 +1,67 @@
 package dtos
 
+import "github.com/google/uuid"
+
 type (
 	WeeklyData struct {
 		Period     string             `json:"period"`
-		Expense    []ExpenseWeekly    `json:"expense"`
-		Income     []IncomeWeekly     `json:"income"`
-		Investment []InvestmentWeekly `json:"investment"`
+		Expense    []ExpenseWeekly    `json:"expense_details"`
+		Income     []IncomeWeekly     `json:"income_details"`
+		Investment []InvestmentWeekly `json:"investment_details"`
 	}
 
 	ExpenseWeekly struct {
-		DateRange string `json:"date_range"`
-		Amount    int    `json:"amount"`
+		StartDate string             `json:"transaction_start_date"`
+		EndDate   string             `json:"transaction_end_date"`
+		Amount    ExpenseTransaction `json:"transaction_amount"`
+	}
+
+	ExpenseTransaction struct {
+		CurrencyCode string `json:"currency_code"`
+		Value        int    `json:"value"`
 	}
 
 	IncomeWeekly struct {
-		DateRange string `json:"date_range"`
-		Amount    int    `json:"amount"`
+		StartDate string            `json:"transaction_start_date"`
+		EndDate   string            `json:"transaction_end_date"`
+		Amount    IncomeTransaction `json:"transaction_amount"`
+	}
+
+	IncomeTransaction struct {
+		CurrencyCode string `json:"currency_code"`
+		Value        int    `json:"value"`
 	}
 
 	InvestmentWeekly struct {
-		DateRange string `json:"date_range"`
-		Amount    int    `json:"amount"`
+		StartDate string            `json:"transaction_start_date"`
+		EndDate   string            `json:"transaction_end_date"`
+		Amount    InvestTransaction `json:"transaction_amount"`
+	}
+
+	InvestTransaction struct {
+		CurrencyCode string `json:"currency_code"`
+		Value        int    `json:"value"`
 	}
 
 	Summary struct {
 		Period  string `json:"period"`
 		Expense struct {
-			TotalAmount int    `json:"total_amount"`
-			Percentage  string `json:"percentage"`
-		} `json:"expense"`
+			TotalAmount SummaryTransaction `json:"transaction_amount"`
+			Percentage  string             `json:"percentage_increase"`
+		} `json:"expense"_info`
 		Investment struct {
-			TotalAmount int    `json:"total_amount"`
-			Percentage  string `json:"percentage_string"`
-		} `json:"investment"`
+			TotalAmount SummaryTransaction `json:"transaction_amount"`
+			Percentage  string             `json:"percentage_increase"`
+		} `json:"investment_info"`
 		NetIncome struct {
-			TotalAmount int    `json:"total_amount"`
-			Percentage  string `json:"percentage"`
-		} `json:"net_income"`
+			TotalAmount SummaryTransaction `json:"transaction_amount"`
+			Percentage  string             `json:"percentage_increase"`
+		} `json:"net_income_info"`
+	}
+
+	SummaryTransaction struct {
+		CurrencyCode string `json:"currency_code"`
+		Value        int    `json:"value"`
 	}
 
 	TrendsData struct {
@@ -47,20 +72,47 @@ type (
 	}
 
 	Priority struct {
-		Period string `json:"period"`
-		Must   string `json:"transaction_must_type"`
-		Want   string `json:"transaction_want_type"`
-		Need   string `json:"transaction_need_type"`
+		Period string         `json:"period"`
+		Info   []PriorityInfo `json:"details"`
+	}
+
+	PriorityInfo struct {
+		Type       string `json:"transaction_priority"`
+		Percentage string `json:"percentage"`
 	}
 
 	ExpenseDetail struct {
 		Period       string      `json:"period"`
 		TotalExpense int         `json:"total_expense"`
-		Expense      []ExpDetail `json:"detail"`
+		Expense      []ExpDetail `json:"details"`
 	}
 
 	ExpDetail struct {
-		Category string `json:"category"`
-		Amount   int    `json:"amount"`
+		ID       uuid.UUID            `json:"category_id"`
+		Category string               `json:"category_name"`
+		Amount   ExpDetailTransaction `json:"transaction_amount"`
+	}
+
+	ExpDetailTransaction struct {
+		CurrencyCode string `json:"currency_code"`
+		Value        int    `json:"value"`
+	}
+
+	WeeklySubExpense struct {
+		Period       string                   `json:"period"`
+		CategoryID   string                   `json:"category_id"`
+		CategoryName string                   `json:"category_name"`
+		Expense      []WeeklySubExpenseDetail `json:"details"`
+	}
+
+	WeeklySubExpenseDetail struct {
+		StartDate string                            `json:"transaction_start_date"`
+		EndDate   string                            `json:"transaction_end_date"`
+		Amount    WeeklySubExpenseDetailTransaction `json:"transaction_amount"`
+	}
+
+	WeeklySubExpenseDetailTransaction struct {
+		CurrencyCode string `json:"currency_code"`
+		Value        int    `json:"value"`
 	}
 )

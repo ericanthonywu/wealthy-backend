@@ -1,5 +1,7 @@
 package entities
 
+import "github.com/google/uuid"
+
 type (
 	Statistic struct {
 		ExpenseWeekOne   string `gorm:"column:expense_01-04" json:"expense_01-04"`
@@ -40,11 +42,12 @@ type (
 	}
 
 	StatisticExpenseWeekly struct {
-		DateRange0104 int `gorm:"column:date_range_01_04"`
-		DateRange0511 int `gorm:"column:date_range_05_11"`
-		DateRange1218 int `gorm:"column:date_range_12_18"`
-		DateRange1925 int `gorm:"column:date_range_19_25"`
-		DateRange2630 int `gorm:"column:date_range_26_30"`
+		CategoryName  string `gorm:"column:category_name"`
+		DateRange0104 int    `gorm:"column:date_range_01_04"`
+		DateRange0511 int    `gorm:"column:date_range_05_11"`
+		DateRange1218 int    `gorm:"column:date_range_12_18"`
+		DateRange1925 int    `gorm:"column:date_range_19_25"`
+		DateRange2630 int    `gorm:"column:date_range_26_30"`
 	}
 
 	StatisticIncomeWeekly struct {
@@ -71,7 +74,8 @@ type (
 	}
 
 	StatisticDetailExpense struct {
-		Category string `gorm:"column:category"`
-		Amount   int    `gorm:"column:amount"`
+		ID       uuid.UUID `gorm:"column:id"`
+		Category string    `gorm:"column:category"`
+		Amount   int       `gorm:"column:amount"`
 	}
 )

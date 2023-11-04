@@ -69,6 +69,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				transactionsDetailGroup := transactionStatisticGroup.Group("/details")
 				{
 					transactionsDetailGroup.GET("/expense", statistic.ExpenseDetail)
+					transactionsDetailGroup.GET("/sub-expense", statistic.SubExpenseDetail)
 				}
 			}
 		}
