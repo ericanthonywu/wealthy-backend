@@ -3,33 +3,54 @@ package dtos
 import "github.com/google/uuid"
 
 type (
-	BudgetResponseAllCategories struct {
-		ID            uuid.UUID             `json:"id"`
-		Categories    string                `json:"categories"`
-		Total         string                `json:"total"`
-		SubCategories []BudgetSubCategories `json:"sub-categories"`
+	AllBudgetLimit struct {
+		Period          string            `json:"period"`
+		AllBudgetDetail []AllBudgetDetail `json:"budget_info"`
 	}
 
-	BudgetSubCategories struct {
-		LimitAmount     int    `json:"limit_amount"`
-		SubCategoryName string `json:"subcategory_name"`
+	AllBudgetDetail struct {
+		CategoryID   uuid.UUID         `json:"category_id"`
+		CategoryName string            `json:"category_name"`
+		SubCategory  []SubCategoryInfo `json:"sub_category_info"`
+	}
+
+	SubCategoryInfo struct {
+		SubCategoryID   uuid.UUID `json:"sub_category_id"`
+		SubCategoryName string    `json:"sub_category_name"`
+		BudgetLimit     Limit     `json:"budget_limit"`
 	}
 
 	BudgetSetRequest struct {
-		IDCategory    uuid.UUID `json:"id_master_categories"`
-		IDSubCategory uuid.UUID `json:"id_master_subcategories"`
-		Amount        int       `json:"amount"`
+		IDCategory    uuid.UUID `json:"category_id"`
+		IDSubCategory uuid.UUID `json:"sub_category_id"`
+		Amount        int       `json:"budget_amount"`
 	}
 
 	BudgetSetResponse struct {
-		ID     uuid.UUID `json:"id"`
+		ID     uuid.UUID `json:"budget_id"`
 		Status bool      `json:"status"`
 	}
 
 	BudgetOverview struct {
-		TransactionCategory string `json:"transaction_category"`
-		BudgetLimit         int    `json:"budget_limit"`
-		TotalSpending       int    `json:"total_spending"`
-		NumberOfCategory    int    `json:"number_of_category"`
+		Period  string           `json:"period"`
+		Details []OverviewDetail `json:"details"`
+	}
+
+	OverviewDetail struct {
+		CategoryName        string      `json:"category_name"`
+		CategoryID          uuid.UUID   `json:"category_id"`
+		BudgetLimit         Limit       `json:"budget_limit"`
+		TransactionSpending Transaction `json:"transaction_spending"`
+		NumberOfCategories  int         `json:"number_of_categories"`
+	}
+
+	Limit struct {
+		CurrencyCode string `json:"currency_code"`
+		Value        int    `json:"value"`
+	}
+
+	Transaction struct {
+		CurrencyCode string `json:"currency_code"`
+		Value        int    `json:"value"`
 	}
 )

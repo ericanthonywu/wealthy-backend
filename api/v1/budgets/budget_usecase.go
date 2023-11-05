@@ -1,15 +1,17 @@
 package budgets
 
 import (
-	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets/entities"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/datecustoms"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
-	"log"
+	"github.com/sirupsen/logrus"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 type (
@@ -18,11 +20,11 @@ type (
 	}
 
 	IBudgetUseCase interface {
-		All(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		Overview(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		AllLimit(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		Overview(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Category(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		LatestSixMonths(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		Set(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -30,12 +32,14 @@ func NewBudgetUseCase(repo IBudgetRepository) *BudgetUseCase {
 	return &BudgetUseCase{repo: repo}
 }
 
-func (s *BudgetUseCase) All(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		allCategories []entities.BudgetAllCategoriesEntities
-		resp          []dtos.BudgetResponseAllCategories
-		subCat        []dtos.BudgetSubCategories
+		dtoResponse     dtos.AllBudgetLimit
+		budgetDetail    []dtos.AllBudgetDetail
+		subCategoryInfo []dtos.SubCategoryInfo
+		stringBuilder   strings.Builder
 	)
+
 	month := ctx.Query("month")
 	year := ctx.Query("year")
 
@@ -43,88 +47,200 @@ func (s *BudgetUseCase) All(ctx *gin.Context) (response interface{}, httpCode in
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		httpCode = http.StatusUnauthorized
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
 		return response, httpCode, errInfo
 	}
 
-	allCategories = s.repo.All(personalAccount.ID, month, year)
-
-	if len(allCategories) > 0 {
-		for _, vcat := range allCategories {
-			var temp dtos.BudgetResponseAllCategories
-			if len(vcat.SubCategories) > 0 {
-				if err := json.Unmarshal([]byte(vcat.SubCategories), &subCat); err != nil {
-					log.Println(err.Error())
-				}
-				temp.SubCategories = subCat
-			}
-
-			if len(vcat.SubCategories) == 0 {
-				temp.SubCategories = []dtos.BudgetSubCategories{}
-			}
-
-			temp.ID = vcat.ID
-			temp.Categories = vcat.Categories
-			temp.Total = vcat.Total
-			resp = append(resp, temp)
-		}
+	dataSubCategoryBudget, err := s.repo.SubCategoryBudget(personalAccount.ID, month, year)
+	if err != nil {
+		logrus.Error(err.Error())
 	}
 
-	return resp, http.StatusOK, []errorsinfo.Errors{}
+	categoryIDPrevious := uuid.Nil
+	categoryNamePrevious := ""
+	lengthOfData := len(dataSubCategoryBudget) - 1
+
+	if len(dataSubCategoryBudget) > 0 {
+		for k, v := range dataSubCategoryBudget {
+
+			// CHECK IF FIRST TIME WITH VALUE NIL
+			if categoryIDPrevious == uuid.Nil {
+
+				// MOVE VALUE INTO PREVIOUS
+				categoryIDPrevious = v.CategoryID
+				categoryNamePrevious = v.CategoryName
+
+				// CHECK IF SUB CATEGORY NOT NIL
+				if v.SubCategoryID != uuid.Nil {
+					subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
+						SubCategoryID:   v.SubCategoryID,
+						SubCategoryName: v.SubCategoryName,
+						BudgetLimit: dtos.Limit{
+							CurrencyCode: "IDR",
+							Value:        v.BudgetLimit,
+						},
+					})
+				}
+				// CHECK IF NOT FIRST TIME WITH VALUE NOT NIL
+			} else if categoryIDPrevious != uuid.Nil {
+
+				// CHECK IF PREVIOUS IS SAME AS CURRENT
+				if categoryIDPrevious == v.CategoryID {
+					subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
+						SubCategoryID:   v.SubCategoryID,
+						SubCategoryName: v.SubCategoryName,
+						BudgetLimit: dtos.Limit{
+							CurrencyCode: "IDR",
+							Value:        v.BudgetLimit,
+						},
+					})
+
+					// OTHERWISE DIFFERENT
+				} else {
+
+					// IF SUB CATEGORY NOT EMPTY
+					if len(subCategoryInfo) > 0 {
+						budgetDetail = append(budgetDetail, dtos.AllBudgetDetail{
+							CategoryID:   categoryIDPrevious,
+							CategoryName: categoryNamePrevious,
+							SubCategory:  subCategoryInfo,
+						})
+						// OTHERWISE EMPTY
+					} else {
+						budgetDetail = append(budgetDetail, dtos.AllBudgetDetail{
+							CategoryID:   categoryIDPrevious,
+							CategoryName: categoryNamePrevious,
+							SubCategory:  []dtos.SubCategoryInfo{},
+						})
+					}
+
+					// RESET SUB CATEGORY
+					subCategoryInfo = []dtos.SubCategoryInfo{}
+
+					// RENEW VALUE ID AND NAME
+					categoryIDPrevious = v.CategoryID
+					categoryNamePrevious = v.CategoryName
+
+					// IF SUB CATEGORY NOT EMPTY
+					if v.SubCategoryID != uuid.Nil {
+						subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
+							SubCategoryID:   v.SubCategoryID,
+							SubCategoryName: v.SubCategoryName,
+							BudgetLimit: dtos.Limit{
+								CurrencyCode: "IDR",
+								Value:        v.BudgetLimit,
+							},
+						})
+
+					}
+
+					if k == lengthOfData {
+						budgetDetail = append(budgetDetail, dtos.AllBudgetDetail{
+							CategoryID:   categoryIDPrevious,
+							CategoryName: categoryNamePrevious,
+							SubCategory:  []dtos.SubCategoryInfo{},
+						})
+					}
+				}
+			}
+		}
+	} else {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return dtoResponse, http.StatusNotFound, errInfo
+	}
+
+	monthINT, err := strconv.Atoi(month)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	stringBuilder.WriteString(datecustoms.IntToMonthName(monthINT))
+	stringBuilder.WriteString(" ")
+	stringBuilder.WriteString(year)
+
+	dtoResponse.Period = stringBuilder.String()
+	dtoResponse.AllBudgetDetail = budgetDetail
+	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
 
-func (s *BudgetUseCase) Overview(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *BudgetUseCase) Overview(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		dtoResponse   dtos.BudgetOverview
+		dataDetails   []dtos.OverviewDetail
+		stringBuilder strings.Builder
+	)
 
-	var resp []dtos.BudgetOverview
-
-	month := ctx.Query("month")
-	year := ctx.Query("year")
+	personalDataForSpending := make(map[uuid.UUID]int)
+	personalDataForCount := make(map[uuid.UUID]int)
 
 	usrEmail := ctx.MustGet("email").(string)
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		httpCode = http.StatusUnauthorized
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
 		return response, httpCode, errInfo
 	}
 
-	if month == "" && year == "" {
-		httpCode = http.StatusBadGateway
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "need month and or year information")
-		return response, httpCode, errInfo
+	personalBudgetData, err := s.repo.PersonalBudget(personalAccount.ID, month, year)
+	if err != nil {
+		logrus.Error(err.Error())
 	}
 
-	dataTransaction := s.repo.TotalSpendingAndNumberOfCategory(personalAccount.ID, month, year)
+	personalTransactionData, err := s.repo.PersonalTransaction(personalAccount.ID, month, year)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
 
-	if len(dataTransaction) > 0 {
-		dataLimit := s.repo.BudgetLimit(personalAccount.ID, month, year)
-		if len(dataLimit) > 0 {
+	if len(personalBudgetData) > 0 {
 
-			budgetLimit := make(map[uuid.UUID]int)
-
-			for _, valueLimit := range dataLimit {
-				budgetLimit[valueLimit.IDMasterExpense] = valueLimit.BudgetLimit
+		if len(personalTransactionData) > 0 {
+			for _, ptd := range personalTransactionData {
+				personalDataForSpending[ptd.ID] = ptd.Amount
+				personalDataForCount[ptd.ID] = ptd.Count
 			}
-
-			for _, valueTransaction := range dataTransaction {
-
-				valueBudgetLimit, _ := budgetLimit[valueTransaction.ID]
-
-				resp = append(resp, dtos.BudgetOverview{
-					TransactionCategory: valueTransaction.Category,
-					BudgetLimit:         valueBudgetLimit,
-					TotalSpending:       valueTransaction.Spending,
-					NumberOfCategory:    valueTransaction.NumberOfCategory,
-				})
-			}
-
-			return resp, http.StatusOK, []errorsinfo.Errors{}
-		} else {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "server can not access budget limit table")
-			return response, http.StatusInternalServerError, errInfo
 		}
+
+		for _, v := range personalBudgetData {
+			count := 0
+			spendingTrx := 0
+
+			if value, isFound := personalDataForSpending[v.ID]; isFound {
+				spendingTrx = value
+			}
+
+			if value, isFound := personalDataForCount[v.ID]; isFound {
+				count = value
+			}
+
+			dataDetails = append(dataDetails, dtos.OverviewDetail{
+				CategoryID:   v.ID,
+				CategoryName: v.Category,
+				BudgetLimit: dtos.Limit{
+					CurrencyCode: "IDR",
+					Value:        v.BudgetLimit,
+				},
+				TransactionSpending: dtos.Transaction{
+					CurrencyCode: "IDR",
+					Value:        spendingTrx,
+				},
+				NumberOfCategories: count,
+			})
+		}
+
+		monthINT, err := strconv.Atoi(month)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		stringBuilder.WriteString(datecustoms.IntToMonthName(monthINT))
+		stringBuilder.WriteString(" ")
+		stringBuilder.WriteString(year)
+
+		dtoResponse.Period = stringBuilder.String()
+		dtoResponse.Details = dataDetails
+		return dtoResponse, http.StatusOK, errInfo
 	}
 
 	errInfo = errorsinfo.ErrorWrapper(errInfo, "", "data not found")
@@ -189,7 +305,7 @@ func (s *BudgetUseCase) LatestSixMonths(ctx *gin.Context) (response interface{},
 	return response, http.StatusOK, []errorsinfo.Errors{}
 }
 
-func (s *BudgetUseCase) Set(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
 		model       entities.BudgetSetEntities
 		dtoResponse dtos.BudgetSetResponse
@@ -199,8 +315,8 @@ func (s *BudgetUseCase) Set(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest)
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		httpCode = http.StatusUnauthorized
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
 		return response, httpCode, errInfo
 	}
 
@@ -210,7 +326,7 @@ func (s *BudgetUseCase) Set(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest)
 	model.IDSubCategory = dtoRequest.IDSubCategory
 	model.ID = uuid.New()
 
-	err := s.repo.Set(&model)
+	err := s.repo.Limit(&model)
 
 	if err != nil {
 		httpCode = http.StatusInternalServerError

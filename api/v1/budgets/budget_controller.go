@@ -14,11 +14,11 @@ type (
 	}
 
 	IBudgetController interface {
-		All(ctx *gin.Context)
+		AllLimit(ctx *gin.Context)
 		Overview(ctx *gin.Context)
 		Category(ctx *gin.Context)
 		LatestSixMonths(ctx *gin.Context)
-		Set(ctx *gin.Context)
+		Limit(ctx *gin.Context)
 	}
 )
 
@@ -26,8 +26,8 @@ func NewBudgetController(useCase IBudgetUseCase) *BudgetController {
 	return &BudgetController{useCase: useCase}
 }
 
-func (c *BudgetController) All(ctx *gin.Context) {
-	data, httpCode, errInfo := c.useCase.All(ctx)
+func (c *BudgetController) AllLimit(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.AllLimit(ctx)
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
@@ -37,7 +37,19 @@ func (c *BudgetController) All(ctx *gin.Context) {
 }
 
 func (c *BudgetController) Overview(ctx *gin.Context) {
-	data, httpCode, errInfo := c.useCase.Overview(ctx)
+
+	var errInfo []errorsinfo.Errors
+
+	month := ctx.Query("month")
+	year := ctx.Query("year")
+
+	if month == "" || year == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month or year required in query url")
+		response.SendBack(ctx, nil, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	data, httpCode, errInfo := c.useCase.Overview(ctx, month, year)
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
@@ -69,7 +81,7 @@ func (c *BudgetController) LatestSixMonths(ctx *gin.Context) {
 	return
 }
 
-func (c *BudgetController) Set(ctx *gin.Context) {
+func (c *BudgetController) Limit(ctx *gin.Context) {
 	var (
 		dtoRequest  dtos.BudgetSetRequest
 		dtoResponse interface{}
@@ -83,6 +95,6 @@ func (c *BudgetController) Set(ctx *gin.Context) {
 		return
 	}
 
-	dtoResponse, httpCode, errInfo = c.useCase.Set(ctx, &dtoRequest)
+	dtoResponse, httpCode, errInfo = c.useCase.Limit(ctx, &dtoRequest)
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
 }

@@ -4,10 +4,18 @@ import "github.com/google/uuid"
 
 type (
 	BudgetAllCategoriesEntities struct {
-		ID            uuid.UUID `gorm:"column:id"`
-		Categories    string    `gorm:"column:categories"`
-		Total         string    `gorm:"column:total"`
+		ID            uuid.UUID `gorm:"column:category_id"`
+		Categories    string    `gorm:"column:category_name"`
+		Total         string    `gorm:"column:budget_amount"`
 		SubCategories string    `gorm:"column:sub_categories"`
+	}
+
+	SubCategoryBudget struct {
+		CategoryID      uuid.UUID `gorm:"column:category_id"`
+		CategoryName    string    `gorm:"column:category_name"`
+		SubCategoryID   uuid.UUID `gorm:"column:sub_category_id"`
+		SubCategoryName string    `gorm:"column:sub_category_name"`
+		BudgetLimit     int       `gorm:"column:budget_limit"`
 	}
 
 	BudgetTotalSpendingAndNumberOfCategory struct {
@@ -47,6 +55,19 @@ type (
 
 	BudgetExistEntities struct {
 		ID uuid.UUID `gorm:"column:id"`
+	}
+
+	PersonalBudget struct {
+		ID          uuid.UUID `gorm:"column:id"`
+		Category    string    `gorm:"column:category"`
+		BudgetLimit int       `gorm:"column:budget"`
+	}
+
+	PersonalTransaction struct {
+		ID       uuid.UUID `gorm:"column:id"`
+		Category string    `gorm:"column:category"`
+		Amount   int       `gorm:"column:amount"`
+		Count    int       `gorm:"column:count"`
 	}
 )
 

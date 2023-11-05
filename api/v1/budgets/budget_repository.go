@@ -12,12 +12,16 @@ type (
 	}
 
 	IBudgetRepository interface {
-		All(idPersonal uuid.UUID, month, year string) (budgetCategories []entities.BudgetAllCategoriesEntities)
+		//AllBudgetLimit(idPersonal uuid.UUID, month, year string) (budgetCategories []entities.BudgetAllCategoriesEntities)
+		SubCategoryBudget(IDPersonal uuid.UUID, month, year string) (data []entities.SubCategoryBudget, err error)
 		TotalSpendingAndNumberOfCategory(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetTotalSpendingAndNumberOfCategory)
 		BudgetLimit(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetLimit)
 		Category(IDPersonal uuid.UUID, month string, year string, category uuid.UUID) (data []entities.BudgetCategory)
 		LatestSixMonths(IDPersonal uuid.UUID, category uuid.UUID) (data []entities.BudgetLatestSixMonth)
-		Set(model *entities.BudgetSetEntities) (err error)
+		Limit(model *entities.BudgetSetEntities) (err error)
+		isBudgetAlreadyExist(model *entities.BudgetSetEntities) (exist bool, id uuid.UUID)
+		PersonalBudget(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalBudget, err error)
+		PersonalTransaction(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalTransaction, err error)
 	}
 )
 
@@ -25,33 +29,29 @@ func NewBudgetRepository(db *gorm.DB) *BudgetRepository {
 	return &BudgetRepository{db: db}
 }
 
-func (r *BudgetRepository) All(idPersonal uuid.UUID, month, year string) (budgetCategories []entities.BudgetAllCategoriesEntities) {
-	if err := r.db.Raw(`SELECT tmec.id,
-       tmec.expense_types                                                          as categories,
-       COALESCE(SUM(budget.amount)
-                FILTER ( WHERE budget.id_personal_accounts = ? AND
-                               to_char(budget.created_at, 'MM') = ? AND to_char(budget.created_at, 'YYYY') = ?),
-                0)                                                                 as total,
-       (SELECT json_agg(r)::jsonb as sub_categories
-        FROM (SELECT tmes.subcategories::text as subcategory_name,
-                     COALESCE(SUM(b.amount::numeric)
-                              FILTER ( WHERE b.id_personal_accounts = ? AND
-                                             to_char(b.created_at, 'MM') = ? AND
-                                             to_char(b.created_at, 'YYYY') = ? ),
-                              0)              as limit_amount
-              FROM tbl_master_expense_subcategories tmes
-                       LEFT JOIN tbl_budgets b ON b.id_master_subcategories = tmes.id
-              WHERE tmes.active = TRUE
-                AND tmes.id_master_expense_categories = tmec.id
-              GROUP BY b.id_master_subcategories, tmes.subcategories, b.amount) r) as sub_categories
+//func (r *BudgetRepository) AllBudgetLimit(idPersonal uuid.UUID, month, year string) (budgetCategories []entities.BudgetAllCategoriesEntities) {
+//
+//	if err := r.db.Raw(``).Scan(&budgetCategories).Error; err != nil {
+//		return []entities.BudgetAllCategoriesEntities{}
+//	}
+//	return budgetCategories
+//}
+
+func (r *BudgetRepository) SubCategoryBudget(IDPersonal uuid.UUID, month, year string) (data []entities.SubCategoryBudget, err error) {
+	if err := r.db.Raw(`SELECT tmec.id as category_id,
+       tmec.expense_types as category_name,
+       tmes.id as sub_category_id,
+       tmes.subcategories as sub_category_name,
+       (SELECT b.amount FROM tbl_budgets b WHERE b.id_master_subcategories = tmes.id
+        AND b.id_personal_accounts = ?
+        AND to_char(b.created_at, 'MM') = ?
+        AND to_char(b.created_at, 'YYYY') = ? ) as budget_limit
 FROM tbl_master_expense_categories tmec
-         LEFT JOIN tbl_master_expense_subcategories tmes ON tmec.id = tmes.id_master_expense_categories
-         LEFT JOIN tbl_budgets budget ON budget.id_master_subcategories = tmes.id
-WHERE tmec.active = true
-GROUP BY tmec.expense_types, tmec.id`, idPersonal, month, year, idPersonal, month, year).Scan(&budgetCategories).Error; err != nil {
-		return []entities.BudgetAllCategoriesEntities{}
+         LEFT JOIN tbl_master_expense_subcategories tmes ON tmes.id_master_expense_categories = tmec.id
+ORDER BY tmec.expense_types ASC`, IDPersonal, month, year).Scan(&data).Error; err != nil {
+		return []entities.SubCategoryBudget{}, err
 	}
-	return budgetCategories
+	return data, nil
 }
 
 func (r *BudgetRepository) TotalSpendingAndNumberOfCategory(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetTotalSpendingAndNumberOfCategory) {
@@ -119,7 +119,7 @@ func (r *BudgetRepository) LatestSixMonths(IDPersonal uuid.UUID, category uuid.U
                                        FROM tbl_budgets b
                                        WHERE b.id_personal_accounts = ?) *
         100)::text                                                                   as percentage
-FROM tbl_transactions tt
+FROM tbl_transactions tt							
 WHERE tt.date_time_transaction::date > CURRENT_DATE - INTERVAL '6 months'
   AND tt.id_personal_account = ? AND tt.id_master_expense_categories = ?
 group by period
@@ -129,25 +129,56 @@ ORDER BY period DESC`, IDPersonal, IDPersonal, IDPersonal, category).Scan(&data)
 	return data
 }
 
-func (r *BudgetRepository) Set(model *entities.BudgetSetEntities) (err error) {
-	var m entities.BudgetExistEntities
+func (r *BudgetRepository) Limit(model *entities.BudgetSetEntities) (err error) {
+	exist, id := r.isBudgetAlreadyExist(model)
 
-	r.db.Raw(`SELECT * FROM tbl_budgets b
-WHERE b.id_master_subcategories=? AND b.id_personal_accounts=?
-AND to_char(b.created_at, 'MM') = EXTRACT(MONTH FROM current_timestamp)::text
-AND to_char(b.created_at, 'YYYY') = EXTRACT(YEAR FROM current_timestamp)::text`, model.IDSubCategory, model.IDPersonalAccount).Scan(&m)
-
-	if m.ID != uuid.Nil {
-		model.ID = m.ID
-		if err = r.db.Save(&model).Error; err != nil {
+	if exist {
+		if err = r.db.Raw(`UPDATE tbl_budgets SET amount=? WHERE id=?`, model.Amount, id).Scan(&model).Error; err != nil {
 			return err
 		}
-	}
-
-	if m.ID == uuid.Nil {
+	} else {
 		if err = r.db.Create(&model).Error; err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (r *BudgetRepository) isBudgetAlreadyExist(model *entities.BudgetSetEntities) (exist bool, id uuid.UUID) {
+	var m entities.BudgetExistEntities
+
+	if err := r.db.Raw(`SELECT * FROM tbl_budgets b
+WHERE b.id_master_categories=? AND b.id_master_subcategories=? AND b.id_personal_accounts=?
+AND to_char(b.created_at, 'MM') = EXTRACT(MONTH FROM current_timestamp)::text
+AND to_char(b.created_at, 'YYYY') = EXTRACT(YEAR FROM current_timestamp)::text`, model.IDCategory, model.IDSubCategory, model.IDPersonalAccount).Scan(&m).Error; err != nil {
+		return false, uuid.Nil
+	}
+
+	if m.ID == uuid.Nil {
+		return false, uuid.Nil
+	}
+
+	return true, m.ID
+}
+
+func (r *BudgetRepository) PersonalBudget(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalBudget, err error) {
+	if err := r.db.Raw(`SELECT tmec.id, tmec.expense_types as category, (SELECT b.amount FROM tbl_budgets b
+                        WHERE b.id_master_categories = tmec.id AND b.id_personal_accounts=?
+                          AND to_char(b.created_at, 'MM') = ? AND to_char(b.created_at, 'YYYY') = ?) as budget FROM tbl_master_expense_categories tmec WHERE tmec.active=true`, IDPersonal, month, year).Scan(&data).Error; err != nil {
+		return []entities.PersonalBudget{}, err
+	}
+	return data, nil
+}
+
+func (r *BudgetRepository) PersonalTransaction(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalTransaction, err error) {
+	if err := r.db.Raw(`SELECT tmec.id, tmec.expense_types as category, coalesce(SUM(tt.amount),0) as amount, COUNT(tt.id_master_expense_categories)
+FROM tbl_transactions tt
+LEFT JOIN tbl_master_expense_categories tmec ON tmec.id = tt.id_master_expense_categories
+LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
+WHERE tt.id_personal_account=?
+  AND to_char(tt.date_time_transaction::DATE, 'MM') = ? AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ? AND tmtt.type = 'EXPENSE'
+group by tmec.id, tmec.expense_types`, IDPersonal, month, year).Scan(&data).Error; err != nil {
+		return []entities.PersonalTransaction{}, err
+	}
+	return data, nil
 }

@@ -47,13 +47,13 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			accountGroup.GET("/profile", tokenSignature(), account.GetProfile)
 		}
 
-		budgetGroup := v1group.Group("/budgets")
+		budgetGroup := v1group.Group("/budgets", tokenSignature())
 		{
-			budgetGroup.POST("/", tokenSignature(), budget.Set)
-			budgetGroup.GET("/all", tokenSignature(), budget.All)
-			budgetGroup.GET("/overview", tokenSignature(), budget.Overview)
-			budgetGroup.GET("/category", tokenSignature(), budget.Category)
-			budgetGroup.GET("/latest-six-months", tokenSignature(), budget.LatestSixMonths)
+			budgetGroup.POST("/limit", budget.Limit)
+			budgetGroup.GET("/limit", budget.AllLimit)
+			budgetGroup.GET("/overview", budget.Overview)
+			budgetGroup.GET("/category", budget.Category)
+			budgetGroup.GET("/latest-six-months", budget.LatestSixMonths)
 		}
 
 		statisticGroup := v1group.Group("/statistics", tokenSignature())

@@ -49,7 +49,7 @@ func (s *StatisticUseCase) Weekly(ctx *gin.Context, month, year string) (respons
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
+		httpCode = http.StatusUnauthorized
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
 		return response, httpCode, errInfo
 	}
