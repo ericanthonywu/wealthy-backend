@@ -2,9 +2,11 @@ package budgets
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
+	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -19,6 +21,7 @@ type (
 		Category(ctx *gin.Context)
 		LatestSixMonths(ctx *gin.Context)
 		Limit(ctx *gin.Context)
+		Trends(ctx *gin.Context)
 	}
 )
 
@@ -97,4 +100,35 @@ func (c *BudgetController) Limit(ctx *gin.Context) {
 
 	dtoResponse, httpCode, errInfo = c.useCase.Limit(ctx, &dtoRequest)
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
+}
+
+func (c *BudgetController) Trends(ctx *gin.Context) {
+	var (
+		errInfo     []errorsinfo.Errors
+		httpCode    int
+		dtoResponse interface{}
+	)
+
+	month := ctx.Query("month")
+	year := ctx.Query("year")
+	IDCategory := ctx.Query("categoryid")
+
+	if month == "" || year == "" || IDCategory == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month or year required in query url")
+		response.SendBack(ctx, nil, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	IDCat, err := uuid.Parse(IDCategory)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	dtoResponse, httpCode, errInfo = c.useCase.Trends(ctx, IDCat, month, year)
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
+	return
 }

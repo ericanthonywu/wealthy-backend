@@ -18,6 +18,14 @@ type (
 		BudgetLimit     int       `gorm:"column:budget_limit"`
 	}
 
+	TrendsWeekly struct {
+		DateRange0104 int `gorm:"column:date_range_01_04"`
+		DateRange0511 int `gorm:"column:date_range_05_11"`
+		DateRange1218 int `gorm:"column:date_range_12_18"`
+		DateRange1925 int `gorm:"column:date_range_19_25"`
+		DateRange2630 int `gorm:"column:date_range_26_30"`
+	}
+
 	BudgetTotalSpendingAndNumberOfCategory struct {
 		ID               uuid.UUID `gorm:"column:id"`
 		Category         string    `gorm:"column:category"`
@@ -31,11 +39,21 @@ type (
 		ExpenseType     string    `gorm:"column:expense_types"`
 	}
 
+	BudgetEachCategory struct {
+		Category    string `gorm:"column:category"`
+		BudgetLimit int    `gorm:"column:budget_limit"`
+	}
+
 	BudgetCategory struct {
 		TransactionCategory string `gorm:"column:transaction_category" json:"transaction_category"`
 		BudgetLimit         int    `gorm:"column:budget_limit" json:"budget_limit"`
 		TotalSpending       int    `gorm:"column:total_spending" json:"total_spending"`
 		TotalRemaining      int    `gorm:"column:total_remaining" json:"total_remaining"`
+	}
+
+	CategoryInfo struct {
+		CategoryID   uuid.UUID `gorm:"column:category_id"`
+		CategoryName string    `gorm:"column:category_name"`
 	}
 
 	BudgetLatestSixMonth struct {

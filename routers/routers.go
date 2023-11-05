@@ -49,11 +49,19 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 		budgetGroup := v1group.Group("/budgets", tokenSignature())
 		{
-			budgetGroup.POST("/limit", budget.Limit)
-			budgetGroup.GET("/limit", budget.AllLimit)
+			limitGroup := budgetGroup.Group("/limits")
+			{
+				limitGroup.POST("/", budget.Limit)
+				limitGroup.GET("/", budget.AllLimit)
+			}
+
+			detailsGroup := budgetGroup.Group("/details")
+			{
+				detailsGroup.GET("/category", budget.Trends)
+			}
+
 			budgetGroup.GET("/overview", budget.Overview)
-			budgetGroup.GET("/category", budget.Category)
-			budgetGroup.GET("/latest-six-months", budget.LatestSixMonths)
+			//budgetGroup.GET("/latest-six-months", budget.LatestSixMonths)
 		}
 
 		statisticGroup := v1group.Group("/statistics", tokenSignature())

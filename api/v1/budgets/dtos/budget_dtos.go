@@ -53,4 +53,26 @@ type (
 		CurrencyCode string `json:"currency_code"`
 		Value        int    `json:"value"`
 	}
+
+	Trends struct {
+		Period       string       `json:"period"`
+		CategoryID   uuid.UUID    `json:"category_id"`
+		CategoryName string       `json:"category_name"`
+		BudgetInfo   Limit        `json:"budget_info"`
+		Expense      ExpenseInfo  `json:"expense_info"`
+		TrendsInfo   []TrendsInfo `json:"trends_info"`
+	}
+
+	ExpenseInfo struct {
+		AverageDailySpending            Transaction `json:"average_daily_spending"`
+		AverageDailySpendingRecommended Transaction `json:"average_daily_spending_recommended"`
+		TransactionSpending             Transaction `json:"transaction_spending"`
+		BudgetRemains                   Transaction `json:"budget_remains"`
+	}
+
+	TrendsInfo struct {
+		StartDate         string `json:"transaction_start_date"`
+		EndDate           string `json:"transaction_end_date"`
+		TransactionAmount Transaction
+	}
 )

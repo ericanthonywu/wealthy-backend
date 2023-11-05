@@ -25,6 +25,7 @@ type (
 		Category(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		LatestSixMonths(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		Trends(ctx *gin.Context, IDCategory uuid.UUID, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -337,4 +338,118 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 	dtoResponse.ID = model.ID
 	dtoResponse.Status = true
 	return dtoResponse, httpCode, []errorsinfo.Errors{}
+}
+
+func (s *BudgetUseCase) Trends(ctx *gin.Context, IDCategory uuid.UUID, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		dtoResponse              dtos.Trends
+		trendsInfo               []dtos.TrendsInfo
+		totalSpendingTransaction int
+		totalRemains             int
+		stringBuilder            strings.Builder
+	)
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		httpCode = http.StatusUnauthorized
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return response, httpCode, errInfo
+	}
+
+	dataTrends, err := s.repo.Trends(personalAccount.ID, IDCategory, month, year)
+	if err != nil {
+		httpCode = http.StatusInternalServerError
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return entities.TrendsWeekly{}, httpCode, errInfo
+	}
+
+	// APPEND PROCESS
+	trendsInfo = append(trendsInfo, dtos.TrendsInfo{
+		StartDate: year + "-" + month + "-01",
+		EndDate:   year + "-" + month + "-04",
+		TransactionAmount: dtos.Transaction{
+			CurrencyCode: "IDR",
+			Value:        dataTrends.DateRange0104,
+		},
+	})
+
+	trendsInfo = append(trendsInfo, dtos.TrendsInfo{
+		StartDate: year + "-" + month + "-05",
+		EndDate:   year + "-" + month + "-11",
+		TransactionAmount: dtos.Transaction{
+			CurrencyCode: "IDR",
+			Value:        dataTrends.DateRange0511,
+		},
+	})
+
+	trendsInfo = append(trendsInfo, dtos.TrendsInfo{
+		StartDate: year + "-" + month + "-12",
+		EndDate:   year + "-" + month + "-18",
+		TransactionAmount: dtos.Transaction{
+			CurrencyCode: "IDR",
+			Value:        dataTrends.DateRange1218,
+		},
+	})
+
+	trendsInfo = append(trendsInfo, dtos.TrendsInfo{
+		StartDate: year + "-" + month + "-19",
+		EndDate:   year + "-" + month + "-25",
+		TransactionAmount: dtos.Transaction{
+			CurrencyCode: "IDR",
+			Value:        dataTrends.DateRange1925,
+		},
+	})
+
+	trendsInfo = append(trendsInfo, dtos.TrendsInfo{
+		StartDate: year + "-" + month + "-26",
+		EndDate:   year + "-" + month + "-30",
+		TransactionAmount: dtos.Transaction{
+			CurrencyCode: "IDR",
+			Value:        dataTrends.DateRange2630,
+		},
+	})
+
+	dataBudgetEachCategory, err := s.repo.BudgetEachCategory(personalAccount.ID, IDCategory, month, year)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	dataCategoryInfo, err := s.repo.CategoryInfo(IDCategory)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	// PERIOD
+	monthINT, err := strconv.Atoi(month)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	stringBuilder.WriteString(datecustoms.IntToMonthName(monthINT))
+	stringBuilder.WriteString(" ")
+	stringBuilder.WriteString(year)
+
+	// TOTAL EXPENSE TRANSACTION
+	totalSpendingTransaction = dataTrends.DateRange0104 + dataTrends.DateRange0511 + dataTrends.DateRange1218 + dataTrends.DateRange1925 + dataTrends.DateRange2630
+
+	// REMAINS BUDGET
+	totalRemains = dataBudgetEachCategory.BudgetLimit - totalSpendingTransaction
+
+	dtoResponse.Period = stringBuilder.String()
+	dtoResponse.CategoryID = dataCategoryInfo.CategoryID
+	dtoResponse.CategoryName = dataCategoryInfo.CategoryName
+	dtoResponse.BudgetInfo.CurrencyCode = "IDR"
+	dtoResponse.BudgetInfo.Value = dataBudgetEachCategory.BudgetLimit
+	dtoResponse.TrendsInfo = trendsInfo
+	dtoResponse.Expense.TransactionSpending.CurrencyCode = "IDR"
+	dtoResponse.Expense.TransactionSpending.Value = totalSpendingTransaction
+	dtoResponse.Expense.BudgetRemains.CurrencyCode = "IDR"
+	dtoResponse.Expense.BudgetRemains.Value = totalRemains
+	dtoResponse.Expense.AverageDailySpending.CurrencyCode = "IDR"
+	dtoResponse.Expense.AverageDailySpending.Value = totalSpendingTransaction / 30
+	dtoResponse.Expense.AverageDailySpendingRecommended.CurrencyCode = "IDR"
+	dtoResponse.Expense.AverageDailySpendingRecommended.Value = dataBudgetEachCategory.BudgetLimit / 30
+
+	return dtoResponse, http.StatusOK, errInfo
 }
