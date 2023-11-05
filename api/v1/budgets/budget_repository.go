@@ -16,7 +16,7 @@ type (
 		TotalSpendingAndNumberOfCategory(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetTotalSpendingAndNumberOfCategory)
 		BudgetLimit(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetLimit)
 		Category(IDPersonal uuid.UUID, month string, year string, category uuid.UUID) (data []entities.BudgetCategory)
-		LatestSixMonths(IDPersonal uuid.UUID, category uuid.UUID) (data []entities.BudgetLatestSixMonth)
+		LatestMonths(IDPersonal uuid.UUID, category uuid.UUID) (data []entities.BudgetLatestMonth)
 		Limit(model *entities.BudgetSetEntities) (err error)
 		isBudgetAlreadyExist(model *entities.BudgetSetEntities) (exist bool, id uuid.UUID)
 		PersonalBudget(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalBudget, err error)
@@ -102,23 +102,19 @@ func (r *BudgetRepository) Category(IDPersonal uuid.UUID, month string, year str
 	return data
 }
 
-func (r *BudgetRepository) LatestSixMonths(IDPersonal uuid.UUID, category uuid.UUID) (data []entities.BudgetLatestSixMonth) {
-	if err := r.db.Raw(`SELECT concat(to_char(to_date(tt.date_time_transaction, 'YYYY-MM-DD'), 'Mon'), ' ',
-              to_char(tt.date_time_transaction::DATE, 'YYYY')) ::text          as period,
-       coalesce(sum(tt.amount), 0) ::numeric                                   as total_spending,
-       (SELECT coalesce(SUM(b.amount), 0)
-        FROM tbl_budgets b
-        WHERE b.id_personal_accounts = ?)::numeric as budget_limit,
-       (coalesce(sum(tt.amount), 0) / (SELECT coalesce(SUM(b.amount), 0)
-                                       FROM tbl_budgets b
-                                       WHERE b.id_personal_accounts = ?) *
-        100)::text                                                                   as percentage
-FROM tbl_transactions tt							
-WHERE tt.date_time_transaction::date > CURRENT_DATE - INTERVAL '6 months'
-  AND tt.id_personal_account = ? AND tt.id_master_expense_categories = ?
-group by period
-ORDER BY period DESC`, IDPersonal, IDPersonal, IDPersonal, category).Scan(&data).Error; err != nil {
-		return []entities.BudgetLatestSixMonth{}
+func (r *BudgetRepository) LatestMonths(IDPersonal uuid.UUID, category uuid.UUID) (data []entities.BudgetLatestMonth) {
+	if err := r.db.Raw(`SELECT concat(to_char(to_date(tt.date_time_transaction, 'YYYY-MM-DD'), 'Mon'), ' ', to_char(tt.date_time_transaction::DATE, 'YYYY'))::text as period,
+       coalesce(sum(tt.amount), 0) ::numeric as total_spending,
+       (SELECT coalesce(SUM(b.amount), 0) 
+        FROM tbl_budgets b 
+        WHERE b.id_personal_accounts = ?)::numeric as budget_limit 
+FROM tbl_transactions tt 
+WHERE tt.date_time_transaction::date > CURRENT_DATE - INTERVAL '6 MONTHS'
+  AND tt.id_personal_account = ?
+  AND tt.id_master_expense_categories = ?
+GROUP BY period 
+ORDER BY period DESC`, IDPersonal, IDPersonal, category).Scan(&data).Error; err != nil {
+		return []entities.BudgetLatestMonth{}
 	}
 	return data
 }

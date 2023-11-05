@@ -56,11 +56,10 @@ type (
 		CategoryName string    `gorm:"column:category_name"`
 	}
 
-	BudgetLatestSixMonth struct {
+	BudgetLatestMonth struct {
 		Period        string `gorm:"column:period" json:"period"`
 		TotalSpending int    `gorm:"column:total_spending" json:"total_spending"`
 		BudgetLimit   int    `gorm:"column:budget_limit" json:"budget_limit"`
-		Percentage    string `gorm:"column:percentage" json:"percentage"`
 	}
 
 	BudgetSetEntities struct {

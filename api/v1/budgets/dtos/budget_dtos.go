@@ -11,6 +11,7 @@ type (
 	AllBudgetDetail struct {
 		CategoryID   uuid.UUID         `json:"category_id"`
 		CategoryName string            `json:"category_name"`
+		BudgetInfo   Limit             `json:"budget_info"`
 		SubCategory  []SubCategoryInfo `json:"sub_category_info"`
 	}
 
@@ -71,8 +72,20 @@ type (
 	}
 
 	TrendsInfo struct {
-		StartDate         string `json:"transaction_start_date"`
-		EndDate           string `json:"transaction_end_date"`
-		TransactionAmount Transaction
+		StartDate         string      `json:"transaction_start_date"`
+		EndDate           string      `json:"transaction_end_date"`
+		TransactionAmount Transaction `json:"transaction_amount"`
+	}
+
+	LatestMonth struct {
+		Details []LatestDetails `json:"details"`
+	}
+
+	LatestDetails struct {
+		Period              string      `json:"period"`
+		StatusComparison    string      `json:"status_comparison"`
+		BudgetInfo          Limit       `json:"budget_info"`
+		TransactionSpending Transaction `json:"transaction_spending"`
+		Percentage          string      `json:"percentage"`
 	}
 )

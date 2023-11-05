@@ -18,8 +18,7 @@ type (
 	IBudgetController interface {
 		AllLimit(ctx *gin.Context)
 		Overview(ctx *gin.Context)
-		Category(ctx *gin.Context)
-		LatestSixMonths(ctx *gin.Context)
+		LatestMonths(ctx *gin.Context)
 		Limit(ctx *gin.Context)
 		Trends(ctx *gin.Context)
 	}
@@ -62,19 +61,26 @@ func (c *BudgetController) Overview(ctx *gin.Context) {
 	return
 }
 
-func (c *BudgetController) Category(ctx *gin.Context) {
-	data, httpCode, errInfo := c.useCase.Category(ctx)
+func (c *BudgetController) LatestMonths(ctx *gin.Context) {
+	var (
+		errInfo  []errorsinfo.Errors
+		httpCode int
+	)
 
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
+	categoryID := ctx.Query("categoryid")
+
+	if categoryID == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "category ID required in query url")
+		response.SendBack(ctx, nil, errInfo, http.StatusBadRequest)
+		return
 	}
 
-	response.SendBack(ctx, data, errInfo, httpCode)
-	return
-}
+	catID, err := uuid.Parse(categoryID)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
 
-func (c *BudgetController) LatestSixMonths(ctx *gin.Context) {
-	data, httpCode, errInfo := c.useCase.LatestSixMonths(ctx)
+	data, httpCode, errInfo := c.useCase.LatestMonths(ctx, catID)
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}

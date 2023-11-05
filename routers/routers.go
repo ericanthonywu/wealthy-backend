@@ -58,10 +58,9 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			detailsGroup := budgetGroup.Group("/details")
 			{
 				detailsGroup.GET("/category", budget.Trends)
+				detailsGroup.GET("/category-latest", budget.LatestMonths)
 			}
-
 			budgetGroup.GET("/overview", budget.Overview)
-			//budgetGroup.GET("/latest-six-months", budget.LatestSixMonths)
 		}
 
 		statisticGroup := v1group.Group("/statistics", tokenSignature())

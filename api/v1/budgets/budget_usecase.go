@@ -1,6 +1,7 @@
 package budgets
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets/dtos"
@@ -22,8 +23,7 @@ type (
 	IBudgetUseCase interface {
 		AllLimit(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Overview(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		Category(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		LatestSixMonths(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		LatestMonths(ctx *gin.Context, categoryID uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Trends(ctx *gin.Context, IDCategory uuid.UUID, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
@@ -61,6 +61,7 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 	categoryIDPrevious := uuid.Nil
 	categoryNamePrevious := ""
 	lengthOfData := len(dataSubCategoryBudget) - 1
+	totalBudgetAmount := 0
 
 	if len(dataSubCategoryBudget) > 0 {
 		for k, v := range dataSubCategoryBudget {
@@ -74,6 +75,8 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 
 				// CHECK IF SUB CATEGORY NOT NIL
 				if v.SubCategoryID != uuid.Nil {
+					totalBudgetAmount = totalBudgetAmount + v.BudgetLimit
+
 					subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
 						SubCategoryID:   v.SubCategoryID,
 						SubCategoryName: v.SubCategoryName,
@@ -88,6 +91,8 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 
 				// CHECK IF PREVIOUS IS SAME AS CURRENT
 				if categoryIDPrevious == v.CategoryID {
+					totalBudgetAmount = totalBudgetAmount + v.BudgetLimit
+
 					subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
 						SubCategoryID:   v.SubCategoryID,
 						SubCategoryName: v.SubCategoryName,
@@ -106,6 +111,10 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 							CategoryID:   categoryIDPrevious,
 							CategoryName: categoryNamePrevious,
 							SubCategory:  subCategoryInfo,
+							BudgetInfo: dtos.Limit{
+								CurrencyCode: "IDR",
+								Value:        totalBudgetAmount,
+							},
 						})
 						// OTHERWISE EMPTY
 					} else {
@@ -113,11 +122,16 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 							CategoryID:   categoryIDPrevious,
 							CategoryName: categoryNamePrevious,
 							SubCategory:  []dtos.SubCategoryInfo{},
+							BudgetInfo: dtos.Limit{
+								CurrencyCode: "IDR",
+								Value:        0,
+							},
 						})
 					}
 
 					// RESET SUB CATEGORY
 					subCategoryInfo = []dtos.SubCategoryInfo{}
+					totalBudgetAmount = 0
 
 					// RENEW VALUE ID AND NAME
 					categoryIDPrevious = v.CategoryID
@@ -125,6 +139,8 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 
 					// IF SUB CATEGORY NOT EMPTY
 					if v.SubCategoryID != uuid.Nil {
+						totalBudgetAmount = totalBudgetAmount + v.BudgetLimit
+
 						subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
 							SubCategoryID:   v.SubCategoryID,
 							SubCategoryName: v.SubCategoryName,
@@ -141,6 +157,10 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 							CategoryID:   categoryIDPrevious,
 							CategoryName: categoryNamePrevious,
 							SubCategory:  []dtos.SubCategoryInfo{},
+							BudgetInfo: dtos.Limit{
+								CurrencyCode: "IDR",
+								Value:        totalBudgetAmount,
+							},
 						})
 					}
 				}
@@ -248,62 +268,65 @@ func (s *BudgetUseCase) Overview(ctx *gin.Context, month, year string) (response
 	return response, http.StatusNotFound, errInfo
 }
 
-func (s *BudgetUseCase) Category(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	var categoryUUID uuid.UUID
-
-	category := ctx.Query("category")
-	month := ctx.Query("month")
-	year := ctx.Query("year")
-
-	if category != "" {
-		categoryUUID, _ = uuid.Parse(category)
-	}
+func (s *BudgetUseCase) LatestMonths(ctx *gin.Context, categoryID uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		dtoResponse dtos.LatestMonth
+		details     []dtos.LatestDetails
+	)
 
 	usrEmail := ctx.MustGet("email").(string)
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
-		return response, httpCode, errInfo
+		httpCode = http.StatusUnauthorized
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return []dtos.LatestDetails{}, httpCode, errInfo
 	}
 
-	if category == "" || month == "" || year == "" {
-		httpCode = http.StatusBadGateway
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "need month, year and id_category information")
-		return response, httpCode, errInfo
+	dataLatestMonth := s.repo.LatestMonths(personalAccount.ID, categoryID)
+
+	if len(dataLatestMonth) == 0 {
+		httpCode = http.StatusOK
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no data")
+		return []dtos.LatestDetails{}, httpCode, errInfo
 	}
 
-	response = s.repo.Category(personalAccount.ID, month, year, categoryUUID)
-	return response, http.StatusOK, []errorsinfo.Errors{}
-}
+	for _, v := range dataLatestMonth {
+		var percentage string
+		var statusComparison string
 
-func (s *BudgetUseCase) LatestSixMonths(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	var categoryUUID uuid.UUID
+		// PERCENTAGE
+		if v.BudgetLimit <= 0 {
+			percentage = "0%"
+			statusComparison = "BELOW BUDGET"
+		} else {
+			percentage = fmt.Sprintf("%.f", (float64(v.TotalSpending)/float64(v.BudgetLimit))*100) + "%"
+			if (float64(v.TotalSpending)/float64(v.BudgetLimit))*100 > 100 {
+				statusComparison = "OVERSPENT"
+			} else if (float64(v.TotalSpending)/float64(v.BudgetLimit))*100 == 100 {
+				statusComparison = "RISK Of SPENT ( IN LIMIT )"
+			} else {
+				statusComparison = "BELOW BUDGET"
+			}
+		}
 
-	category := ctx.Query("category")
-
-	if category != "" {
-		categoryUUID, _ = uuid.Parse(category)
+		details = append(details, dtos.LatestDetails{
+			Period: v.Period,
+			BudgetInfo: dtos.Limit{
+				CurrencyCode: "IDR",
+				Value:        v.BudgetLimit,
+			},
+			TransactionSpending: dtos.Transaction{
+				CurrencyCode: "IDR",
+				Value:        v.TotalSpending,
+			},
+			Percentage:       percentage,
+			StatusComparison: statusComparison,
+		})
 	}
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
-		return response, httpCode, errInfo
-	}
-
-	if category == "" {
-		httpCode = http.StatusBadGateway
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "need month, year and id_category information")
-		return response, httpCode, errInfo
-	}
-
-	response = s.repo.LatestSixMonths(personalAccount.ID, categoryUUID)
-	return response, http.StatusOK, []errorsinfo.Errors{}
+	dtoResponse.Details = details
+	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
 
 func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
