@@ -59,6 +59,7 @@ func main() {
 	}
 
 	route := gin.Default()
+	route.Static("/images", "./images")
 	route.Use(databases.DBInContext(dbConnection))
 	route.NoRoute(routers.NoRoute)
 	routers.RouterConfig(route)

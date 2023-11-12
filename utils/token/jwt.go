@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func JWTBuilder(email, role string) (tokenString string, err error) {
+func JWTBuilder(email, role string) (tokenString string, expired int64, err error) {
 
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
@@ -22,7 +22,7 @@ func JWTBuilder(email, role string) (tokenString string, err error) {
 
 	if err != nil {
 		logrus.Error(err.Error())
-		return "", err
+		return "", 0, err
 	}
-	return tokenString, nil
+	return tokenString, time.Now().Add(time.Minute * 18000).Unix(), nil
 }

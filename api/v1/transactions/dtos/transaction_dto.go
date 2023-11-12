@@ -11,8 +11,10 @@ type (
 		Amount                        int64     `json:"amount"`
 		Repeat                        bool      `json:"repeat,omitempty"`
 		Note                          string    `json:"note"`
-		From                          string    `json:"from,omitempty"`
-		To                            string    `json:"to,omitempty"`
+		TransferFrom                  string    `json:"transfer_from,omitempty"`
+		TransferTo                    string    `json:"transfer_to,omitempty"`
+		Departure                     string    `json:"departure,omitempty"`
+		Arrival                       string    `json:"arrival,omitempty"`
 		MutualFundProduct             string    `json:"mutual_fund_product,omitempty"`
 		StockCode                     string    `json:"stock_code,omitempty"`
 		Lot                           int64     `json:"lot,omitempty"`

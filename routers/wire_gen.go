@@ -9,6 +9,7 @@ package routers
 import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/images"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
@@ -58,4 +59,11 @@ func Statistics(db *gorm.DB) *statistics.StatisticController {
 	statisticUseCase := statistics.NewStatisticUseCase(statisticRepository)
 	statisticController := statistics.NewStatisticController(statisticUseCase)
 	return statisticController
+}
+
+func Images(db *gorm.DB) *images.ShowImageController {
+	showImageRepository := images.NewShowImageRepository(db)
+	showImageUseCase := images.NewShowImageUseCase(showImageRepository)
+	showImageController := images.NewShowImageController(showImageUseCase)
+	return showImageController
 }

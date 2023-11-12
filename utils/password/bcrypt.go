@@ -19,7 +19,7 @@ func Generate(pass string) string {
 func Compare(hashedPassword string, password []byte) bool {
 	//return bcrypt.CompareHashAndPassword(hashedPassword, password)
 	// Since we'll be getting the hashed password from the DB it
-	// will be a string so we'll need to convert it to a byte slice
+	// will be a utilities so we'll need to convert it to a byte slice
 	byteHash := []byte(hashedPassword)
 	err := bcrypt.CompareHashAndPassword(byteHash, password)
 	if err != nil {

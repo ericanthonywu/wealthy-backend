@@ -7,6 +7,7 @@ import (
 	"github.com/google/wire"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/images"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
@@ -84,4 +85,16 @@ func Statistics(db *gorm.DB) *statistics.StatisticController {
 		wire.Bind(new(statistics.IStatisticRepository), new(*statistics.StatisticRepository)),
 	)))
 	return &statistics.StatisticController{}
+}
+
+func Images(db *gorm.DB) *images.ShowImageController {
+	panic(wire.Build(wire.NewSet(
+		images.NewShowImageController,
+		images.NewShowImageUseCase,
+		images.NewShowImageRepository,
+		wire.Bind(new(images.IShowImageController), new(*images.ShowImageController)),
+		wire.Bind(new(images.IShowImageUseCase), new(*images.ShowImageUseCase)),
+		wire.Bind(new(images.IShowImageRepository), new(*images.ShowImageRepository)),
+	)))
+	return &images.ShowImageController{}
 }

@@ -12,6 +12,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 	transaction := Transactions(db)
 	budget := Budgets(db)
 	statistic := Statistics(db)
+	images := Images(db)
 
 	v1group := router.Group("/v1")
 	{
@@ -43,8 +44,24 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		{
 			accountGroup.POST("/signup", account.SignUp)
 			accountGroup.POST("/signin", account.SignIn)
-			accountGroup.PUT("/profile", tokenSignature(), account.SetProfile)
-			accountGroup.GET("/profile", tokenSignature(), account.GetProfile)
+			accountGroup.PATCH("/profiles/:id", tokenSignature(), account.UpdateProfile)
+			accountGroup.GET("/profiles", tokenSignature(), account.GetProfile)
+
+			accountProfileGroup := accountGroup.Group("/profiles", tokenSignature())
+			{
+				accountProfileGroup.POST("/avatar", account.SetAvatar)
+				accountProfileGroup.DELETE("/avatar/:customer-id", account.RemoveAvatar)
+			}
+
+			accountPasswordGroup := accountGroup.Group("/password", tokenSignature())
+			{
+				accountPasswordGroup.POST("/change/:id", account.ChangePassword)
+			}
+
+			accountReferral := accountGroup.Group("/referrals", tokenSignature())
+			{
+				accountReferral.POST("/validate", account.ValidateRefCode)
+			}
 		}
 
 		budgetGroup := v1group.Group("/budgets", tokenSignature())
@@ -104,5 +121,14 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			walletGroup.PUT("/amount/:id-wallet", tokenSignature(), wallet.UpdateAmount)
 
 		}
+
+		imageGroup := v1group.Group("/images")
+		{
+			avatarGroup := imageGroup.Group("/avatar")
+			{
+				avatarGroup.GET("/:filename", images.Avatar)
+			}
+		}
 	}
+
 }

@@ -62,8 +62,8 @@ func (s *TransactionUseCase) Add(request *dtos.TransactionRequest) (data interfa
 		IDTransaction:     trxID,
 		Repeat:            request.Repeat,
 		Note:              request.Note,
-		From:              request.From,
-		To:                request.To,
+		From:              request.TransferFrom,
+		To:                request.TransferTo,
 		MutualFundProduct: request.MutualFundProduct,
 		StockCode:         request.StockCode,
 		Lot:               request.Lot,
@@ -282,7 +282,7 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 	}
 
 	if month == "" && year == "" {
-		httpCode = http.StatusBadGateway
+		httpCode = http.StatusBadRequest
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "need month and or year information")
 		return response, httpCode, errInfo
 	}

@@ -3,7 +3,7 @@ FROM golang:alpine3.18 as builder
 # Time zone
 RUN apk add --no-cache tzdata
 
-# Set necessary environmet variables needed for our image
+# Set necessary environmet variables needed for our images
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
     GOOS=linux \

@@ -18,7 +18,7 @@ func tokenSignature() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var (
 			errInfo []errorsinfo.Errors
-			//tokenAccessString string
+			//tokenAccessString utilities
 		)
 
 		claims := jwt.MapClaims{}
