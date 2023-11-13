@@ -12,6 +12,7 @@ type (
 
 	IShowImageController interface {
 		Avatar(ctx *gin.Context)
+		Travel(ctx *gin.Context)
 	}
 )
 
@@ -23,4 +24,12 @@ func (c *ShowImageController) Avatar(ctx *gin.Context) {
 	fileName := ctx.Param("filename")
 	imagePath := fmt.Sprintf("./assets/avatar/%s", fileName)
 	ctx.File(imagePath)
+	return
+}
+
+func (c *ShowImageController) Travel(ctx *gin.Context) {
+	fileName := ctx.Param("filename")
+	imagePath := fmt.Sprintf("./assets/travel/%s", fileName)
+	ctx.File(imagePath)
+	return
 }

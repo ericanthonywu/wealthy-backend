@@ -21,6 +21,7 @@ type (
 		IncomeSpending(ctx *gin.Context)
 		Investment(ctx *gin.Context)
 		ByNotes(ctx *gin.Context)
+		TravelTransactionHistory(ctx *gin.Context)
 	}
 )
 
@@ -42,7 +43,7 @@ func (c *TransactionController) Add(ctx *gin.Context) {
 		return
 	}
 
-	data, httpCode, errInfo = c.useCase.Add(&dtoRequest)
+	data, httpCode, errInfo = c.useCase.Add(ctx, &dtoRequest)
 	response.SendBack(ctx, data, []errorsinfo.Errors{}, httpCode)
 	return
 }
@@ -81,7 +82,7 @@ func (c *TransactionController) TransferTransactionHistory(ctx *gin.Context) {
 }
 
 func (c *TransactionController) InvestTransactionHistory(ctx *gin.Context) {
-	data, httpCode, errInfo := c.useCase.IncomeTransactionHistory(ctx)
+	data, httpCode, errInfo := c.useCase.InvestTransactionHistory(ctx)
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
@@ -115,6 +116,17 @@ func (c *TransactionController) Investment(ctx *gin.Context) {
 
 func (c *TransactionController) ByNotes(ctx *gin.Context) {
 	data, httpCode, errInfo := c.useCase.ByNotes(ctx)
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *TransactionController) TravelTransactionHistory(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.TravelTransactionHistory(ctx)
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}

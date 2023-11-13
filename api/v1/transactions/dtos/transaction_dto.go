@@ -15,12 +15,17 @@ type (
 		TransferTo                    string    `json:"transfer_to,omitempty"`
 		Departure                     string    `json:"departure,omitempty"`
 		Arrival                       string    `json:"arrival,omitempty"`
+		ImageBase64                   string    `json:"image_base64,omitempty"`
 		MutualFundProduct             string    `json:"mutual_fund_product,omitempty"`
 		StockCode                     string    `json:"stock_code,omitempty"`
 		Lot                           int64     `json:"lot,omitempty"`
+		TravelStartDate               string    `json:"travel_start_date,omitempty"`
+		TravelEndDate                 string    `json:"travel_end_date,omitempty"`
+		SellBuy                       int       `json:"sellbuy,omitempty"`
 		IDWallet                      uuid.UUID `json:"id_wallets,omitempty"`
 		IDMasterIncomeCategories      uuid.UUID `json:"id_master_income_categories,omitempty"`
 		IDMasterExpenseCategories     uuid.UUID `json:"id_master_expense_categories,omitempty"`
+		IDMasterExpenseSubCategories  uuid.UUID `json:"id_master_expense_subcategories,omitempty"`
 		IDMasterInvest                uuid.UUID `json:"id_master_invest,omitempty"`
 		IDMasterBroker                uuid.UUID `json:"id_master_broker,omitempty"`
 		IDMasterReksanadaTypes        uuid.UUID `json:"id_master_reksadana_types,omitempty"`
@@ -33,8 +38,22 @@ type (
 	}
 
 	TransactionHistoryForIncomeExpenses struct {
-		Total  int         `json:"transaction_total"`
+		Total  float64     `json:"transaction_total"`
 		Detail interface{} `json:"detail"`
+	}
+
+	TransactionHistoryForTravel struct {
+		Detail []TransactionHistoryForTravelDetail `json:"detail"`
+	}
+
+	TransactionHistoryForTravelDetail struct {
+		Departure       string  `gorm:"column:departure"`
+		Arrival         string  `gorm:"column:arrival"`
+		Amount          float64 `gorm:"column:amount"`
+		TravelStartDate string  `gorm:"travel_start_date"`
+		TravelEndDate   string  `gorm:"column:travel_end_date"`
+		ImagePath       string  `gorm:"column:image_path"`
+		Filename        string  `gorm:"column:filename"`
 	}
 
 	TransactionHistoryForTransfer struct {

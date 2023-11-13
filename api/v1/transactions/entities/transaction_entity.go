@@ -10,9 +10,11 @@ type (
 		Date                          string    `gorm:"column:date_time_transaction"`
 		Fees                          float64   `gorm:"column:fees"`
 		Amount                        float64   `gorm:"column:amount"`
+		IDPersonalAccount             uuid.UUID `gorm:"column:id_personal_account"`
 		IDWallet                      uuid.UUID `gorm:"column:id_wallets"`
 		IDMasterIncomeCategories      uuid.UUID `gorm:"column:id_master_income_categories"`
 		IDMasterExpenseCategories     uuid.UUID `gorm:"column:id_master_expense_categories"`
+		IDMasterExpenseSubCategories  uuid.UUID `gorm:"column:id_master_expense_subcategories"`
 		IDMasterInvest                uuid.UUID `gorm:"column:id_master_invest"`
 		IDMasterBroker                uuid.UUID `gorm:"column:id_master_broker"`
 		IDMasterReksanadaTypes        uuid.UUID `gorm:"column:id_master_reksadana_types"`
@@ -24,19 +26,30 @@ type (
 		IDTransaction     uuid.UUID `gorm:"column:id_transactions"`
 		Repeat            bool      `gorm:"column:repeat"`
 		Note              string    `gorm:"column:note"`
-		From              string    `gorm:"column:from"`
-		To                string    `gorm:"column:to"`
+		From              string    `gorm:"column:transfer_from"`
+		To                string    `gorm:"column:transfer_to"`
 		MutualFundProduct string    `gorm:"column:mutual_fund_product"`
 		StockCode         string    `gorm:"column:stock_code"`
 		Lot               int64     `gorm:"column:lot"`
+		Departure         string    `gorm:"column:departure"`
+		Arrival           string    `gorm:"column:arrival"`
+		ImagePath         string    `gorm:"column:image_path"`
+		Filename          string    `gorm:"column:filename"`
+		TravelStartDate   string    `gorm:"column:travel_start_date"`
+		TravelEndDate     string    `gorm:"column:travel_end_date"`
+		SellBuy           int       `gorm:"column:sellbuy"`
 	}
 
 	TransactionExpenseTotalHistory struct {
-		TotalExpense int `gorm:"column:total_expense" json:"transaction_total"`
+		TotalExpense float64 `gorm:"column:total_expense" json:"transaction_total"`
 	}
 
 	TransactionIncomeTotalHistory struct {
-		TotalIncome int `gorm:"column:total_income" json:"transaction_total"`
+		TotalIncome float64 `gorm:"column:total_income" json:"transaction_total"`
+	}
+
+	TransactionInvestTotalHistory struct {
+		TotalInvest float64 `gorm:"column:total_invest" json:"transaction_total"`
 	}
 
 	TransactionDetailHistory struct {
@@ -55,13 +68,23 @@ type (
 	}
 
 	TransactionDetailInvest struct {
-		TransactionDate        string `gorm:"column:transaction_date" json:"transaction_date"`
-		TransactionAmountTotal int    `gorm:"column:transaction_amount_total" json:"transaction_amount_total"`
-		TransactionNote        string `gorm:"column:transaction_note" json:"transaction_note"`
-		Price                  int    `gorm:"column:price" json:"price"`
-		Lot                    int    `gorm:"column:lot" json:"lot"`
-		StockCode              string `gorm:"column:stock_code" json:"stock_code"`
-		SellBuy                string `gorm:"column:sell_buy" json:"sell_buy"`
+		TransactionDate        string  `gorm:"column:transaction_date" json:"transaction_date"`
+		TransactionAmountTotal float64 `gorm:"column:transaction_amount_total" json:"transaction_amount_total"`
+		TransactionNote        string  `gorm:"column:transaction_note" json:"transaction_note"`
+		Price                  float64 `gorm:"column:price" json:"price"`
+		Lot                    int     `gorm:"column:lot" json:"lot"`
+		StockCode              string  `gorm:"column:stock_code" json:"stock_code"`
+		SellBuy                string  `gorm:"column:sell_buy" json:"sell_buy"`
+	}
+
+	TransactionDetailTravel struct {
+		Departure       string  `gorm:"column:departure"`
+		Arrival         string  `gorm:"column:arrival"`
+		Amount          float64 `gorm:"column:amount"`
+		TravelStartDate string  `gorm:"travel_start_date"`
+		TravelEndDate   string  `gorm:"column:travel_end_date"`
+		ImagePath       string  `gorm:"column:image_path"`
+		Filename        string  `gorm:"column:filename"`
 	}
 
 	TransactionIncomeSpendingTotalMonthly struct {

@@ -98,27 +98,28 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 
-		transactionGroup := v1group.Group("/transactions")
+		transactionGroup := v1group.Group("/transactions", tokenSignature())
 		{
-			transactionGroup.POST("/", tokenSignature(), transaction.Add)
-			transactionGroup.GET("/income-spending", tokenSignature(), transaction.IncomeSpending)
-			transactionGroup.GET("/investment", tokenSignature(), transaction.Investment)
-			transactionGroup.GET("/notes", tokenSignature(), transaction.ByNotes)
+			transactionGroup.POST("/", transaction.Add)
+			transactionGroup.GET("/income-spending", transaction.IncomeSpending)
+			transactionGroup.GET("/investment", transaction.Investment)
+			transactionGroup.GET("/notes", transaction.ByNotes)
 
 			transactionHistory := transactionGroup.Group("/history")
 			{
-				transactionHistory.GET("/expense", tokenSignature(), transaction.ExpenseTransactionHistory)
-				transactionHistory.GET("/income", tokenSignature(), transaction.IncomeTransactionHistory)
-				transactionHistory.GET("/transfer", tokenSignature(), transaction.TransferTransactionHistory)
-				transactionHistory.GET("/invest", tokenSignature(), transaction.InvestTransactionHistory)
+				transactionHistory.GET("/expense", transaction.ExpenseTransactionHistory)
+				transactionHistory.GET("/income", transaction.IncomeTransactionHistory)
+				transactionHistory.GET("/transfer", transaction.TransferTransactionHistory)
+				transactionHistory.GET("/invest", transaction.InvestTransactionHistory)
+				transactionHistory.GET("/travel", transaction.TravelTransactionHistory)
 			}
 		}
 
-		walletGroup := v1group.Group("/wallets")
+		walletGroup := v1group.Group("/wallets", tokenSignature())
 		{
-			walletGroup.POST("/", tokenSignature(), wallet.Add)
-			walletGroup.GET("/", tokenSignature(), wallet.List)
-			walletGroup.PUT("/amount/:id-wallet", tokenSignature(), wallet.UpdateAmount)
+			walletGroup.POST("/", wallet.Add)
+			walletGroup.GET("/", wallet.List)
+			walletGroup.PUT("/amount/:id-wallet", wallet.UpdateAmount)
 
 		}
 
@@ -127,6 +128,11 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			avatarGroup := imageGroup.Group("/avatar")
 			{
 				avatarGroup.GET("/:filename", images.Avatar)
+			}
+
+			travelGroup := imageGroup.Group("/travel")
+			{
+				travelGroup.GET("/:filename", images.Travel)
 			}
 		}
 	}

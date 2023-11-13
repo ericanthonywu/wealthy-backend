@@ -1,13 +1,19 @@
 package transactions
 
 import (
+	"encoding/base64"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/entities"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
+	"github.com/sirupsen/logrus"
 	"net/http"
+	"os"
+	"time"
 )
 
 type (
@@ -16,9 +22,10 @@ type (
 	}
 
 	ITransactionUseCase interface {
-		Add(request *dtos.TransactionRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		Add(ctx *gin.Context, request *dtos.TransactionRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ExpenseTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		IncomeTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		TravelTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		TransferTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		InvestTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		IncomeSpending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
@@ -31,11 +38,23 @@ func NewTransactionUseCase(repo ITransactionRepository) *TransactionUseCase {
 	return &TransactionUseCase{repo: repo}
 }
 
-func (s *TransactionUseCase) Add(request *dtos.TransactionRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		trxID uuid.UUID
-		err   error
+		trxID      uuid.UUID
+		err        error
+		filename   string
+		targetPath string
+		imagePath  string
 	)
+
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		httpCode = http.StatusUnauthorized
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return nil, httpCode, errInfo
+	}
 
 	trxID, err = uuid.NewUUID()
 	if err != nil {
@@ -43,14 +62,28 @@ func (s *TransactionUseCase) Add(request *dtos.TransactionRequest) (data interfa
 		return nil, http.StatusUnprocessableEntity, errInfo
 	}
 
+	if request.ImageBase64 != "" {
+		imageData, err := base64.StdEncoding.DecodeString(request.ImageBase64)
+		filename = fmt.Sprintf("%d", time.Now().Unix()) + ".png"
+		targetPath = "assets/travel/" + filename
+		imagePath = "images/travel/" + filename
+
+		err = utilities.SaveImage(imageData, targetPath)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+	}
+
 	modelTransaction := entities.TransactionEntity{
 		ID:                            trxID,
 		Date:                          request.Date,
 		Fees:                          float64(request.Fees),
 		Amount:                        float64(request.Amount),
+		IDPersonalAccount:             personalAccount.ID,
 		IDWallet:                      request.IDWallet,
 		IDMasterIncomeCategories:      request.IDMasterIncomeCategories,
 		IDMasterExpenseCategories:     request.IDMasterExpenseCategories,
+		IDMasterExpenseSubCategories:  request.IDMasterExpenseSubCategories,
 		IDMasterInvest:                request.IDMasterInvest,
 		IDMasterBroker:                request.IDMasterBroker,
 		IDMasterReksanadaTypes:        request.IDMasterReksanadaTypes,
@@ -67,6 +100,13 @@ func (s *TransactionUseCase) Add(request *dtos.TransactionRequest) (data interfa
 		MutualFundProduct: request.MutualFundProduct,
 		StockCode:         request.StockCode,
 		Lot:               request.Lot,
+		Departure:         request.Departure,
+		Arrival:           request.Arrival,
+		ImagePath:         imagePath,
+		Filename:          filename,
+		TravelStartDate:   request.TravelStartDate,
+		TravelEndDate:     request.TravelEndDate,
+		SellBuy:           request.SellBuy,
 	}
 
 	err = s.repo.Add(&modelTransaction, &modelTransactionDetail)
@@ -81,7 +121,7 @@ func (s *TransactionUseCase) Add(request *dtos.TransactionRequest) (data interfa
 	}
 
 	data = struct {
-		IDTransaction uuid.UUID
+		IDTransaction uuid.UUID `json:"id_transaction"`
 	}{
 		IDTransaction: trxID,
 	}
@@ -148,10 +188,10 @@ func (s *TransactionUseCase) IncomeTransactionHistory(ctx *gin.Context) (respons
 
 	if startDate == "" || endDate == "" {
 		responseIncomeTotalHistory = s.repo.IncomeTotalHistoryWithoutDate(personalAccount.ID)
-		responseIncomeDetailHistory = s.repo.IncomeDetailHistoryWithoutData(personalAccount.ID)
+		responseIncomeDetailHistory = s.repo.InvestDetailWithoutData(personalAccount.ID)
 	} else {
 		responseIncomeTotalHistory = s.repo.IncomeTotalHistoryWithData(personalAccount.ID, startDate, endDate)
-		responseIncomeDetailHistory = s.repo.IncomeDetailHistoryWithData(personalAccount.ID, startDate, endDate)
+		responseIncomeDetailHistory = s.repo.InvestDetailWithData(personalAccount.ID, startDate, endDate)
 	}
 
 	if responseIncomeTotalHistory.TotalIncome == 0 || responseIncomeDetailHistory == nil {
@@ -163,6 +203,48 @@ func (s *TransactionUseCase) IncomeTransactionHistory(ctx *gin.Context) (respons
 	dtoResponse.Total = responseIncomeTotalHistory.TotalIncome
 	dtoResponse.Detail = responseIncomeDetailHistory
 
+	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
+}
+
+func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		dtoResponse                 dtos.TransactionHistoryForTravel
+		details                     []dtos.TransactionHistoryForTravelDetail
+		responseTravelDetailHistory []entities.TransactionDetailTravel
+	)
+
+	startDate := ctx.Query("startDate")
+	endDate := ctx.Query("endDate")
+
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		httpCode = http.StatusNotFound
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return response, httpCode, errInfo
+	}
+
+	if startDate == "" || endDate == "" {
+		responseTravelDetailHistory = s.repo.TravelDetailWithoutData(personalAccount.ID)
+	} else {
+		responseTravelDetailHistory = s.repo.TravelDetailWithData(personalAccount.ID, startDate, endDate)
+	}
+
+	if len(responseTravelDetailHistory) > 0 {
+		for _, v := range responseTravelDetailHistory {
+			details = append(details, dtos.TransactionHistoryForTravelDetail{
+				Departure:       v.Departure,
+				Arrival:         v.Arrival,
+				Amount:          v.Amount,
+				ImagePath:       os.Getenv("APP_HOST") + "/v1/" + v.ImagePath,
+				Filename:        v.Filename,
+				TravelStartDate: v.TravelStartDate,
+				TravelEndDate:   v.TravelEndDate,
+			})
+		}
+	}
+	dtoResponse.Detail = details
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
 

@@ -31,6 +31,11 @@ type (
 
 		InvestDetailWithoutData(IDPersonal uuid.UUID) (data []entities.TransactionDetailInvest)
 		InvestDetailWithData(IDPersonal uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailInvest)
+		InvestTotalHistoryWithoutDate(IDPersonal uuid.UUID) (data entities.TransactionInvestTotalHistory)
+		InvestTotalHistoryWithData(IDPersonal uuid.UUID, startDate, endDate string) (data entities.TransactionInvestTotalHistory)
+
+		TravelDetailWithData(IDPersonal uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailTravel)
+		TravelDetailWithoutData(IDPersonal uuid.UUID) (data []entities.TransactionDetailTravel)
 
 		IncomeSpendingMonthlyTotal(IDPersonal uuid.UUID, month, year string) (data entities.TransactionIncomeSpendingTotalMonthly)
 		IncomeSpendingMonthlyDetail(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionIncomeSpendingDetailMonthly)
@@ -41,7 +46,6 @@ type (
 		InvestMonthlyDetail(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionInvestmentDetail)
 		InvestAnnuallyTotal(IDPersonal uuid.UUID, year string) (data entities.TransactionInvestmentTotals)
 		InvestAnnuallyDetail(IDPersonal uuid.UUID, year string) (data []entities.TransactionInvestmentDetail)
-
 		ByNote(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionByNotes)
 	}
 )
@@ -111,7 +115,7 @@ func (r *TransactionRepository) ExpenseDetailHistoryWithDate(IDPersonal uuid.UUI
 }
 
 func (r *TransactionRepository) ExpenseTotalHistoryWithoutDate(IDPersonal uuid.UUID) (data entities.TransactionExpenseTotalHistory) {
-	if err := r.db.Raw(`SELECT COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_expense_categories IS NOT NULL ), 0) as total_expense
+	if err := r.db.Raw(`SELECT COALESCE(SUM(tt.amount) FILTER ( WHERE  tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000' ), 0) as total_expense
       FROM tbl_transactions tt
       WHERE tt.id_personal_account = ?
         AND to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
@@ -123,7 +127,7 @@ func (r *TransactionRepository) ExpenseTotalHistoryWithoutDate(IDPersonal uuid.U
 }
 
 func (r *TransactionRepository) ExpenseTotalHistoryWithDate(IDPersonal uuid.UUID, startDate, endDate string) (data entities.TransactionExpenseTotalHistory) {
-	if err := r.db.Raw(`SELECT COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_expense_categories IS NOT NULL ), 0) as total_expense
+	if err := r.db.Raw(`SELECT COALESCE(SUM(tt.amount) FILTER ( WHERE  tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000' ), 0) as total_expense
       FROM tbl_transactions tt
       WHERE tt.id_personal_account = ?
         AND tt.date_time_transaction BETWEEN ? AND ?`, IDPersonal, startDate, endDate).Scan(&data).Error; err != nil {
@@ -179,7 +183,7 @@ ORDER BY transaction_date DESC`, IDPersonal, startDate, endDate).Scan(&data).Err
 }
 
 func (r *TransactionRepository) IncomeTotalHistoryWithoutDate(IDPersonal uuid.UUID) (data entities.TransactionIncomeTotalHistory) {
-	if err := r.db.Raw(`SELECT COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_income_categories IS NOT NULL ), 0) as total_income
+	if err := r.db.Raw(`SELECT COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000' ), 0) as total_income
 FROM tbl_transactions tt
 WHERE tt.id_personal_account = ?
   AND to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
@@ -190,11 +194,33 @@ WHERE tt.id_personal_account = ?
 }
 
 func (r *TransactionRepository) IncomeTotalHistoryWithData(IDPersonal uuid.UUID, startDate, endDate string) (data entities.TransactionIncomeTotalHistory) {
-	if err := r.db.Raw(`SELECT COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_income_categories IS NOT NULL ), 0) as total_income
+	if err := r.db.Raw(`SELECT COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000' ), 0) as total_income
       FROM tbl_transactions tt
       WHERE tt.id_personal_account = ?
         AND tt.date_time_transaction BETWEEN ? AND ?`, IDPersonal, startDate, endDate).Scan(&data).Error; err != nil {
 		return entities.TransactionIncomeTotalHistory{}
+	}
+
+	return data
+}
+
+func (r *TransactionRepository) InvestTotalHistoryWithoutDate(IDPersonal uuid.UUID) (data entities.TransactionInvestTotalHistory) {
+	if err := r.db.Raw(`SELECT COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_invest <> '00000000-0000-0000-0000-000000000000' ), 0) as total_invest
+FROM tbl_transactions tt
+WHERE tt.id_personal_account = ?
+  AND to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
+        MONTH FROM current_timestamp)::text`, IDPersonal).Scan(&data).Error; err != nil {
+		return entities.TransactionInvestTotalHistory{}
+	}
+	return data
+}
+
+func (r *TransactionRepository) InvestTotalHistoryWithData(IDPersonal uuid.UUID, startDate, endDate string) (data entities.TransactionInvestTotalHistory) {
+	if err := r.db.Raw(`SELECT COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_invest <> '00000000-0000-0000-0000-000000000000' ), 0) as total_invest
+      FROM tbl_transactions tt
+      WHERE tt.id_personal_account = ?
+        AND tt.date_time_transaction BETWEEN ? AND ?`, IDPersonal, startDate, endDate).Scan(&data).Error; err != nil {
+		return entities.TransactionInvestTotalHistory{}
 	}
 
 	return data
@@ -215,8 +241,8 @@ func (r *TransactionRepository) TransferDetailWithData(IDPersonal uuid.UUID, sta
                  WHEN td.note IS NOT NULL then td.note
                  WHEN td.note IS NULL then ''
                  END ::text                    as transaction_note,
-             td."to" ::text                     as transaction_destination,
-             td."from" ::text                  as transaction_source
+             td.transfer_to ::text                     as transaction_destination,
+             td.transfer_from ::text                  as transaction_source
       FROM tbl_transactions tt
                INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
                LEFT JOIN tbl_transaction_details td ON td.id_transactions = tt.id
@@ -238,8 +264,8 @@ func (r *TransactionRepository) TransferDetailWithoutData(IDPersonal uuid.UUID) 
            WHEN td.note IS NOT NULL then td.note
            WHEN td.note IS NULL then ''
            END::text                    as transaction_note,
-       td."to"::text                     as transaction_destination,
-       td."from"::text                   as transaction_source
+       td.transfer_to::text                     as transaction_destination,
+       td.transfer_from::text                   as transaction_source
 FROM tbl_transactions tt
          INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
          LEFT JOIN tbl_transaction_details td ON td.id_transactions = tt.id
@@ -266,13 +292,13 @@ func (r *TransactionRepository) InvestDetailWithoutData(IDPersonal uuid.UUID) (d
        td.lot ::int                   as lot,
        td.stock_code::text            as stock_code,
        CASE
-           WHEN td.sellbuy = 1 THEN 'SELL'
-           WHEN td.sellbuy = 2 THEN 'BUY'
+           WHEN td.sellbuy = 0 THEN 'SELL'
+           WHEN td.sellbuy = 1 THEN 'BUY'
            ELSE ''
            END ::text                 as sell_buy
 FROM tbl_transactions tt
          INNER JOIN tbl_transaction_details td ON td.id_transactions = tt.id
-WHERE tt.id_master_transaction_types = '?'
+WHERE tt.id_personal_account = '?'
 GROUP BY transaction_note, lot, stock_code, transaction_date, sell_buy, tt.amount
 ORDER BY transaction_date DESC`, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionDetailInvest{}
@@ -292,14 +318,14 @@ func (r *TransactionRepository) InvestDetailWithData(IDPersonal uuid.UUID, start
        td.lot                   as lot,
        td.stock_code            as stock_code,
        CASE
-           WHEN td.sellbuy = 1 THEN 'SELL'
-           WHEN td.sellbuy = 2 THEN 'BUY'
+           WHEN td.sellbuy = 0 THEN 'SELL'
+           WHEN td.sellbuy = 1 THEN 'BUY'
            ELSE ''
            END                  as sell_buy
 FROM tbl_transactions tt
          INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
          INNER JOIN tbl_transaction_details td ON td.id_transactions = tt.id
-WHERE tt.id_master_transaction_types = ?
+WHERE tt.id_personal_account = ?
   AND tmtt.type = 'INVEST'
   AND tt.date_time_transaction BETWEEN ? AND ?
 GROUP BY transaction_note, lot, stock_code, transaction_date, sell_buy, tt.amount
@@ -310,15 +336,55 @@ ORDER BY transaction_date DESC`, IDPersonal, startDate, endDate).Scan(&data).Err
 	return data
 }
 
+func (r *TransactionRepository) TravelDetailWithoutData(IDPersonal uuid.UUID) (data []entities.TransactionDetailTravel) {
+	if err := r.db.Raw(`SELECT td.departure,
+       td.arrival,
+       tt.amount,
+       td.travel_start_date,
+       td.travel_end_date,
+       td.image_path,
+       td.filename
+FROM tbl_transactions tt
+         LEFT JOIN tbl_master_income_categories tmic ON tmic.id = tt.id_master_income_categories
+         INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
+         LEFT JOIN tbl_transaction_details td ON td.id_transactions = tt.id
+WHERE tmtt.type = 'TRAVEL'
+  AND tt.id_personal_account = ?
+ORDER BY td.travel_end_date::DATE ASC`, IDPersonal).Scan(&data).Error; err != nil {
+	}
+	return
+}
+
+func (r *TransactionRepository) TravelDetailWithData(IDPersonal uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailTravel) {
+	if err := r.db.Raw(`SELECT td.departure,
+       td.arrival,
+       tt.amount,
+       td.travel_start_date,
+       td.travel_end_date,
+       td.image_path,
+       td.filename
+FROM tbl_transactions tt
+         LEFT JOIN tbl_master_income_categories tmic ON tmic.id = tt.id_master_income_categories
+         INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
+         LEFT JOIN tbl_transaction_details td ON td.id_transactions = tt.id
+WHERE tmtt.type = 'TRAVEL'
+  AND tt.id_personal_account = ?
+  AND tt.date_time_transaction BETWEEN ? AND ?
+ORDER BY td.travel_end_date::DATE ASC`, IDPersonal, startDate, endDate).Scan(&data).Error; err != nil {
+
+	}
+	return
+}
+
 func (r *TransactionRepository) IncomeSpendingMonthlyTotal(IDPersonal uuid.UUID, month, year string) (data entities.TransactionIncomeSpendingTotalMonthly) {
 	if err := r.db.Raw(`SELECT concat(to_char(to_date(t.date_time_transaction, 'YYYY-MM-DD'), 'Mon'), ' ',
               to_char(t.date_time_transaction::DATE, 'YYYY')) ::text                                  as month,
        to_char(t.date_time_transaction::DATE, 'YYYY')::text                                           as year,
-       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_income_categories IS NOT NULL), 0)::numeric  as total_income,
-       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_expense_categories IS NOT NULL),
+       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_income_categories <> '00000000-0000-0000-0000-000000000000'), 0)::numeric  as total_income,
+       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'),
                 0)::numeric                                                                           as total_spending,
-       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_income_categories IS NOT NULL), 0) -
-       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_expense_categories IS NOT NULL), 0)::numeric as net_income
+       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_income_categories <> '00000000-0000-0000-0000-000000000000'), 0) -
+       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'), 0)::numeric as net_income
 FROM tbl_transactions t
 WHERE to_char(t.date_time_transaction::DATE, 'MM') = ?
   AND to_char(t.date_time_transaction::DATE, 'YYYY') = ?
@@ -367,10 +433,10 @@ ORDER BY date DESC`, month, year, IDPersonal).Scan(&data).Error; err != nil {
 
 func (r *TransactionRepository) IncomeSpendingAnnuallyTotal(IDPersonal uuid.UUID, year string) (data entities.TransactionIncomeSpendingTotalAnnually) {
 	if err := r.db.Raw(`SELECT to_char(t.date_time_transaction::DATE, 'YYYY') ::text  as transaction_period,
-       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_income_categories IS NOT NULL), 0)::numeric  as total_income,
-       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_expense_categories IS NOT NULL), 0)::numeric as total_spending,
-       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_income_categories IS NOT NULL), 0) -
-       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_expense_categories IS NOT NULL), 0)::numeric as net_income
+       COALESCE(SUM(t.amount) FILTER ( WHERE tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000'), 0)::numeric  as total_income,
+       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'), 0)::numeric as total_spending,
+       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_income_categories <> '00000000-0000-0000-0000-000000000000'), 0) -
+       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'), 0)::numeric as net_income
 FROM tbl_transactions t
 WHERE to_char(t.date_time_transaction::DATE, 'YYYY') = ? AND t.id_personal_account = ?
 GROUP BY transaction_period`, year, IDPersonal).Scan(&data).Error; err != nil {
@@ -385,12 +451,12 @@ func (r *TransactionRepository) IncomeSpendingAnnuallyDetail(IDPersonal uuid.UUI
               to_char(tt.date_time_transaction::DATE, 'YYYY'))::text as month_year,
        date_part('days', (date_trunc('month', tt.date_time_transaction::DATE) +
                           interval '1 month - 1 day')) ::numeric     as total_days_in_month,
-       COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_income_categories IS NOT NULL ),
+       COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000' ),
                 0) :: numeric                                        as total_income,
-       COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_expense_categories IS NOT NULL ),
+       COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000' ),
                 0) :: numeric                                        as total_spending,
-       COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_income_categories IS NOT NULL ),
-                0) - COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_expense_categories IS NOT NULL ),
+       COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000' ),
+                0) - COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000' ),
                               0) :: numeric                          as net_income
 FROM tbl_transactions tt
          LEFT JOIN tbl_master_expense_categories tmec ON tt.id_master_expense_categories = tmec.id
