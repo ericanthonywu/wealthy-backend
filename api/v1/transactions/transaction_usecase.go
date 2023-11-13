@@ -234,9 +234,12 @@ func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context) (respons
 	if len(responseTravelDetailHistory) > 0 {
 		for _, v := range responseTravelDetailHistory {
 			details = append(details, dtos.TransactionHistoryForTravelDetail{
-				Departure:       v.Departure,
-				Arrival:         v.Arrival,
-				Amount:          v.Amount,
+				Departure: v.Departure,
+				Arrival:   v.Arrival,
+				Amount: dtos.Amount{
+					CurrencyCode: "IDR",
+					Value:        v.Amount,
+				},
 				ImagePath:       os.Getenv("APP_HOST") + "/v1/" + v.ImagePath,
 				Filename:        v.Filename,
 				TravelStartDate: v.TravelStartDate,

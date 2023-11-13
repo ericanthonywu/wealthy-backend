@@ -43,17 +43,22 @@ type (
 	}
 
 	TransactionHistoryForTravel struct {
-		Detail []TransactionHistoryForTravelDetail `json:"detail"`
+		Detail []TransactionHistoryForTravelDetail `json:"details"`
 	}
 
 	TransactionHistoryForTravelDetail struct {
-		Departure       string  `gorm:"column:departure"`
-		Arrival         string  `gorm:"column:arrival"`
-		Amount          float64 `gorm:"column:amount"`
-		TravelStartDate string  `gorm:"travel_start_date"`
-		TravelEndDate   string  `gorm:"column:travel_end_date"`
-		ImagePath       string  `gorm:"column:image_path"`
-		Filename        string  `gorm:"column:filename"`
+		Departure       string `json:"departure"`
+		Arrival         string `json:"arrival"`
+		Amount          Amount `json:"budget_amount"`
+		TravelStartDate string `json:"travel_start_date"`
+		TravelEndDate   string `json:"travel_end_date"`
+		ImagePath       string `json:"image_path"`
+		Filename        string `json:"filename"`
+	}
+
+	Amount struct {
+		CurrencyCode string  `json:"currency_code"`
+		Value        float64 `json:"value"`
 	}
 
 	TransactionHistoryForTransfer struct {
