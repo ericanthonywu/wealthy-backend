@@ -175,10 +175,12 @@ func (s *AccountUseCase) GetProfile(ctx *gin.Context) (response interface{}, htt
 
 	dtoResponse.AccountCustomer.ID = dataProfile.ID
 	dtoResponse.AccountCustomer.Name = dataProfile.Name
-	dtoResponse.AccountCustomer.Gender = dataProfile.Gender
 	dtoResponse.AccountCustomer.ReferType = dataProfile.ReferType
 	dtoResponse.AccountCustomer.Username = dataProfile.Username
 	dtoResponse.AccountCustomer.Email = dataProfile.Email
+
+	dtoResponse.AccountCustomer.Gender.ID = dataProfile.IDGender
+	dtoResponse.AccountCustomer.Gender.Value = dataProfile.Gender
 
 	dtoResponse.AccountDetail.AccountType = dataProfile.AccountType
 	dtoResponse.AccountDetail.UserRoles = dataProfile.UserRoles
@@ -191,22 +193,37 @@ func (s *AccountUseCase) GetProfile(ctx *gin.Context) (response interface{}, htt
 
 func (s *AccountUseCase) UpdateProfile(ctx *gin.Context, customerID uuid.UUID, request map[string]interface{}) (response map[string]bool, httpCode int, errInfo []errorsinfo.Errors) {
 	var err error
-
 	dtoResponse := make(map[string]bool)
+	dtoResponse["success"] = false
+
+	if request["id"] != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("can not change customer ID").Error())
+	}
 
 	if request["refer_code"] != nil {
-		dtoResponse["success"] = false
-		httpCode = http.StatusBadRequest
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("can not change refer code").Error())
-		return dtoResponse, httpCode, errInfo
+	}
+
+	if request["email"] != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("can not change email").Error())
+	}
+
+	if request["image_path"] != nil || request["filename"] != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("can not change avatar. use set avatar API instead").Error())
+	}
+
+	if request["id_master_account_type"] != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("can not change account type. use subscription API for switch to PRO account").Error())
+	}
+
+	if len(errInfo) > 0 {
+		return dtoResponse, http.StatusBadRequest, errInfo
 	}
 
 	err = s.repo.UpdateProfile(customerID, request)
 	if err != nil {
-		dtoResponse["success"] = false
-		httpCode = http.StatusInternalServerError
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return dtoResponse, httpCode, errInfo
+		return dtoResponse, http.StatusInternalServerError, errInfo
 	}
 
 	dtoResponse["success"] = true

@@ -49,6 +49,7 @@ type (
 		DOB         string    `gorm:"column:date_of_birth" json:"date_of_birth"`
 		ReferType   string    `gorm:"column:refer_code" json:"referral_code"`
 		AccountType string    `gorm:"column:account_type" json:"account_type"`
+		IDGender    uuid.UUID `gorm:"column:id_gender" json:"id_gender"`
 		Gender      string    `gorm:"column:gender" json:"gender"`
 		UserRoles   string    `gorm:"column:user_roles" json:"user_roles"`
 		ImagePath   string    `gorm:"column:image_path" json:"image_path"`

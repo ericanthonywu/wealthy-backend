@@ -64,13 +64,18 @@ type (
 	}
 
 	AccountCustomerInfo struct {
-		Email     string    `json:"email"`
-		Username  string    `json:"username"`
-		Name      string    `json:"name"`
-		DOB       string    `json:"date_of_birth"`
-		ReferType string    `json:"refer_type"`
-		ID        uuid.UUID `json:"id"`
-		Gender    string    `json:"gender"`
+		Email     string        `json:"email"`
+		Username  string        `json:"username"`
+		Name      string        `json:"name"`
+		DOB       string        `json:"date_of_birth"`
+		ReferType string        `json:"refer_type"`
+		ID        uuid.UUID     `json:"id"`
+		Gender    AccountGender `json:"gender"`
+	}
+
+	AccountGender struct {
+		ID    uuid.UUID `json:"id"`
+		Value string    `json:"value"`
 	}
 
 	AccountDetail struct {
