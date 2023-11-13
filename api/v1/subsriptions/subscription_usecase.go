@@ -13,6 +13,7 @@ type (
 
 	ISubscriptionUseCase interface {
 		Plan(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		FAQ(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -22,6 +23,17 @@ func NewSubscriptionUseCase(repo ISubscriptionRepository) *SubscriptionUseCase {
 
 func (s *SubscriptionUseCase) Plan(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	data := s.repo.Plan()
+
+	if len(data) == 0 {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no data")
+		return data, http.StatusNotFound, errInfo
+	}
+
+	return data, http.StatusOK, errInfo
+}
+
+func (s *SubscriptionUseCase) FAQ(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	data := s.repo.FAQ()
 
 	if len(data) == 0 {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no data")

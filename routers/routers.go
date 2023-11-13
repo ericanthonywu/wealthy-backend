@@ -139,6 +139,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		subscriptionGroup := v1group.Group("/subscriptions", tokenSignature())
 		{
 			subscriptionGroup.GET("/plan", subscriptions.Plan)
+			subscriptionGroup.GET("/faq", subscriptions.FAQ)
 		}
 
 		internalGroup := v1group.Group("/internals")

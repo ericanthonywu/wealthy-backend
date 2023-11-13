@@ -13,6 +13,7 @@ type (
 
 	ISubscriptionRepository interface {
 		Plan() (data []entities.SubsPlan)
+		FAQ() (data []entities.SubsFAQ)
 	}
 )
 
@@ -28,5 +29,14 @@ WHERE tmp.active=true`).Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return []entities.SubsPlan{}
 	}
+	return data
+}
+
+func (r *SubscriptionRepository) FAQ() (data []entities.SubsFAQ) {
+	if err := r.db.Raw(`SELECT tf.id as id, tf.questions, tf.answer FROM tbl_faq tf WHERE tf.active=true`).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return []entities.SubsFAQ{}
+	}
+
 	return data
 }
