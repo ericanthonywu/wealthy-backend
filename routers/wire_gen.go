@@ -13,6 +13,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/internals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/subsriptions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets"
 	"gorm.io/gorm"
@@ -74,4 +75,11 @@ func Internals(db *gorm.DB) *internals.InternalController {
 	internalUseCase := internals.NewInternalUseCase(internalRepository)
 	internalController := internals.NewInternalController(internalUseCase)
 	return internalController
+}
+
+func Subscriptions(db *gorm.DB) *subsriptions.SubscriptionController {
+	subscriptionRepository := subsriptions.NewSubscriptionRepository(db)
+	subscriptionUseCase := subsriptions.NewSubscriptionUseCase(subscriptionRepository)
+	subscriptionController := subsriptions.NewSubscriptionController(subscriptionUseCase)
+	return subscriptionController
 }

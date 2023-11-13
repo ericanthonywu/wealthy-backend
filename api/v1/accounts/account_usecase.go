@@ -188,6 +188,8 @@ func (s *AccountUseCase) GetProfile(ctx *gin.Context) (response interface{}, htt
 	dtoResponse.AccountAvatar.URL = os.Getenv("APP_HOST") + "/v1/" + dataProfile.ImagePath
 	dtoResponse.AccountAvatar.FileName = dataProfile.FileName
 
+	dtoResponse.AccountCustomer.DOB = dataProfile.DOB
+
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
 

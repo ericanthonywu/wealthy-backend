@@ -11,6 +11,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/internals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/subsriptions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets"
 	"gorm.io/gorm"
@@ -110,4 +111,16 @@ func Internals(db *gorm.DB) *internals.InternalController {
 		wire.Bind(new(internals.IInternalRepository), new(*internals.InternalRepository)),
 	)))
 	return &internals.InternalController{}
+}
+
+func Subscriptions(db *gorm.DB) *subsriptions.SubscriptionController {
+	panic(wire.Build(wire.NewSet(
+		subsriptions.NewSubscriptionController,
+		subsriptions.NewSubscriptionUseCase,
+		subsriptions.NewSubscriptionRepository,
+		wire.Bind(new(subsriptions.ISubscriptionController), new(*subsriptions.SubscriptionController)),
+		wire.Bind(new(subsriptions.ISubscriptionUseCase), new(*subsriptions.SubscriptionUseCase)),
+		wire.Bind(new(subsriptions.ISubscriptionRepository), new(*subsriptions.SubscriptionRepository)),
+	)))
+	return &subsriptions.SubscriptionController{}
 }
