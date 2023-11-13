@@ -8,6 +8,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/images"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/internals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
@@ -97,4 +98,16 @@ func Images(db *gorm.DB) *images.ShowImageController {
 		wire.Bind(new(images.IShowImageRepository), new(*images.ShowImageRepository)),
 	)))
 	return &images.ShowImageController{}
+}
+
+func Internals(db *gorm.DB) *internals.InternalController {
+	panic(wire.Build(wire.NewSet(
+		internals.NewInternalController,
+		internals.NewInternalUseCase,
+		internals.NewInternalRepository,
+		wire.Bind(new(internals.IInternalController), new(*internals.InternalController)),
+		wire.Bind(new(internals.IInternalUseCase), new(*internals.InternalUseCase)),
+		wire.Bind(new(internals.IInternalRepository), new(*internals.InternalRepository)),
+	)))
+	return &internals.InternalController{}
 }

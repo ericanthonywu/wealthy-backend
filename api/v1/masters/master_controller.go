@@ -23,7 +23,7 @@ type (
 		Invest(ctx *gin.Context)
 		Broker(ctx *gin.Context)
 		TransactionPriority(ctx *gin.Context)
-		Gender(ctx gin.Context)
+		Gender(ctx *gin.Context)
 		SubExpenseCategories(ctx *gin.Context)
 	}
 )

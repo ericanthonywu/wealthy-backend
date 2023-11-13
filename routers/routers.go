@@ -13,6 +13,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 	budget := Budgets(db)
 	statistic := Statistics(db)
 	images := Images(db)
+	internals := Internals(db)
 
 	v1group := router.Group("/v1")
 	{
@@ -129,6 +130,14 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 		}
 
+		internalGroup := v1group.Group("/internals")
+		{
+			internalTransactionGroup := internalGroup.Group("/transactions")
+			{
+				internalTransactionGroup.GET("/notes", internals.TransactionNotes)
+			}
+		}
+
 		imageGroup := v1group.Group("/images")
 		{
 			avatarGroup := imageGroup.Group("/avatar")
@@ -141,6 +150,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				travelGroup.GET("/:filename", images.Travel)
 			}
 		}
+
 	}
 
 }
