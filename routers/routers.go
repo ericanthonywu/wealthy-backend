@@ -91,6 +91,11 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		{
 			statisticGroup.GET("/trends", statistic.Trend)
 
+			analyticsGroup := statisticGroup.Group("/analytics")
+			{
+				analyticsGroup.GET("/trend", statistic.AnalyticsTrend)
+			}
+
 			transactionStatisticGroup := statisticGroup.Group("/transactions")
 			{
 				transactionStatisticGroup.GET("/weekly", statistic.Weekly)
@@ -150,7 +155,6 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				travelGroup.GET("/:filename", images.Travel)
 			}
 		}
-
 	}
 
 }

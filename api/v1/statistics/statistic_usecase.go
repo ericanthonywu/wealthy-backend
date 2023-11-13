@@ -32,6 +32,7 @@ type (
 		ExpenseDetail(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		SubExpenseDetail(ctx *gin.Context, month, year string, IDCategory uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		isDataPriorityNotEmpty(data entities.StatisticPriority) bool
+		AnalyticsTrend(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -354,7 +355,7 @@ func (s *StatisticUseCase) Priority(ctx *gin.Context, month, year string) (respo
 
 	if personalAccount.ID == uuid.Nil {
 		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
 		return response, httpCode, errInfo
 	}
 
@@ -412,7 +413,7 @@ func (s *StatisticUseCase) Trend(ctx *gin.Context, month, year string) (response
 
 	if personalAccount.ID == uuid.Nil {
 		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
 		return response, httpCode, errInfo
 	}
 
@@ -469,7 +470,7 @@ func (s *StatisticUseCase) ExpenseDetail(ctx *gin.Context, month, year string) (
 
 	if personalAccount.ID == uuid.Nil {
 		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
 		return response, httpCode, errInfo
 	}
 
@@ -606,4 +607,36 @@ func (s *StatisticUseCase) subExpenseWeekly(IDPersonal uuid.UUID, IDCategory uui
 
 func (s *StatisticUseCase) isDataPriorityNotEmpty(data entities.StatisticPriority) bool {
 	return data != entities.StatisticPriority{}
+}
+
+func (s *StatisticUseCase) AnalyticsTrend(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	period := ctx.Query("period")
+	typeName := ctx.Query("type")
+
+	if period == "" || typeName == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month, year, type ID is required in url param")
+		return response, http.StatusBadRequest, errInfo
+	}
+
+	typeName = strings.ToUpper(typeName)
+
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return response, http.StatusBadRequest, errInfo
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	dataRepo := s.repo.AnalyticsTrend(personalAccount.ID, typeName, period)
+
+	if len(dataRepo) == 0 {
+		dataRepo = []entities.StatisticAnalyticsTrends{}
+	}
+
+	return dataRepo, http.StatusOK, errInfo
 }

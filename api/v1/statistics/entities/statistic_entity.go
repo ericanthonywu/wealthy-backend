@@ -78,4 +78,9 @@ type (
 		Category string    `gorm:"column:category"`
 		Amount   int       `gorm:"column:amount"`
 	}
+
+	StatisticAnalyticsTrends struct {
+		Total  float64 `gorm:"column:total" json:"total"`
+		Period string  `gorm:"column:period" json:"period"`
+	}
 )

@@ -19,6 +19,7 @@ type (
 		Summary(ctx *gin.Context)
 		TransactionPriority(ctx *gin.Context)
 		Trend(ctx *gin.Context)
+		AnalyticsTrend(ctx *gin.Context)
 		ExpenseDetail(ctx *gin.Context)
 		SubExpenseDetail(ctx *gin.Context)
 	}
@@ -121,6 +122,13 @@ func (c *StatisticController) Trend(ctx *gin.Context) {
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
+
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *StatisticController) AnalyticsTrend(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.AnalyticsTrend(ctx)
 
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return

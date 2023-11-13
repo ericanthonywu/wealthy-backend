@@ -20,6 +20,7 @@ type (
 		investmentWeekly(IDPersonal uuid.UUID, month, year string) (data entities.StatisticInvestmentWeekly, err error)
 		ExpenseDetail(IDPersonal uuid.UUID, month, year string) (data []entities.StatisticDetailExpense, err error)
 		SubExpenseDetail(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.StatisticExpenseWeekly, err error)
+		AnalyticsTrend(IDPersonal uuid.UUID, typeName, period string) (data []entities.StatisticAnalyticsTrends)
 	}
 )
 
@@ -170,6 +171,21 @@ WHERE tt.id_personal_account=?
  GROUP BY tmec.expense_types`, IDPersonal, month, year, IDCategory).Scan(&data).Error; err != nil {
 		return entities.StatisticExpenseWeekly{}, err
 	}
-
 	return data, nil
+}
+
+func (r *StatisticRepository) AnalyticsTrend(IDPersonal uuid.UUID, typeName, period string) (data []entities.StatisticAnalyticsTrends) {
+	periods := period + ` MONTHS`
+
+	sql := `SELECT coalesce(SUM(tt.amount),0) as total,
+       concat(TO_CHAR(tt.date_time_transaction::date, 'Mon'),'-', TO_CHAR(tt.date_time_transaction::date, 'YYYY')) as period
+FROM tbl_transactions tt
+INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
+WHERE tmtt.type='` + typeName + `' AND tt.date_time_transaction::date > CURRENT_DATE - INTERVAL '` + periods + `'
+  AND tt.id_personal_account=?
+GROUP BY tt.date_time_transaction`
+	if err := r.db.Raw(sql, IDPersonal).Scan(&data).Error; err != nil {
+		return []entities.StatisticAnalyticsTrends{}
+	}
+	return data
 }
