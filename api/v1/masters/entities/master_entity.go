@@ -42,6 +42,16 @@ type (
 		ID       uuid.UUID `json:"id" gorm:"column:id"`
 		Priority string    `json:"priority" gorm:"column:priority"`
 	}
+
+	Gender struct {
+		ID         uuid.UUID `json:"id" gorm:"column:id"`
+		GenderName string    `json:"gender_name" gorm:"column:gender_name"`
+	}
+
+	SubExpenseCategories struct {
+		ID         uuid.UUID `json:"id" gorm:"column:id"`
+		GenderName string    `json:"subcategories" gorm:"column:subcategories"`
+	}
 )
 
 func (TransactionType) TableName() string {
@@ -74,4 +84,12 @@ func (Broker) TableName() string {
 
 func (TransactionPriority) TableName() string {
 	return "tbl_master_transaction_priorities"
+}
+
+func (Gender) TableName() string {
+	return "tbl_master_genders"
+}
+
+func (SubExpenseCategories) TableName() string {
+	return "tbl_master_expense_subcategories"
 }

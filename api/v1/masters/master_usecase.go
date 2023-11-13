@@ -1,5 +1,9 @@
 package masters
 
+import (
+	"github.com/google/uuid"
+)
+
 type (
 	MasterUseCase struct {
 		repo IMasterRepository
@@ -14,6 +18,8 @@ type (
 		InvestType() (data interface{})
 		Broker() (data interface{})
 		TransactionPriority() (data interface{})
+		Gender() (data interface{})
+		SubExpenseCategories(expenseID uuid.UUID) (data interface{})
 	}
 )
 
@@ -51,4 +57,15 @@ func (s *MasterUseCase) Broker() (data interface{}) {
 
 func (s *MasterUseCase) TransactionPriority() (data interface{}) {
 	return s.repo.TransactionPriority()
+}
+
+func (s *MasterUseCase) Gender() (data interface{}) {
+	return s.repo.Gender()
+}
+
+func (s *MasterUseCase) SubExpenseCategories(expenseID uuid.UUID) (data interface{}) {
+	if s.repo.ExpenseIDExist(expenseID) {
+		return s.repo.SubExpenseCategory(expenseID)
+	}
+	return data
 }

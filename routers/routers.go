@@ -16,26 +16,32 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 	v1group := router.Group("/v1")
 	{
-		masterGroup := v1group.Group("/masters")
+		masterGroup := v1group.Group("/masters", tokenSignature())
 		{
 			typeGroup := masterGroup.Group("/types")
 			{
-				typeGroup.GET("/transaction", tokenSignature(), master.TransactionType)
-				typeGroup.GET("/reksadana", tokenSignature(), master.ReksadanaType)
-				typeGroup.GET("/wallet", tokenSignature(), master.WalletType)
-				typeGroup.GET("/invest", tokenSignature(), master.Invest)
-				typeGroup.GET("/broker", tokenSignature(), master.Broker)
+				typeGroup.GET("/transaction", master.TransactionType)
+				typeGroup.GET("/reksadana", master.ReksadanaType)
+				typeGroup.GET("/wallet", master.WalletType)
+				typeGroup.GET("/invest", master.Invest)
+				typeGroup.GET("/broker", master.Broker)
 			}
 
 			categoriesGroup := masterGroup.Group("/categories")
 			{
-				categoriesGroup.GET("/income", tokenSignature(), master.IncomeType)
-				categoriesGroup.GET("/expense", tokenSignature(), master.ExpenseType)
+				categoriesGroup.GET("/income", master.IncomeType)
+				categoriesGroup.GET("/expense", master.ExpenseType)
+				categoriesGroup.GET("/sub-expense/:expense-id", master.SubExpenseCategories)
 			}
 
 			transactionGroup := masterGroup.Group("/transactions")
 			{
-				transactionGroup.GET("/priority", tokenSignature(), master.TransactionPriority)
+				transactionGroup.GET("/priority", master.TransactionPriority)
+			}
+
+			genderGroup := masterGroup.Group("/genders")
+			{
+				genderGroup.GET("/", master.Gender)
 			}
 
 		}

@@ -1,7 +1,9 @@
 package masters
 
 import (
+	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters/entities"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -19,6 +21,9 @@ type (
 		InvestType() (data []entities.InvestType)
 		Broker() (data []entities.Broker)
 		TransactionPriority() (data []entities.TransactionPriority)
+		Gender() (data []entities.Gender)
+		SubExpenseCategory(expenseID uuid.UUID) (data []entities.SubExpenseCategories)
+		ExpenseIDExist(expenseID uuid.UUID) (exist bool)
 	}
 )
 
@@ -64,4 +69,29 @@ func (r *MasterRepository) Broker() (data []entities.Broker) {
 func (r *MasterRepository) TransactionPriority() (data []entities.TransactionPriority) {
 	r.db.Where("active=?", true).Find(&data)
 	return
+}
+
+func (r *MasterRepository) Gender() (data []entities.Gender) {
+	r.db.Find(&data).Scan(&data)
+	return data
+}
+
+func (r *MasterRepository) SubExpenseCategory(expenseID uuid.UUID) (data []entities.SubExpenseCategories) {
+	r.db.Where("id_master_expense_categories = ?", expenseID).Find(&data)
+	return data
+}
+
+func (r *MasterRepository) ExpenseIDExist(expenseID uuid.UUID) (exist bool) {
+	var model entities.ExpenseType
+
+	err := r.db.First(&model, "id = ?", expenseID).Error
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	if model.ID != uuid.Nil {
+		exist = true
+	}
+
+	return exist
 }
