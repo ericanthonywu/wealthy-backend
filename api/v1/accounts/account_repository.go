@@ -180,7 +180,7 @@ func (r *AccountRepository) ListRefCode() []string {
 func (r *AccountRepository) GetLevelReferenceCode(referralCode string) (level int, err error) {
 	var model entities.AccountRewards
 
-	if err = r.db.First(&model, referralCode).Error; err != nil {
+	if err = r.db.Where("ref_code_reference", referralCode).First(&model).Error; err != nil {
 		return model.Level, err
 	}
 

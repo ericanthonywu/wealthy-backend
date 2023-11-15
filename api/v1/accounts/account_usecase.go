@@ -78,10 +78,8 @@ func (s *AccountUseCase) SignUp(request *dtos.AccountSignUpRequest) (response dt
 
 		// Get level
 		level, err = s.repo.GetLevelReferenceCode(request.RefCodeReference)
-		if err != nil {
-			httpCode = http.StatusInternalServerError
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-			return response, httpCode, errInfo
+		if err.Error() == "record not found" {
+			level = 0
 		}
 
 		if err == nil {
@@ -89,8 +87,14 @@ func (s *AccountUseCase) SignUp(request *dtos.AccountSignUpRequest) (response dt
 		}
 	}
 
+	newID, err := uuid.NewUUID()
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
 	// WRITING FOR REFERENCE CODE
 	model := entities.AccountRewards{
+		ID:               newID,
 		RefCode:          request.RefCode,
 		RefCodeReference: request.RefCodeReference,
 		Level:            level,
