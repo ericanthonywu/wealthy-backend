@@ -76,14 +76,24 @@ func (s *AccountUseCase) SignUp(request *dtos.AccountSignUpRequest) (response dt
 			return response, httpCode, errInfo
 		}
 
-		// Get level
-		level, err = s.repo.GetLevelReferenceCode(request.RefCodeReference)
-		if err.Error() == "record not found" {
-			level = 0
+		if request.RefCodeReference != "" {
+			level, err = s.repo.GetLevelReferenceCode(request.RefCodeReference)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
+
+			if err == nil {
+				level = level + 1
+			}
+
+			if level == 0 {
+				level = level + 1
+			}
 		}
 
-		if err == nil {
-			level += level
+		if request.RefCodeReference == "" {
+			level = 0
+
 		}
 	}
 
