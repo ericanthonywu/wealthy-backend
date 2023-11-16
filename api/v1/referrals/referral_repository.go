@@ -1,4 +1,4 @@
-package referral
+package referrals
 
 import "gorm.io/gorm"
 

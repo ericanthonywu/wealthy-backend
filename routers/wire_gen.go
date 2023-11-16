@@ -12,6 +12,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/images"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/internals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/referrals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/subsriptions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
@@ -82,4 +83,11 @@ func Subscriptions(db *gorm.DB) *subsriptions.SubscriptionController {
 	subscriptionUseCase := subsriptions.NewSubscriptionUseCase(subscriptionRepository)
 	subscriptionController := subsriptions.NewSubscriptionController(subscriptionUseCase)
 	return subscriptionController
+}
+
+func Referrals(db *gorm.DB) *referrals.ReferralController {
+	referralRepository := referrals.NewReferralRepository(db)
+	referralUseCase := referrals.NewReferralUseCase(referralRepository)
+	referralController := referrals.NewReferralController(referralUseCase)
+	return referralController
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/images"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/internals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/referrals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/subsriptions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
@@ -123,4 +124,16 @@ func Subscriptions(db *gorm.DB) *subsriptions.SubscriptionController {
 		wire.Bind(new(subsriptions.ISubscriptionRepository), new(*subsriptions.SubscriptionRepository)),
 	)))
 	return &subsriptions.SubscriptionController{}
+}
+
+func Referrals(db *gorm.DB) *referrals.ReferralController {
+	panic(wire.Build(wire.NewSet(
+		referrals.NewReferralController,
+		referrals.NewReferralUseCase,
+		referrals.NewReferralRepository,
+		wire.Bind(new(referrals.IReferralController), new(*referrals.ReferralController)),
+		wire.Bind(new(referrals.IReferralUseCase), new(*referrals.ReferralUseCase)),
+		wire.Bind(new(referrals.IReferralRepository), new(*referrals.ReferralRepository)),
+	)))
+	return &referrals.ReferralController{}
 }

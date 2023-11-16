@@ -72,7 +72,7 @@ func (s *AccountUseCase) SignUp(request *dtos.AccountSignUpRequest) (response dt
 		listRefCodeExist := s.repo.ListRefCode()
 		if !utilities.Contains(listRefCodeExist, request.RefCodeReference) {
 			httpCode = http.StatusBadRequest
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("referral code reference not exist").Error())
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("referrals code reference not exist").Error())
 			return response, httpCode, errInfo
 		}
 
@@ -279,7 +279,7 @@ func (s *AccountUseCase) ValidateRefCode(request *dtos.AccountRefCodeValidationR
 	RefCodeList := s.repo.ListRefCode()
 
 	if utilities.Contains(RefCodeList, request.RefCode) {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("referral code already exist on system. please use another code to be registered").Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("referrals code already exist on system. please use another code to be registered").Error())
 		return dtos.AccountRefCodeValidationResponse{}, http.StatusOK, errInfo
 	}
 
