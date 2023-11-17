@@ -15,6 +15,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 	images := Images(db)
 	internals := Internals(db)
 	subscriptions := Subscriptions(db)
+	referrals := Referrals(db)
 
 	v1group := router.Group("/v1")
 	{
@@ -148,6 +149,12 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			{
 				internalTransactionGroup.GET("/notes", internals.TransactionNotes)
 			}
+		}
+
+		referralGroup := v1group.Group("/referrals", tokenSignature())
+		{
+			referralGroup.GET("/statistics", referrals.Statistic)
+			referralGroup.GET("/list", referrals.List)
 		}
 
 		imageGroup := v1group.Group("/images")
