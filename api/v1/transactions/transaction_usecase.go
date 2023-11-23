@@ -188,10 +188,10 @@ func (s *TransactionUseCase) IncomeTransactionHistory(ctx *gin.Context) (respons
 
 	if startDate == "" || endDate == "" {
 		responseIncomeTotalHistory = s.repo.IncomeTotalHistoryWithoutDate(personalAccount.ID)
-		responseIncomeDetailHistory = s.repo.InvestDetailWithoutData(personalAccount.ID)
+		responseIncomeDetailHistory = s.repo.IncomeDetailHistoryWithoutData(personalAccount.ID)
 	} else {
 		responseIncomeTotalHistory = s.repo.IncomeTotalHistoryWithData(personalAccount.ID, startDate, endDate)
-		responseIncomeDetailHistory = s.repo.InvestDetailWithData(personalAccount.ID, startDate, endDate)
+		responseIncomeDetailHistory = s.repo.IncomeDetailHistoryWithData(personalAccount.ID, startDate, endDate)
 	}
 
 	if responseIncomeTotalHistory.TotalIncome == 0 || responseIncomeDetailHistory == nil {

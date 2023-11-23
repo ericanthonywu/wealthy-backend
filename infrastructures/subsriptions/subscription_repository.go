@@ -1,7 +1,7 @@
 package subsriptions
 
 import (
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/subsriptions/entities"
+	"github.com/semicolon-indonesia/wealthy-backend/infrastructures/subsriptions/entities"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )

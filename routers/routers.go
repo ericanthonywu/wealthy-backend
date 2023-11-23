@@ -16,6 +16,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 	internals := Internals(db)
 	subscriptions := Subscriptions(db)
 	referrals := Referrals(db)
+	payments := Payments(db)
 
 	v1group := router.Group("/v1")
 	{
@@ -46,7 +47,6 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			{
 				genderGroup.GET("", master.Gender)
 			}
-
 		}
 
 		accountGroup := v1group.Group("/accounts")
@@ -131,9 +131,9 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 		walletGroup := v1group.Group("/wallets", tokenSignature())
 		{
-			walletGroup.POST("", wallet.Add)
+			walletGroup.POST("/", wallet.Add)
 			walletGroup.GET("", wallet.List)
-			walletGroup.PUT("/amount/:id-wallet", wallet.UpdateAmount)
+			walletGroup.PATCH("/amount/:id-wallet", wallet.UpdateAmount)
 
 		}
 
@@ -155,6 +155,11 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		{
 			referralGroup.GET("/statistics", referrals.Statistic)
 			referralGroup.GET("/list", referrals.List)
+		}
+
+		paymentGroup := v1group.Group("/payments", tokenSignature())
+		{
+			paymentGroup.POST("/subscriptions", payments.Subscriptions)
 		}
 
 		imageGroup := v1group.Group("/images")

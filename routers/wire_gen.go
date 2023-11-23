@@ -12,11 +12,12 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/images"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/internals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/payments"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/referrals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/subsriptions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets"
+	subsriptions2 "github.com/semicolon-indonesia/wealthy-backend/infrastructures/subsriptions"
 	"gorm.io/gorm"
 )
 
@@ -78,10 +79,10 @@ func Internals(db *gorm.DB) *internals.InternalController {
 	return internalController
 }
 
-func Subscriptions(db *gorm.DB) *subsriptions.SubscriptionController {
-	subscriptionRepository := subsriptions.NewSubscriptionRepository(db)
-	subscriptionUseCase := subsriptions.NewSubscriptionUseCase(subscriptionRepository)
-	subscriptionController := subsriptions.NewSubscriptionController(subscriptionUseCase)
+func Subscriptions(db *gorm.DB) *subsriptions2.SubscriptionController {
+	subscriptionRepository := subsriptions2.NewSubscriptionRepository(db)
+	subscriptionUseCase := subsriptions2.NewSubscriptionUseCase(subscriptionRepository)
+	subscriptionController := subsriptions2.NewSubscriptionController(subscriptionUseCase)
 	return subscriptionController
 }
 
@@ -90,4 +91,11 @@ func Referrals(db *gorm.DB) *referrals.ReferralController {
 	referralUseCase := referrals.NewReferralUseCase(referralRepository)
 	referralController := referrals.NewReferralController(referralUseCase)
 	return referralController
+}
+
+func Payments(db *gorm.DB) *payments.PaymentController {
+	paymentRepository := payments.NewPaymentRepository(db)
+	paymentUseCase := payments.NewPaymentUseCase(paymentRepository)
+	paymentController := payments.NewPaymentController(paymentUseCase)
+	return paymentController
 }

@@ -10,11 +10,12 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/images"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/internals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/payments"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/referrals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/subsriptions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets"
+	subsriptions2 "github.com/semicolon-indonesia/wealthy-backend/infrastructures/subsriptions"
 	"gorm.io/gorm"
 )
 
@@ -114,16 +115,16 @@ func Internals(db *gorm.DB) *internals.InternalController {
 	return &internals.InternalController{}
 }
 
-func Subscriptions(db *gorm.DB) *subsriptions.SubscriptionController {
+func Subscriptions(db *gorm.DB) *subsriptions2.SubscriptionController {
 	panic(wire.Build(wire.NewSet(
-		subsriptions.NewSubscriptionController,
-		subsriptions.NewSubscriptionUseCase,
-		subsriptions.NewSubscriptionRepository,
-		wire.Bind(new(subsriptions.ISubscriptionController), new(*subsriptions.SubscriptionController)),
-		wire.Bind(new(subsriptions.ISubscriptionUseCase), new(*subsriptions.SubscriptionUseCase)),
-		wire.Bind(new(subsriptions.ISubscriptionRepository), new(*subsriptions.SubscriptionRepository)),
+		subsriptions2.NewSubscriptionController,
+		subsriptions2.NewSubscriptionUseCase,
+		subsriptions2.NewSubscriptionRepository,
+		wire.Bind(new(subsriptions2.ISubscriptionController), new(*subsriptions2.SubscriptionController)),
+		wire.Bind(new(subsriptions2.ISubscriptionUseCase), new(*subsriptions2.SubscriptionUseCase)),
+		wire.Bind(new(subsriptions2.ISubscriptionRepository), new(*subsriptions2.SubscriptionRepository)),
 	)))
-	return &subsriptions.SubscriptionController{}
+	return &subsriptions2.SubscriptionController{}
 }
 
 func Referrals(db *gorm.DB) *referrals.ReferralController {
@@ -136,4 +137,16 @@ func Referrals(db *gorm.DB) *referrals.ReferralController {
 		wire.Bind(new(referrals.IReferralRepository), new(*referrals.ReferralRepository)),
 	)))
 	return &referrals.ReferralController{}
+}
+
+func Payments(db *gorm.DB) *payments.PaymentController {
+	panic(wire.Build(wire.NewSet(
+		payments.NewPaymentController,
+		payments.NewPaymentUseCase,
+		payments.NewPaymentRepository,
+		wire.Bind(new(payments.IPaymentController), new(*payments.PaymentController)),
+		wire.Bind(new(payments.IPaymentUseCase), new(*payments.PaymentUseCase)),
+		wire.Bind(new(payments.IPaymentRepository), new(*payments.PaymentRepository)),
+	)))
+	return &payments.PaymentController{}
 }
