@@ -143,7 +143,7 @@ func (s *TransactionUseCase) ExpenseTransactionHistory(ctx *gin.Context) (respon
 
 	if personalAccount.ID == uuid.Nil {
 		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
 		return response, httpCode, errInfo
 	}
 
@@ -157,7 +157,11 @@ func (s *TransactionUseCase) ExpenseTransactionHistory(ctx *gin.Context) (respon
 
 	if responseExpenseTotalHistory.TotalExpense == 0 || responseExpenseDetailHistory == nil {
 		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		response := struct {
+			Message string `json:"message"`
+		}{
+			Message: "there is not expense transaction between periods : " + startDate + " until " + endDate,
+		}
 		return response, httpCode, errInfo
 	}
 
@@ -182,7 +186,7 @@ func (s *TransactionUseCase) IncomeTransactionHistory(ctx *gin.Context) (respons
 
 	if personalAccount.ID == uuid.Nil {
 		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
 		return response, httpCode, errInfo
 	}
 
@@ -196,7 +200,11 @@ func (s *TransactionUseCase) IncomeTransactionHistory(ctx *gin.Context) (respons
 
 	if responseIncomeTotalHistory.TotalIncome == 0 || responseIncomeDetailHistory == nil {
 		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		response := struct {
+			Message string `json:"message"`
+		}{
+			Message: "there is not income transaction between periods : " + startDate + " until " + endDate,
+		}
 		return response, httpCode, errInfo
 	}
 
@@ -231,6 +239,15 @@ func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context) (respons
 		responseTravelDetailHistory = s.repo.TravelDetailWithData(personalAccount.ID, startDate, endDate)
 	}
 
+	if len(responseTravelDetailHistory) == 0 {
+		response := struct {
+			Message string `json:"message"`
+		}{
+			Message: "there is not travel transaction between periods : " + startDate + " until " + endDate,
+		}
+		return response, http.StatusNotFound, []errorsinfo.Errors{}
+	}
+
 	if len(responseTravelDetailHistory) > 0 {
 		for _, v := range responseTravelDetailHistory {
 			details = append(details, dtos.TransactionHistoryForTravelDetail{
@@ -254,7 +271,7 @@ func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context) (respons
 func (s *TransactionUseCase) TransferTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
 		dtoResponse                   dtos.TransactionHistoryForTransfer
-		responseTransferDetailHistory interface{}
+		responseTransferDetailHistory []entities.TransactionDetailTransfer
 	)
 
 	startDate := ctx.Query("startDate")
@@ -265,7 +282,7 @@ func (s *TransactionUseCase) TransferTransactionHistory(ctx *gin.Context) (respo
 
 	if personalAccount.ID == uuid.Nil {
 		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
 		return response, httpCode, errInfo
 	}
 
@@ -275,6 +292,15 @@ func (s *TransactionUseCase) TransferTransactionHistory(ctx *gin.Context) (respo
 		responseTransferDetailHistory = s.repo.TransferDetailWithData(personalAccount.ID, startDate, endDate)
 	}
 
+	if len(responseTransferDetailHistory) == 0 {
+		response := struct {
+			Message string `json:"message"`
+		}{
+			Message: "there is not transfer transaction between periods : " + startDate + " until " + endDate,
+		}
+		return response, http.StatusNotFound, []errorsinfo.Errors{}
+	}
+
 	dtoResponse.Detail = responseTransferDetailHistory
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
@@ -282,7 +308,7 @@ func (s *TransactionUseCase) TransferTransactionHistory(ctx *gin.Context) (respo
 func (s *TransactionUseCase) InvestTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
 		dtoResponse                 dtos.TransactionHistoryForInvest
-		responseInvestDetailHistory interface{}
+		responseInvestDetailHistory []entities.TransactionDetailInvest
 	)
 
 	startDate := ctx.Query("startDate")
@@ -301,6 +327,15 @@ func (s *TransactionUseCase) InvestTransactionHistory(ctx *gin.Context) (respons
 		responseInvestDetailHistory = s.repo.InvestDetailWithoutData(personalAccount.ID)
 	} else {
 		responseInvestDetailHistory = s.repo.InvestDetailWithData(personalAccount.ID, startDate, endDate)
+	}
+
+	if len(responseInvestDetailHistory) == 0 {
+		response := struct {
+			Message string `json:"message"`
+		}{
+			Message: "there is not invest transaction between periods : " + startDate + " until " + endDate,
+		}
+		return response, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
 	dtoResponse.Detail = responseInvestDetailHistory
@@ -322,7 +357,7 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context) (response interfac
 
 	if personalAccount.ID == uuid.Nil {
 		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
 		return response, httpCode, errInfo
 	}
 
@@ -362,7 +397,7 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 
 	if personalAccount.ID == uuid.Nil {
 		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
 		return response, httpCode, errInfo
 	}
 
@@ -397,7 +432,7 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 
 	if personalAccount.ID == uuid.Nil {
 		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
 		return response, httpCode, errInfo
 	}
 

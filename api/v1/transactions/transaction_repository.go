@@ -249,7 +249,7 @@ func (r *TransactionRepository) TransferDetailWithData(IDPersonal uuid.UUID, sta
       WHERE tmtt.type = 'TRANSFER'
         AND tt.id_personal_account = ?
         AND tt.date_time_transaction BETWEEN ? AND ?
-      GROUP BY transaction_date, transaction_note, td."to", td."from"
+      GROUP BY transaction_date, transaction_note, td.transfer_to, td.transfer_from
       ORDER BY transaction_date DESC`, IDPersonal, startDate, endDate).Scan(&data).Error; err != nil {
 		return []entities.TransactionDetailTransfer{}
 	}
@@ -273,7 +273,7 @@ WHERE tmtt.type = 'TRANSFER'
   AND tt.id_personal_account = ?
   AND to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
         MONTH FROM current_timestamp)::text
-GROUP BY transaction_date, transaction_note, td."to", td."from"
+GROUP BY transaction_date, transaction_note, td.transfer_to, td.transfer_from
 ORDER BY transaction_date DESC`, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionDetailTransfer{}
 	}
@@ -396,9 +396,9 @@ GROUP BY year, month`, month, year, IDPersonal).Scan(&data).Error; err != nil {
 }
 
 func (r *TransactionRepository) IncomeSpendingMonthlyDetail(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionIncomeSpendingDetailMonthly) {
-	if err := r.db.Raw(`SELECT concat(to_char(tt.date_time_transaction::DATE, 'DD'), ' ',
-              to_char(to_date(tt.date_time_transaction, 'YYYY-MM-DD'), 'Mon'), ' ',
-              to_char(tt.date_time_transaction::DATE, 'YYYY'))::text as date,
+	if err := r.db.Raw(`SELECT concat(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-',
+              to_char(tt.date_time_transaction::DATE, 'MM'), '-',
+              to_char(tt.date_time_transaction::DATE, 'DD'))::text as date,
        CASE
            WHEN tmec.expense_types IS NOT NULL THEN tmec.expense_types
            WHEN tmic.income_types IS NOT NULL THEN tmic.income_types

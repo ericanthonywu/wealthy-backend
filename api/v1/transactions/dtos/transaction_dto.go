@@ -62,8 +62,8 @@ type (
 	}
 
 	TransactionHistoryForTransfer struct {
-		TotalMoneyIn  int         `json:"total_money_in"`
-		TotalMoneyOut int         `json:"total_money_out"`
+		TotalMoneyIn  int         `json:"total_money_in,omitempty"`
+		TotalMoneyOut int         `json:"total_money_out,omitempty"`
 		Detail        interface{} `json:"detail"`
 	}
 
