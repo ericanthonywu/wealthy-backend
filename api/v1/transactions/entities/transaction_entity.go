@@ -32,6 +32,7 @@ type (
 		StockCode         string    `gorm:"column:stock_code"`
 		Lot               int64     `gorm:"column:lot"`
 		SellBuy           int       `gorm:"column:sellbuy"`
+		IDTravel          uuid.UUID `gorm:"column:id_travel"`
 	}
 
 	TransactionExpenseTotalHistory struct {

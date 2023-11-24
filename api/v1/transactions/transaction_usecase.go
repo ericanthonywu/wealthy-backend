@@ -81,6 +81,7 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		StockCode:         request.StockCode,
 		Lot:               request.Lot,
 		SellBuy:           request.SellBuy,
+		IDTravel:          request.IDTravel,
 	}
 
 	err = s.repo.Add(&modelTransaction, &modelTransactionDetail)

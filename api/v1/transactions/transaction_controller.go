@@ -37,6 +37,7 @@ func (c *TransactionController) Add(ctx *gin.Context) {
 		data       interface{}
 	)
 
+	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
 		response.SendBack(ctx, dtos.TransactionRequest{}, errInfo, http.StatusBadRequest)
