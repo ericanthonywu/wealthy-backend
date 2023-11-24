@@ -2,6 +2,9 @@ package masters
 
 import (
 	"github.com/google/uuid"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters/entities"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
+	"net/http"
 )
 
 type (
@@ -20,6 +23,7 @@ type (
 		TransactionPriority() (data interface{})
 		Gender() (data interface{})
 		SubExpenseCategories(expenseID uuid.UUID) (data interface{})
+		Exchange() (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -68,4 +72,27 @@ func (s *MasterUseCase) SubExpenseCategories(expenseID uuid.UUID) (data interfac
 		return s.repo.SubExpenseCategory(expenseID)
 	}
 	return data
+}
+
+func (s *MasterUseCase) Exchange() (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	dataExchange, err := s.repo.Exchange()
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return []entities.Exchange{}, http.StatusInternalServerError, errInfo
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	if len(dataExchange) == 0 {
+		message := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no data currency exchange",
+		}
+		return message, http.StatusNotFound, errInfo
+	}
+
+	return dataExchange, http.StatusOK, errInfo
 }

@@ -24,6 +24,7 @@ type (
 		Gender() (data []entities.Gender)
 		SubExpenseCategory(expenseID uuid.UUID) (data []entities.SubExpenseCategories)
 		ExpenseIDExist(expenseID uuid.UUID) (exist bool)
+		Exchange() (data []entities.Exchange, err error)
 	}
 )
 
@@ -94,4 +95,13 @@ func (r *MasterRepository) ExpenseIDExist(expenseID uuid.UUID) (exist bool) {
 	}
 
 	return exist
+}
+
+func (r *MasterRepository) Exchange() (data []entities.Exchange, err error) {
+	if err := r.db.Raw(`SELECT tmec.id, tmec.currency_name as currency, currency_value as value FROM tbl_master_exchange_currency tmec
+WHERE tmec.active = true`).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return []entities.Exchange{}, err
+	}
+	return data, nil
 }

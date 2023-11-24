@@ -52,6 +52,12 @@ type (
 		ID         uuid.UUID `json:"id" gorm:"column:id"`
 		GenderName string    `json:"subcategories" gorm:"column:subcategories"`
 	}
+
+	Exchange struct {
+		ID       uuid.UUID `gorm:"column:id" json:"id"`
+		Currency string    `gorm:"column:currency" json:"currency"`
+		Value    int64     `gorm:"column:value" json:"value"`
+	}
 )
 
 func (TransactionType) TableName() string {

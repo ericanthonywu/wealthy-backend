@@ -47,6 +47,11 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			{
 				genderGroup.GET("", master.Gender)
 			}
+
+			currencyGroup := masterGroup.Group("/currency")
+			{
+				currencyGroup.GET("/exchange", master.Exchange)
+			}
 		}
 
 		accountGroup := v1group.Group("/accounts")

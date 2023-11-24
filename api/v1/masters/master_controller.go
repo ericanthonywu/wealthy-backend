@@ -25,6 +25,7 @@ type (
 		TransactionPriority(ctx *gin.Context)
 		Gender(ctx *gin.Context)
 		SubExpenseCategories(ctx *gin.Context)
+		Exchange(ctx *gin.Context)
 	}
 )
 
@@ -117,5 +118,11 @@ func (c *MasterController) SubExpenseCategories(ctx *gin.Context) {
 	}
 
 	response.SendBack(ctx, data, []errorsinfo.Errors{}, http.StatusOK)
+	return
+}
+
+func (c *MasterController) Exchange(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.Exchange()
+	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
