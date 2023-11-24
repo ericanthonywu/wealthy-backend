@@ -3,6 +3,7 @@ package budgets
 import (
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets/entities"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -24,6 +25,7 @@ type (
 		Trends(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.TrendsWeekly, err error)
 		BudgetEachCategory(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.BudgetEachCategory, err error)
 		CategoryInfo(IDCategory uuid.UUID) (data entities.CategoryInfo, err error)
+		Travels(IDPersonal uuid.UUID) (data []entities.BudgetTravel, err error)
 	}
 )
 
@@ -200,6 +202,16 @@ func (r *BudgetRepository) BudgetEachCategory(IDPersonal uuid.UUID, IDCategory u
 func (r *BudgetRepository) CategoryInfo(IDCategory uuid.UUID) (data entities.CategoryInfo, err error) {
 	if err := r.db.Raw(`SELECT tmec.id as category_id, tmec.expense_types as category_name FROM tbl_master_expense_categories tmec WHERE tmec.id=?`, IDCategory).Scan(&data).Error; err != nil {
 		return entities.CategoryInfo{}, err
+	}
+	return data, nil
+}
+
+func (r *BudgetRepository) Travels(IDPersonal uuid.UUID) (data []entities.BudgetTravel, err error) {
+	if err := r.db.Raw(`SELECT tb.id, tb.departure,tb.arrival,tb.image_path,tb.filename,tb.amount as budget,tb.travel_start_date,tb.travel_end_date
+FROM tbl_budgets tb WHERE tb.id_personal_accounts = ? AND id_master_transaction_types = 'd969fb78-1370-4238-adf0-f143d8a662ef'`, IDPersonal).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return []entities.BudgetTravel{}, err
 	}
 	return data, nil
 }

@@ -85,6 +85,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			{
 				detailsGroup.GET("/category", budget.Trends)
 				detailsGroup.GET("/category-latest", budget.LatestMonths)
+				detailsGroup.GET("/travel", budget.Travels)
 			}
 			budgetGroup.GET("/overview", budget.Overview)
 		}

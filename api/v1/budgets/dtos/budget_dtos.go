@@ -22,14 +22,15 @@ type (
 	}
 
 	BudgetSetRequest struct {
-		IDCategory      uuid.UUID `json:"category_id"`
-		IDSubCategory   uuid.UUID `json:"sub_category_id"`
-		Amount          int       `json:"budget_amount"`
-		Departure       string    `json:"departure,omitempty"`
-		Arrival         string    `json:"arrival,omitempty"`
-		TravelStartDate string    `json:"travel_start_date,omitempty"`
-		TravelEndDate   string    `json:"travel_end_date,omitempty"`
-		ImageBase64     string    `json:"image_base64,omitempty"`
+		IDCategory               uuid.UUID `json:"category_id"`
+		IDSubCategory            uuid.UUID `json:"sub_category_id"`
+		IDMasterTransactionTypes uuid.UUID `json:"id_master_transaction_types,omitempty"`
+		Amount                   int       `json:"budget_amount"`
+		Departure                string    `json:"departure,omitempty"`
+		Arrival                  string    `json:"arrival,omitempty"`
+		TravelStartDate          string    `json:"travel_start_date,omitempty"`
+		TravelEndDate            string    `json:"travel_end_date,omitempty"`
+		ImageBase64              string    `json:"image_base64,omitempty"`
 	}
 
 	BudgetSetResponse struct {
@@ -92,5 +93,25 @@ type (
 		BudgetInfo          Limit       `json:"budget_info"`
 		TransactionSpending Transaction `json:"transaction_spending"`
 		Percentage          string      `json:"percentage"`
+	}
+
+	Travel struct {
+		Details []TravelDetails `json:"details"`
+	}
+
+	TravelDetails struct {
+		ID              uuid.UUID `json:"travel_id"`
+		Departure       string    `json:"travel_departure"`
+		Arrival         string    `json:"travel_arrival"`
+		Budget          Amount    `json:"travel_budget"`
+		TravelStartDate string    `json:"travel_start_date"`
+		TravelEndDate   string    `json:"travel_end_date"`
+		ImagePath       string    `json:"image_path"`
+		Filename        string    `json:"filename"`
+	}
+
+	Amount struct {
+		CurrencyCode string `json:"currency_code"`
+		Value        int64  `json:"value"`
 	}
 )

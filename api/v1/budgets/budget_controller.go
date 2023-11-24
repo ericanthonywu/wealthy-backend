@@ -23,6 +23,7 @@ type (
 		LatestMonths(ctx *gin.Context)
 		Limit(ctx *gin.Context)
 		Trends(ctx *gin.Context)
+		Travels(ctx *gin.Context)
 	}
 )
 
@@ -125,6 +126,12 @@ func (c *BudgetController) Limit(ctx *gin.Context) {
 			return
 		}
 
+		if utilities.IsEmptyString(dtoRequest.IDMasterTransactionTypes.String()) {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id_master_transaction_types attribute needed in body payload")
+			response.SendBack(ctx, dtos.BudgetSetRequest{}, errInfo, http.StatusBadRequest)
+			return
+		}
+
 		if !utilities.ValidateBetweenTwoDateRange(dtoRequest.TravelStartDate, dtoRequest.TravelEndDate) {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "travel_end_date attribute must greater than travel_start_date attribute in body payload")
 			response.SendBack(ctx, dtos.BudgetSetRequest{}, errInfo, http.StatusBadRequest)
@@ -163,6 +170,12 @@ func (c *BudgetController) Trends(ctx *gin.Context) {
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
+	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
+	return
+}
+
+func (c *BudgetController) Travels(ctx *gin.Context) {
+	dtoResponse, httpCode, errInfo := c.useCase.Travels(ctx)
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
 	return
 }

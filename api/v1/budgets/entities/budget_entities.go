@@ -63,17 +63,18 @@ type (
 	}
 
 	BudgetSetEntities struct {
-		ID                uuid.UUID `gorm:"column:id"`
-		IDPersonalAccount uuid.UUID `gorm:"column:id_personal_accounts"`
-		IDCategory        uuid.UUID `gorm:"column:id_master_categories"`
-		IDSubCategory     uuid.UUID `gorm:"column:id_master_subcategories"`
-		Amount            int       `gorm:"column:amount"`
-		Departure         string    `gorm:"column:departure"`
-		Arrival           string    `gorm:"column:arrival"`
-		ImagePath         string    `gorm:"column:image_path"`
-		Filename          string    `gorm:"column:filename"`
-		TravelStartDate   string    `gorm:"column:travel_start_date"`
-		TravelEndDate     string    `gorm:"column:travel_end_date"`
+		ID                      uuid.UUID `gorm:"column:id"`
+		IDPersonalAccount       uuid.UUID `gorm:"column:id_personal_accounts"`
+		IDCategory              uuid.UUID `gorm:"column:id_master_categories"`
+		IDSubCategory           uuid.UUID `gorm:"column:id_master_subcategories"`
+		IDMasterTransactionType uuid.UUID `gorm:"column:id_master_transaction_types"`
+		Amount                  int       `gorm:"column:amount"`
+		Departure               string    `gorm:"column:departure"`
+		Arrival                 string    `gorm:"column:arrival"`
+		ImagePath               string    `gorm:"column:image_path"`
+		Filename                string    `gorm:"column:filename"`
+		TravelStartDate         string    `gorm:"column:travel_start_date"`
+		TravelEndDate           string    `gorm:"column:travel_end_date"`
 	}
 
 	BudgetExistEntities struct {
@@ -91,6 +92,17 @@ type (
 		Category string    `gorm:"column:category"`
 		Amount   int       `gorm:"column:amount"`
 		Count    int       `gorm:"column:count"`
+	}
+
+	BudgetTravel struct {
+		ID              uuid.UUID `gorm:"column:id"`
+		Departure       string    `gorm:"column:departure"`
+		Arrival         string    `gorm:"column:arrival"`
+		ImagePath       string    `gorm:"column:image_path"`
+		Filename        string    `gorm:"column:filename"`
+		Budget          string    `gorm:"column:budget"`
+		TravelStartDate string    `gorm:"column:travel_start_date"`
+		TravelEndDate   string    `gorm:"column:travel_end_date"`
 	}
 )
 

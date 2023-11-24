@@ -14,6 +14,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -30,6 +31,7 @@ type (
 		LatestMonths(ctx *gin.Context, categoryID uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest, purpose string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Trends(ctx *gin.Context, IDCategory uuid.UUID, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		Travels(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -368,6 +370,7 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 		model.ImagePath = imagePath
 		model.TravelStartDate = dtoRequest.TravelStartDate
 		model.TravelEndDate = dtoRequest.TravelEndDate
+		model.IDMasterTransactionType = dtoRequest.IDMasterTransactionTypes
 	}
 
 	model.Amount = dtoRequest.Amount
@@ -498,6 +501,66 @@ func (s *BudgetUseCase) Trends(ctx *gin.Context, IDCategory uuid.UUID, month, ye
 	dtoResponse.Expense.AverageDailySpending.Value = totalSpendingTransaction / 30
 	dtoResponse.Expense.AverageDailySpendingRecommended.CurrencyCode = "IDR"
 	dtoResponse.Expense.AverageDailySpendingRecommended.Value = dataBudgetEachCategory.BudgetLimit / 30
+
+	return dtoResponse, http.StatusOK, errInfo
+}
+
+func (s *BudgetUseCase) Travels(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		dtoResponse   dtos.Travel
+		travelDetails []dtos.TravelDetails
+	)
+
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		httpCode = http.StatusUnauthorized
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return response, httpCode, errInfo
+	}
+
+	dataTravel, err := s.repo.Travels(personalAccount.ID)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return entities.TrendsWeekly{}, http.StatusInternalServerError, errInfo
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	if len(dataTravel) == 0 {
+		response := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no travel data using the token",
+		}
+		return response, http.StatusNotFound, errInfo
+	}
+
+	if len(dataTravel) > 0 {
+		for _, v := range dataTravel {
+
+			budgetValue, _ := strconv.ParseInt(v.Budget, 10, 64)
+
+			travelDetails = append(travelDetails, dtos.TravelDetails{
+				ID:        v.ID,
+				Departure: v.Departure,
+				Arrival:   v.Arrival,
+				ImagePath: os.Getenv("APP_HOST") + "/v1/" + v.ImagePath,
+				Filename:  v.Filename,
+				Budget: dtos.Amount{
+					CurrencyCode: "IDR",
+					Value:        budgetValue,
+				},
+				TravelStartDate: v.TravelStartDate,
+				TravelEndDate:   v.TravelEndDate,
+			})
+		}
+
+		dtoResponse.Details = travelDetails
+	}
 
 	return dtoResponse, http.StatusOK, errInfo
 }
