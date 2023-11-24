@@ -15,9 +15,10 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/payments"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/referrals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/tracks"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets"
-	subsriptions2 "github.com/semicolon-indonesia/wealthy-backend/infrastructures/subsriptions"
+	"github.com/semicolon-indonesia/wealthy-backend/infrastructures/subsriptions"
 	"gorm.io/gorm"
 )
 
@@ -79,10 +80,10 @@ func Internals(db *gorm.DB) *internals.InternalController {
 	return internalController
 }
 
-func Subscriptions(db *gorm.DB) *subsriptions2.SubscriptionController {
-	subscriptionRepository := subsriptions2.NewSubscriptionRepository(db)
-	subscriptionUseCase := subsriptions2.NewSubscriptionUseCase(subscriptionRepository)
-	subscriptionController := subsriptions2.NewSubscriptionController(subscriptionUseCase)
+func Subscriptions(db *gorm.DB) *subsriptions.SubscriptionController {
+	subscriptionRepository := subsriptions.NewSubscriptionRepository(db)
+	subscriptionUseCase := subsriptions.NewSubscriptionUseCase(subscriptionRepository)
+	subscriptionController := subsriptions.NewSubscriptionController(subscriptionUseCase)
 	return subscriptionController
 }
 
@@ -98,4 +99,11 @@ func Payments(db *gorm.DB) *payments.PaymentController {
 	paymentUseCase := payments.NewPaymentUseCase(paymentRepository)
 	paymentController := payments.NewPaymentController(paymentUseCase)
 	return paymentController
+}
+
+func Tracks(db *gorm.DB) *tracks.TrackController {
+	trackRepository := tracks.NewTrackRepository(db)
+	trackUseCase := tracks.NewTrackUseCase(trackRepository)
+	trackController := tracks.NewTrackController(trackUseCase)
+	return trackController
 }

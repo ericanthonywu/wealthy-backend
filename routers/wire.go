@@ -13,6 +13,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/payments"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/referrals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/tracks"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets"
 	subsriptions2 "github.com/semicolon-indonesia/wealthy-backend/infrastructures/subsriptions"
@@ -149,4 +150,16 @@ func Payments(db *gorm.DB) *payments.PaymentController {
 		wire.Bind(new(payments.IPaymentRepository), new(*payments.PaymentRepository)),
 	)))
 	return &payments.PaymentController{}
+}
+
+func Tracks(db *gorm.DB) *tracks.TrackController {
+	panic(wire.Build(wire.NewSet(
+		tracks.NewTrackController,
+		tracks.NewTrackUseCase,
+		tracks.NewTrackRepository,
+		wire.Bind(new(tracks.ITrackController), new(*tracks.TrackController)),
+		wire.Bind(new(tracks.ITrackUseCase), new(*tracks.TrackUseCase)),
+		wire.Bind(new(tracks.ITrackRepository), new(*tracks.TrackRepository)),
+	)))
+	return &tracks.TrackController{}
 }
