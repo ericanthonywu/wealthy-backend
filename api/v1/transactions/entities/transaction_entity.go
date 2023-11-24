@@ -31,12 +31,6 @@ type (
 		MutualFundProduct string    `gorm:"column:mutual_fund_product"`
 		StockCode         string    `gorm:"column:stock_code"`
 		Lot               int64     `gorm:"column:lot"`
-		Departure         string    `gorm:"column:departure"`
-		Arrival           string    `gorm:"column:arrival"`
-		ImagePath         string    `gorm:"column:image_path"`
-		Filename          string    `gorm:"column:filename"`
-		TravelStartDate   string    `gorm:"column:travel_start_date"`
-		TravelEndDate     string    `gorm:"column:travel_end_date"`
 		SellBuy           int       `gorm:"column:sellbuy"`
 	}
 

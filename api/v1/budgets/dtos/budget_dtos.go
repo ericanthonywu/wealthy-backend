@@ -22,9 +22,14 @@ type (
 	}
 
 	BudgetSetRequest struct {
-		IDCategory    uuid.UUID `json:"category_id"`
-		IDSubCategory uuid.UUID `json:"sub_category_id"`
-		Amount        int       `json:"budget_amount"`
+		IDCategory      uuid.UUID `json:"category_id"`
+		IDSubCategory   uuid.UUID `json:"sub_category_id"`
+		Amount          int       `json:"budget_amount"`
+		Departure       string    `json:"departure,omitempty"`
+		Arrival         string    `json:"arrival,omitempty"`
+		TravelStartDate string    `json:"travel_start_date,omitempty"`
+		TravelEndDate   string    `json:"travel_end_date,omitempty"`
+		ImageBase64     string    `json:"image_base64,omitempty"`
 	}
 
 	BudgetSetResponse struct {

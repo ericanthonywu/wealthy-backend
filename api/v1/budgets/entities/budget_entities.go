@@ -68,6 +68,12 @@ type (
 		IDCategory        uuid.UUID `gorm:"column:id_master_categories"`
 		IDSubCategory     uuid.UUID `gorm:"column:id_master_subcategories"`
 		Amount            int       `gorm:"column:amount"`
+		Departure         string    `gorm:"column:departure"`
+		Arrival           string    `gorm:"column:arrival"`
+		ImagePath         string    `gorm:"column:image_path"`
+		Filename          string    `gorm:"column:filename"`
+		TravelStartDate   string    `gorm:"column:travel_start_date"`
+		TravelEndDate     string    `gorm:"column:travel_end_date"`
 	}
 
 	BudgetExistEntities struct {

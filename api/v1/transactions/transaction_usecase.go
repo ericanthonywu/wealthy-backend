@@ -1,19 +1,14 @@
 package transactions
 
 import (
-	"encoding/base64"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/entities"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
-	"time"
 )
 
 type (
@@ -40,11 +35,8 @@ func NewTransactionUseCase(repo ITransactionRepository) *TransactionUseCase {
 
 func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		trxID      uuid.UUID
-		err        error
-		filename   string
-		targetPath string
-		imagePath  string
+		trxID uuid.UUID
+		err   error
 	)
 
 	usrEmail := ctx.MustGet("email").(string)
@@ -63,15 +55,7 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 	}
 
 	if request.ImageBase64 != "" {
-		imageData, err := base64.StdEncoding.DecodeString(request.ImageBase64)
-		filename = fmt.Sprintf("%d", time.Now().Unix()) + ".png"
-		targetPath = "assets/travel/" + filename
-		imagePath = "images/travel/" + filename
 
-		err = utilities.SaveImage(imageData, targetPath)
-		if err != nil {
-			logrus.Error(err.Error())
-		}
 	}
 
 	modelTransaction := entities.TransactionEntity{
@@ -100,12 +84,6 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		MutualFundProduct: request.MutualFundProduct,
 		StockCode:         request.StockCode,
 		Lot:               request.Lot,
-		Departure:         request.Departure,
-		Arrival:           request.Arrival,
-		ImagePath:         imagePath,
-		Filename:          filename,
-		TravelStartDate:   request.TravelStartDate,
-		TravelEndDate:     request.TravelEndDate,
 		SellBuy:           request.SellBuy,
 	}
 

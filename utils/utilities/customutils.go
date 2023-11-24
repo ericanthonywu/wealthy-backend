@@ -3,9 +3,11 @@ package utilities
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 func CustomSubstring(originalString string, startIndex, endIndex int) string {
@@ -35,7 +37,12 @@ func SaveImage(data []byte, targetPath string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+
+		}
+	}(file)
 
 	_, err = file.Write(data)
 	if err != nil {
@@ -56,4 +63,40 @@ func GetBaseURL(c *gin.Context) string {
 	url := c.Request.URL.String()
 	baseURL := strings.Split(url, "/")[0]
 	return baseURL
+}
+
+func IsEmptyString(variableContent string) bool {
+	if variableContent == "" {
+		return true
+	}
+	return false
+}
+
+func ValidateBetweenTwoDateRange(startDateOrigin, endDateOrigin string) bool {
+	var result int
+
+	if startDateOrigin != "" || endDateOrigin != "" {
+		startDate, err := time.Parse("2006-01-02", startDateOrigin)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		endDate, err := time.Parse("2006-01-02", endDateOrigin)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		diff := endDate.Sub(startDate)
+		result = int(diff.Hours() / 24)
+
+		if result < 0 {
+			return false
+		}
+
+		if result >= 0 {
+			return true
+		}
+	}
+
+	return false
 }

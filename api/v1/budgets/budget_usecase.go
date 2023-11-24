@@ -1,18 +1,22 @@
 package budgets
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets/entities"
+	"github.com/semicolon-indonesia/wealthy-backend/constants"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/datecustoms"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type (
@@ -24,7 +28,7 @@ type (
 		AllLimit(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Overview(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		LatestMonths(ctx *gin.Context, categoryID uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest, purpose string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Trends(ctx *gin.Context, IDCategory uuid.UUID, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
@@ -329,10 +333,13 @@ func (s *BudgetUseCase) LatestMonths(ctx *gin.Context, categoryID uuid.UUID) (re
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
 
-func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest, purpose string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
 		model       entities.BudgetSetEntities
 		dtoResponse dtos.BudgetSetResponse
+		filename    string
+		targetPath  string
+		imagePath   string
 	)
 
 	usrEmail := ctx.MustGet("email").(string)
@@ -344,6 +351,25 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 		return response, httpCode, errInfo
 	}
 
+	if purpose == constants.Travel {
+		imageData, err := base64.StdEncoding.DecodeString(dtoRequest.ImageBase64)
+		filename = fmt.Sprintf("%d", time.Now().Unix()) + ".png"
+		targetPath = "assets/travel/" + filename
+		imagePath = "images/travel/" + filename
+
+		err = utilities.SaveImage(imageData, targetPath)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		model.Departure = dtoRequest.Departure
+		model.Arrival = dtoRequest.Arrival
+		model.Filename = filename
+		model.ImagePath = imagePath
+		model.TravelStartDate = dtoRequest.TravelStartDate
+		model.TravelEndDate = dtoRequest.TravelEndDate
+	}
+
 	model.Amount = dtoRequest.Amount
 	model.IDPersonalAccount = personalAccount.ID
 	model.IDCategory = dtoRequest.IDCategory
@@ -351,11 +377,10 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 	model.ID = uuid.New()
 
 	err := s.repo.Limit(&model)
-
 	if err != nil {
-		httpCode = http.StatusInternalServerError
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "problem while set budget")
-		return response, httpCode, errInfo
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "insert new budget issue")
+		return response, http.StatusInternalServerError, errInfo
 	}
 
 	dtoResponse.ID = model.ID
