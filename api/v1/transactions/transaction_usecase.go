@@ -8,7 +8,6 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"net/http"
-	"os"
 )
 
 type (
@@ -20,7 +19,7 @@ type (
 		Add(ctx *gin.Context, request *dtos.TransactionRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ExpenseTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		IncomeTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		TravelTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		TravelTransactionHistory(ctx *gin.Context, IDTravel uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		TransferTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		InvestTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		IncomeSpending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
@@ -189,7 +188,7 @@ func (s *TransactionUseCase) IncomeTransactionHistory(ctx *gin.Context) (respons
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
 
-func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context, IDTravel uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
 		dtoResponse                 dtos.TransactionHistoryForTravel
 		details                     []dtos.TransactionHistoryForTravelDetail
@@ -209,9 +208,9 @@ func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context) (respons
 	}
 
 	if startDate == "" || endDate == "" {
-		responseTravelDetailHistory = s.repo.TravelDetailWithoutData(personalAccount.ID)
+		responseTravelDetailHistory = s.repo.TravelDetailWithoutData(personalAccount.ID, IDTravel)
 	} else {
-		responseTravelDetailHistory = s.repo.TravelDetailWithData(personalAccount.ID, startDate, endDate)
+		responseTravelDetailHistory = s.repo.TravelDetailWithData(personalAccount.ID, IDTravel, startDate, endDate)
 	}
 
 	if len(responseTravelDetailHistory) == 0 {
@@ -226,16 +225,14 @@ func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context) (respons
 	if len(responseTravelDetailHistory) > 0 {
 		for _, v := range responseTravelDetailHistory {
 			details = append(details, dtos.TransactionHistoryForTravelDetail{
-				Departure: v.Departure,
-				Arrival:   v.Arrival,
+				DateTransaction: v.DateTransaction,
+				IDTransaction:   v.IDTransaction,
 				Amount: dtos.Amount{
 					CurrencyCode: "IDR",
-					Value:        v.Amount,
+					Value:        float64(v.Amount),
 				},
-				ImagePath:       os.Getenv("APP_HOST") + "/v1/" + v.ImagePath,
-				Filename:        v.Filename,
-				TravelStartDate: v.TravelStartDate,
-				TravelEndDate:   v.TravelEndDate,
+				Category: v.Category,
+				Note:     v.Note,
 			})
 		}
 	}

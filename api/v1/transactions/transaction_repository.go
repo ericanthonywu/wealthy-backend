@@ -34,8 +34,8 @@ type (
 		InvestTotalHistoryWithoutDate(IDPersonal uuid.UUID) (data entities.TransactionInvestTotalHistory)
 		InvestTotalHistoryWithData(IDPersonal uuid.UUID, startDate, endDate string) (data entities.TransactionInvestTotalHistory)
 
-		TravelDetailWithData(IDPersonal uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailTravel)
-		TravelDetailWithoutData(IDPersonal uuid.UUID) (data []entities.TransactionDetailTravel)
+		TravelDetailWithData(IDPersonal uuid.UUID, idTravel uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailTravel)
+		TravelDetailWithoutData(IDPersonal, idTravel uuid.UUID) (data []entities.TransactionDetailTravel)
 
 		IncomeSpendingMonthlyTotal(IDPersonal uuid.UUID, month, year string) (data entities.TransactionIncomeSpendingTotalMonthly)
 		IncomeSpendingMonthlyDetail(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionIncomeSpendingDetailMonthly)
@@ -336,41 +336,31 @@ ORDER BY transaction_date DESC`, IDPersonal, startDate, endDate).Scan(&data).Err
 	return data
 }
 
-func (r *TransactionRepository) TravelDetailWithoutData(IDPersonal uuid.UUID) (data []entities.TransactionDetailTravel) {
-	if err := r.db.Raw(`SELECT td.departure,
-       td.arrival,
-       tt.amount,
-       td.travel_start_date,
-       td.travel_end_date,
-       td.image_path,
-       td.filename
+func (r *TransactionRepository) TravelDetailWithoutData(IDPersonal, idTravel uuid.UUID) (data []entities.TransactionDetailTravel) {
+	if err := r.db.Raw(`SELECT tt.date_time_transaction, tt.id as id_transaction,tt.amount, tmec.expense_types as category,td.note
 FROM tbl_transactions tt
-         LEFT JOIN tbl_master_income_categories tmic ON tmic.id = tt.id_master_income_categories
+         INNER JOIN tbl_master_expense_categories tmec ON tmec.id = tt.id_master_expense_categories
          INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
-         LEFT JOIN tbl_transaction_details td ON td.id_transactions = tt.id
+         INNER JOIN tbl_transaction_details td ON td.id_transactions = tt.id
 WHERE tmtt.type = 'TRAVEL'
   AND tt.id_personal_account = ?
-ORDER BY td.travel_end_date::DATE ASC`, IDPersonal).Scan(&data).Error; err != nil {
+  AND td.id_travel = ?
+ORDER BY tt.date_time_transaction::DATE ASC`, IDPersonal, idTravel).Scan(&data).Error; err != nil {
 	}
 	return
 }
 
-func (r *TransactionRepository) TravelDetailWithData(IDPersonal uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailTravel) {
-	if err := r.db.Raw(`SELECT td.departure,
-       td.arrival,
-       tt.amount,
-       td.travel_start_date,
-       td.travel_end_date,
-       td.image_path,
-       td.filename
+func (r *TransactionRepository) TravelDetailWithData(IDPersonal uuid.UUID, idTravel uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailTravel) {
+	if err := r.db.Raw(`SELECT tt.date_time_transaction, tt.id  as id_transaction, tt.amount,tmec.expense_types as category,td.note
 FROM tbl_transactions tt
-         LEFT JOIN tbl_master_income_categories tmic ON tmic.id = tt.id_master_income_categories
+         INNER JOIN tbl_master_expense_categories tmec ON tmec.id = tt.id_master_expense_categories
          INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
-         LEFT JOIN tbl_transaction_details td ON td.id_transactions = tt.id
+         INNER JOIN tbl_transaction_details td ON td.id_transactions = tt.id
 WHERE tmtt.type = 'TRAVEL'
   AND tt.id_personal_account = ?
+  AND td.id_travel = ?
   AND tt.date_time_transaction BETWEEN ? AND ?
-ORDER BY td.travel_end_date::DATE ASC`, IDPersonal, startDate, endDate).Scan(&data).Error; err != nil {
+ORDER BY tt.date_time_transaction::DATE ASC`, IDPersonal, idTravel, startDate, endDate).Scan(&data).Error; err != nil {
 
 	}
 	return

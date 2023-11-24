@@ -43,13 +43,11 @@ type (
 	}
 
 	TransactionHistoryForTravelDetail struct {
-		Departure       string `json:"departure"`
-		Arrival         string `json:"arrival"`
-		Amount          Amount `json:"budget_amount"`
-		TravelStartDate string `json:"travel_start_date"`
-		TravelEndDate   string `json:"travel_end_date"`
-		ImagePath       string `json:"image_path"`
-		Filename        string `json:"filename"`
+		DateTransaction string    `json:"transaction_date"`
+		IDTransaction   uuid.UUID `json:"transaction_id"`
+		Amount          Amount    `json:"amount"`
+		Category        string    `json:"transaction_category"`
+		Note            string    `json:"transaction_note"`
 	}
 
 	Amount struct {

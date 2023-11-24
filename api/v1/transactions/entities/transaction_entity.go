@@ -73,13 +73,11 @@ type (
 	}
 
 	TransactionDetailTravel struct {
-		Departure       string  `gorm:"column:departure"`
-		Arrival         string  `gorm:"column:arrival"`
-		Amount          float64 `gorm:"column:amount"`
-		TravelStartDate string  `gorm:"travel_start_date"`
-		TravelEndDate   string  `gorm:"column:travel_end_date"`
-		ImagePath       string  `gorm:"column:image_path"`
-		Filename        string  `gorm:"column:filename"`
+		DateTransaction string    `gorm:"column:date_time_transaction"`
+		IDTransaction   uuid.UUID `gorm:"column:id_transaction"`
+		Amount          int64     `gorm:"column:amount"`
+		Category        string    `gorm:"column:category"`
+		Note            string    `gorm:"column:note"`
 	}
 
 	TransactionIncomeSpendingTotalMonthly struct {
