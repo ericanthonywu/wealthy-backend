@@ -54,10 +54,6 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		return nil, http.StatusUnprocessableEntity, errInfo
 	}
 
-	if request.ImageBase64 != "" {
-
-	}
-
 	modelTransaction := entities.TransactionEntity{
 		ID:                            trxID,
 		Date:                          request.Date,

@@ -13,14 +13,9 @@ type (
 		Note                          string    `json:"note"`
 		TransferFrom                  string    `json:"transfer_from,omitempty"`
 		TransferTo                    string    `json:"transfer_to,omitempty"`
-		Departure                     string    `json:"departure,omitempty"`
-		Arrival                       string    `json:"arrival,omitempty"`
-		ImageBase64                   string    `json:"image_base64,omitempty"`
 		MutualFundProduct             string    `json:"mutual_fund_product,omitempty"`
 		StockCode                     string    `json:"stock_code,omitempty"`
 		Lot                           int64     `json:"lot,omitempty"`
-		TravelStartDate               string    `json:"travel_start_date,omitempty"`
-		TravelEndDate                 string    `json:"travel_end_date,omitempty"`
 		SellBuy                       int       `json:"sellbuy,omitempty"`
 		IDWallet                      uuid.UUID `json:"id_wallets,omitempty"`
 		IDMasterIncomeCategories      uuid.UUID `json:"id_master_income_categories,omitempty"`
