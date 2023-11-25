@@ -58,6 +58,31 @@ type (
 		Currency string    `gorm:"column:currency" json:"currency"`
 		Value    int64     `gorm:"column:value" json:"value"`
 	}
+
+	ExpenseCategoryEditable struct {
+		ID          uuid.UUID `gorm:"column:id" json:"id"`
+		ExpenseType string    `gorm:"column:expense_types" json:"category"`
+		Filename    string    `gorm:"column:filename" json:"filename"`
+		ImagePath   string    `gorm:"column:image_path" json:"image_path"`
+	}
+
+	ExpenseSubCategoryEditable struct {
+		ID            uuid.UUID `gorm:"column:id" json:"id"`
+		Subcategories string    `gorm:"column:subcategories" json:"category"`
+		Filename      string    `gorm:"column:filename" json:"filename"`
+		ImagePath     string    `gorm:"column:image_path" json:"image_path"`
+	}
+
+	IncomeCategoryEditable struct {
+		ID         uuid.UUID `gorm:"column:id" json:"id"`
+		IncomeType string    `gorm:"column:category" json:"income_type"`
+		Filename   string    `gorm:"column:filename" json:"filename"`
+		ImagePath  string    `gorm:"column:image_path" json:"image_path"`
+	}
+
+	AddEntities struct {
+		ID uuid.UUID `gorm:"column:id" json:"id"`
+	}
 )
 
 func (TransactionType) TableName() string {

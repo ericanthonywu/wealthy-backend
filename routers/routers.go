@@ -37,6 +37,27 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				categoriesGroup.GET("/income", master.IncomeType)
 				categoriesGroup.GET("/expense", master.ExpenseType)
 				categoriesGroup.GET("/sub-expense/:expense-id", master.SubExpenseCategories)
+
+				personalGroup := categoriesGroup.Group("/personals")
+				{
+					personalGroup.GET("/income", master.PersonalIncomeCategory)
+					personalGroup.GET("/expense", master.PersonalExpenseCategory)
+					personalGroup.GET("/sub-expense/:expense-id", master.PersonalExpenseSubCategory)
+
+					renameGroup := personalGroup.Group("/renames")
+					{
+						renameGroup.PUT("/income/:id", master.RenameIncomeCategory)
+						renameGroup.PUT("/expense/:id", master.RenameExpenseCategory)
+						renameGroup.PUT("/sub-expense/:id", master.RenameSubExpenseCategory)
+					}
+
+					addGroup := personalGroup.Group("/adds")
+					{
+						addGroup.POST("/income", master.AddIncomeCategory)
+						addGroup.POST("/expense", master.AddExpenseCategory)
+						addGroup.POST("/sub-expense", master.AddSubExpenseCategory)
+					}
+				}
 			}
 
 			transactionGroup := masterGroup.Group("/transactions")

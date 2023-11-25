@@ -25,6 +25,15 @@ type (
 		SubExpenseCategory(expenseID uuid.UUID) (data []entities.SubExpenseCategories)
 		ExpenseIDExist(expenseID uuid.UUID) (exist bool)
 		Exchange() (data []entities.Exchange, err error)
+		PersonalIncomeCategory(IDPersonal uuid.UUID) (data []entities.IncomeCategoryEditable, err error)
+		PersonalExpenseCategory(IDPersonal uuid.UUID) (data []entities.ExpenseCategoryEditable, err error)
+		PersonalExpenseSubCategory(IDPersonal uuid.UUID, expenseIDUUID uuid.UUID) (data []entities.ExpenseSubCategoryEditable, err error)
+		RenameIncomeCategory(newName string, id, IDPersonal uuid.UUID) (err error)
+		RenameExpenseCategory(newName string, id, IDPersonal uuid.UUID) (err error)
+		RenameSubExpenseCategory(newName string, id, IDPersonal uuid.UUID) (err error)
+		AddIncomeCategory(newCategory string, IDPersonal uuid.UUID) (data entities.AddEntities, err error)
+		AddExpenseCategory(newCategory string, IDPersonal uuid.UUID) (data entities.AddEntities, err error)
+		AddSubExpenseCategory(newCategory string, ExpenseID uuid.UUID, IDPersonal uuid.UUID) (data entities.AddEntities, err error)
 	}
 )
 
@@ -102,6 +111,94 @@ func (r *MasterRepository) Exchange() (data []entities.Exchange, err error) {
 WHERE tmec.active = true`).Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return []entities.Exchange{}, err
+	}
+	return data, nil
+}
+
+func (r *MasterRepository) PersonalIncomeCategory(IDPersonal uuid.UUID) (data []entities.IncomeCategoryEditable, err error) {
+	if err = r.db.Raw(`SELECT tmice.id, tmice.income_types as category, tmice.filename, tmice.image_path FROM tbl_master_income_categories_editable tmice
+WHERE tmice.id_personal_accounts=? AND tmice.active=true`, IDPersonal).Scan(&data).Error; err != nil {
+		return []entities.IncomeCategoryEditable{}, err
+	}
+	return data, nil
+}
+
+func (r *MasterRepository) PersonalExpenseCategory(IDPersonal uuid.UUID) (data []entities.ExpenseCategoryEditable, err error) {
+	if err = r.db.Raw(`SELECT tmece.id, tmece.expense_types, tmece.filename, tmece.image_path FROM tbl_master_expense_categories_editable tmece
+WHERE tmece.id_personal_accounts=? AND
+tmece.active=true;`, IDPersonal).Scan(&data).Error; err != nil {
+		return []entities.ExpenseCategoryEditable{}, err
+	}
+	return data, nil
+}
+
+func (r *MasterRepository) PersonalExpenseSubCategory(IDPersonal, expenseIDUUID uuid.UUID) (data []entities.ExpenseSubCategoryEditable, err error) {
+	if err = r.db.Raw(`SELECT tmese.id, tmese.subcategories, tmese.filename, tmese.image_path , tmese.id_master_expense_categories FROM tbl_master_expense_subcategories_editable tmese
+WHERE tmese.id_personal_accounts=?  AND tmese.id_master_expense_categories=? AND
+tmese.active=true`, IDPersonal, expenseIDUUID).Scan(&data).Error; err != nil {
+		return []entities.ExpenseSubCategoryEditable{}, err
+	}
+	return data, nil
+}
+
+func (r *MasterRepository) RenameIncomeCategory(newName string, id, IDPersonal uuid.UUID) (err error) {
+	var model interface{}
+
+	if err = r.db.Raw(`UPDATE tbl_master_income_categories_editable SET income_types=? WHERE id=? AND id_personal_accounts=?`, newName, id, IDPersonal).Scan(&model).
+		Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+	return nil
+}
+
+func (r *MasterRepository) RenameExpenseCategory(newName string, id, IDPersonal uuid.UUID) (err error) {
+	var model interface{}
+
+	if err = r.db.Raw(`UPDATE tbl_master_expense_categories_editable SET expense_types=? WHERE id=? AND id_personal_accounts=?`, newName, id, IDPersonal).Scan(&model).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+	return nil
+}
+
+func (r *MasterRepository) RenameSubExpenseCategory(newName string, id, IDPersonal uuid.UUID) (err error) {
+	var model interface{}
+
+	if err = r.db.Raw(`UPDATE tbl_master_expense_subcategories_editable SET subcategories=? WHERE id=? AND id_personal_accounts=?`, newName, id, IDPersonal).Scan(&model).
+		Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+	return nil
+}
+
+func (r *MasterRepository) AddIncomeCategory(newCategory string, IDPersonal uuid.UUID) (data entities.AddEntities, err error) {
+	id, _ := uuid.NewUUID()
+
+	if err = r.db.Raw(`INSERT INTO tbl_master_income_categories_editable (id, income_types, active, id_personal_accounts) VALUES (?,?, ?, ?) RETURNING id`, id, newCategory, true, IDPersonal).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.AddEntities{}, err
+	}
+	return data, nil
+}
+
+func (r *MasterRepository) AddExpenseCategory(newCategory string, IDPersonal uuid.UUID) (data entities.AddEntities, err error) {
+	id, _ := uuid.NewUUID()
+
+	if err = r.db.Raw(`INSERT INTO tbl_master_expense_categories_editable (id,expense_types,active, id_personal_accounts) VALUES (?,?, ?, ?) RETURNING id`, id, newCategory, true, IDPersonal).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.AddEntities{}, err
+	}
+	return data, nil
+}
+
+func (r *MasterRepository) AddSubExpenseCategory(newCategory string, ExpenseID uuid.UUID, IDPersonal uuid.UUID) (data entities.AddEntities, err error) {
+	id, _ := uuid.NewUUID()
+
+	if err = r.db.Raw(`INSERT INTO tbl_master_expense_subcategories_editable (id, subcategories,id_master_expense_categories, active, id_personal_accounts ) VALUES (?,?, ?, ?, ?) RETURNING id`, id, newCategory, ExpenseID, true, IDPersonal).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.AddEntities{}, err
 	}
 	return data, nil
 }
