@@ -102,9 +102,13 @@ type (
 	}
 
 	TransactionNotesDetail struct {
-		TransactionCategory string `json:"transaction_category"`
-		TransactionAmount   Amount `json:"transaction_amount"`
-		TransactionLimit    Amount `json:"transaction_limit"`
-		TransactionNote     string `json:"transaction_note"`
+		TransactionCategory        string                       `json:"transaction_category"`
+		TransactionNotesDeepDetail []TransactionNotesDeepDetail `json:"info"`
+	}
+
+	TransactionNotesDeepDetail struct {
+		TransactionNote   string `json:"transaction_note"`
+		TransactionAmount Amount `json:"transaction_amount"`
+		TransactionLimit  Amount `json:"transaction_limit"`
 	}
 )

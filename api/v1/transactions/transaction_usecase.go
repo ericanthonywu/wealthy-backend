@@ -500,9 +500,10 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 
 func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		dtoResponse dtos.TransactionNotes
-		dataNotes   []entities.TransactionByNotes
-		detailNotes []dtos.TransactionNotesDetail
+		dtoResponse      dtos.TransactionNotes
+		detailNotes      dtos.TransactionNotesDetail
+		deepDetailsNotes []dtos.TransactionNotesDeepDetail
+		dataNotes        []entities.TransactionByNotes
 	)
 
 	month := ctx.Query("month")
@@ -534,25 +535,51 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 		for k, v := range dataNotes {
 
 			if catPrev == v.TransactionCategory {
-				detailNotes = append(detailNotes, dtos.TransactionNotesDetail{
-					TransactionCategory: catPrev,
-					TransactionAmount: dtos.Amount{
-						CurrencyCode: "IDR",
-						Value:        v.Amount,
-					},
-					TransactionLimit: dtos.Amount{
-						CurrencyCode: "IDR",
-						Value:        v.Budget,
-					},
-					TransactionNote: v.TransactionNote,
-				})
+				if k == lengthData-1 {
+					detailNotes.TransactionNotesDeepDetail = append(detailNotes.TransactionNotesDeepDetail, deepDetailsNotes...)
+					detailNotes.TransactionCategory = catPrev
+
+					dtoResponse.TransactionNotesDetail = append(dtoResponse.TransactionNotesDetail, detailNotes)
+
+					// clear
+					deepDetailsNotes = []dtos.TransactionNotesDeepDetail{}
+					detailNotes = dtos.TransactionNotesDetail{}
+
+					deepDetailsNotes = append(deepDetailsNotes, dtos.TransactionNotesDeepDetail{
+						TransactionNote: v.TransactionNote,
+						TransactionAmount: dtos.Amount{
+							CurrencyCode: "IDR",
+							Value:        v.Amount,
+						},
+						TransactionLimit: dtos.Amount{
+							CurrencyCode: "IDR",
+							Value:        v.Budget,
+						},
+					})
+
+					detailNotes.TransactionCategory = v.TransactionCategory
+					detailNotes.TransactionNotesDeepDetail = append(detailNotes.TransactionNotesDeepDetail, deepDetailsNotes...)
+
+					dtoResponse.TransactionNotesDetail = append(dtoResponse.TransactionNotesDetail, detailNotes)
+				} else {
+					deepDetailsNotes = append(deepDetailsNotes, dtos.TransactionNotesDeepDetail{
+						TransactionNote: v.TransactionNote,
+						TransactionAmount: dtos.Amount{
+							CurrencyCode: "IDR",
+							Value:        v.Amount,
+						},
+						TransactionLimit: dtos.Amount{
+							CurrencyCode: "IDR",
+							Value:        v.Budget,
+						},
+					})
+				}
 			}
 
 			if catPrev == "" {
 				catPrev = v.TransactionCategory
-
-				detailNotes = append(detailNotes, dtos.TransactionNotesDetail{
-					TransactionCategory: catPrev,
+				deepDetailsNotes = append(deepDetailsNotes, dtos.TransactionNotesDeepDetail{
+					TransactionNote: v.TransactionNote,
 					TransactionAmount: dtos.Amount{
 						CurrencyCode: "IDR",
 						Value:        v.Amount,
@@ -561,14 +588,25 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 						CurrencyCode: "IDR",
 						Value:        v.Budget,
 					},
-					TransactionNote: v.TransactionNote,
 				})
 			}
 
 			if catPrev != v.TransactionCategory {
-				if k == (lengthData - 1) {
-					detailNotes = append(detailNotes, dtos.TransactionNotesDetail{
-						TransactionCategory: catPrev,
+
+				if k == lengthData-1 {
+
+					// save previous
+					detailNotes.TransactionCategory = catPrev
+					detailNotes.TransactionNotesDeepDetail = append(detailNotes.TransactionNotesDeepDetail, deepDetailsNotes...)
+
+					dtoResponse.TransactionNotesDetail = append(dtoResponse.TransactionNotesDetail, detailNotes)
+
+					// clear
+					deepDetailsNotes = []dtos.TransactionNotesDeepDetail{}
+					detailNotes = dtos.TransactionNotesDetail{}
+
+					deepDetailsNotes = append(deepDetailsNotes, dtos.TransactionNotesDeepDetail{
+						TransactionNote: v.TransactionNote,
 						TransactionAmount: dtos.Amount{
 							CurrencyCode: "IDR",
 							Value:        v.Amount,
@@ -577,32 +615,37 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 							CurrencyCode: "IDR",
 							Value:        v.Budget,
 						},
-						TransactionNote: v.TransactionNote,
 					})
-					dtoResponse.TransactionNotesDetail = append(dtoResponse.TransactionNotesDetail, detailNotes...)
 
-					// clear
-					detailNotes = []dtos.TransactionNotesDetail{}
+					detailNotes.TransactionCategory = v.TransactionCategory
+					detailNotes.TransactionNotesDeepDetail = append(detailNotes.TransactionNotesDeepDetail, deepDetailsNotes...)
+					dtoResponse.TransactionNotesDetail = append(dtoResponse.TransactionNotesDetail, detailNotes)
+
 				} else {
-					dtoResponse.TransactionNotesDetail = append(dtoResponse.TransactionNotesDetail, detailNotes...)
+					// save previous
+					detailNotes.TransactionCategory = catPrev
+					detailNotes.TransactionNotesDeepDetail = append(detailNotes.TransactionNotesDeepDetail, deepDetailsNotes...)
+
+					dtoResponse.TransactionNotesDetail = append(dtoResponse.TransactionNotesDetail, detailNotes)
 
 					// clear
-					detailNotes = []dtos.TransactionNotesDetail{}
+					deepDetailsNotes = []dtos.TransactionNotesDeepDetail{}
+					detailNotes = dtos.TransactionNotesDetail{}
+
+					// save new
+					deepDetailsNotes = append(deepDetailsNotes, dtos.TransactionNotesDeepDetail{
+						TransactionNote: v.TransactionNote,
+						TransactionAmount: dtos.Amount{
+							CurrencyCode: "IDR",
+							Value:        v.Amount,
+						},
+						TransactionLimit: dtos.Amount{
+							CurrencyCode: "IDR",
+							Value:        v.Budget,
+						},
+					})
 
 					catPrev = v.TransactionCategory
-
-					detailNotes = append(detailNotes, dtos.TransactionNotesDetail{
-						TransactionCategory: catPrev,
-						TransactionAmount: dtos.Amount{
-							CurrencyCode: "IDR",
-							Value:        v.Amount,
-						},
-						TransactionLimit: dtos.Amount{
-							CurrencyCode: "IDR",
-							Value:        v.Budget,
-						},
-						TransactionNote: v.TransactionNote,
-					})
 				}
 			}
 		}

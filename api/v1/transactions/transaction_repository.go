@@ -545,22 +545,18 @@ ORDER BY t.date_time_transaction::DATE DESC`, year, IDPersonal).Scan(&data).Erro
 func (r *TransactionRepository) ByNote(IDPersonal uuid.UUID, dateFilter string) (data []entities.TransactionByNotes) {
 	if err := r.db.Raw(`SELECT
     CASE WHEN tb.amount IS NULL THEN '0' ELSE tb.amount END as budget,
-    t.amount,
-    TO_CHAR(t.date_time_transaction::timestamp, 'MM') as month,
-    TO_CHAR(t.date_time_transaction::timestamp, 'Mon YYYY') as month_year,
-    COUNT(td.note) as quantity,
+    COALESCE(SUM(t.amount),0) as amount,
     td.note as transaction_note,
-    tmec.expense_types as transaction_category
+    tmec.expense_types
 FROM tbl_transactions t
 INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
 INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
 LEFT JOIN tbl_budgets tb ON tb.id_master_categories = t.id_master_expense_categories
-INNER JOIN tbl_master_expense_categories tmec ON t.id_master_expense_categories = tmec.id
+LEFT JOIN tbl_master_expense_categories tmec ON t.id_master_expense_categories = tmec.id
 WHERE DATE_TRUNC('month', t.date_time_transaction::timestamp) = ?::timestamp
   AND t.id_personal_account = ?
   AND (tmtt.type = 'EXPENSE' OR tmtt.type='TRAVEL')
-GROUP BY month_year, td.note, tmec.expense_types, month, t.amount, tb.amount
-ORDER BY month DESC`, dateFilter, IDPersonal).Scan(&data).Error; err != nil {
+GROUP BY td.note,budget, tmec.expense_types`, dateFilter, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionByNotes{}
 	}
 	return data
