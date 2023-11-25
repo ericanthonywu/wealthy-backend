@@ -81,11 +81,11 @@ type (
 	}
 
 	TransactionIncomeSpendingTotalMonthly struct {
-		Month         string `gorm:"column:month" json:"month"`
-		Year          int    `gorm:"column:year" json:"year"`
-		TotalIncome   int    `gorm:"column:total_income" json:"total_income"`
-		TotalSpending int    `gorm:"column:total_spending" json:"total_spending"`
-		NetIncome     int    `gorm:"column:net_income" json:"net_income"`
+		Month         string  `gorm:"column:month" json:"month"`
+		Year          int     `gorm:"column:year" json:"year"`
+		TotalIncome   int     `gorm:"column:total_income" json:"total_income"`
+		TotalSpending int     `gorm:"column:total_spending" json:"total_spending"`
+		NetIncome     float64 `gorm:"column:net_income" json:"net_income"`
 	}
 
 	TransactionIncomeSpendingDetailMonthly struct {
@@ -97,18 +97,18 @@ type (
 	}
 
 	TransactionIncomeSpendingTotalAnnually struct {
-		TransactionPeriod string `gorm:"column:transaction_period" json:"transaction_period"`
-		TotalIncome       int    `gorm:"column:total_income" json:"total_income"`
-		TotalSpending     int    `gorm:"column:total_spending" json:"total_spending"`
-		NetIncome         int    `gorm:"column:net_income" json:"net_income"`
+		TransactionPeriod string  `gorm:"column:transaction_period" json:"transaction_period"`
+		TotalIncome       int     `gorm:"column:total_income" json:"total_income"`
+		TotalSpending     int     `gorm:"column:total_spending" json:"total_spending"`
+		NetIncome         float64 `gorm:"column:net_income" json:"net_income"`
 	}
 
 	TransactionIncomeSpendingDetailAnnually struct {
-		MonthYear       string `gorm:"column:month_year" json:"month_year"`
-		TotalDayInMonth int    `gorm:"column:total_day_in_month" json:"total_day_in_month"`
-		TotalIncome     int    `gorm:"column:total_income" json:"total_income"`
-		TotalSpending   int    `gorm:"column:total_spending" json:"total_spending"`
-		NetIncome       int    `gorm:"column:net_income" json:"net_income"`
+		MonthYear       string  `gorm:"column:month_year" json:"month_year"`
+		TotalDayInMonth int     `gorm:"column:total_day_in_month" json:"total_day_in_month"`
+		TotalIncome     int     `gorm:"column:total_income" json:"total_income"`
+		TotalSpending   int     `gorm:"column:total_spending" json:"total_spending"`
+		NetIncome       float64 `gorm:"column:net_income" json:"net_income"`
 	}
 
 	TransactionInvestmentTotals struct {

@@ -423,7 +423,7 @@ ORDER BY date DESC`, month, year, IDPersonal).Scan(&data).Error; err != nil {
 
 func (r *TransactionRepository) IncomeSpendingAnnuallyTotal(IDPersonal uuid.UUID, year string) (data entities.TransactionIncomeSpendingTotalAnnually) {
 	if err := r.db.Raw(`SELECT to_char(t.date_time_transaction::DATE, 'YYYY') ::text  as transaction_period,
-       COALESCE(SUM(t.amount) FILTER ( WHERE tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000'), 0)::numeric  as total_income,
+       COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_income_categories <> '00000000-0000-0000-0000-000000000000'), 0)::numeric  as total_income,
        COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'), 0)::numeric as total_spending,
        COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_income_categories <> '00000000-0000-0000-0000-000000000000'), 0) -
        COALESCE(SUM(t.amount) FILTER ( WHERE t.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'), 0)::numeric as net_income
