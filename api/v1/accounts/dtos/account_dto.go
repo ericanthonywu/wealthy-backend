@@ -108,4 +108,9 @@ type (
 	AccountAvatarResponse struct {
 		Success bool `json:"success"`
 	}
+
+	AccountGroupSharing struct {
+		IDPersonalAccount       uuid.UUID `json:"id_personal_accounts"`
+		IDPersonalAccountTarget uuid.UUID `json:"id_personal_accounts_target"`
+	}
 )

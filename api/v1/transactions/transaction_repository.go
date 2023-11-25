@@ -47,6 +47,7 @@ type (
 		InvestAnnuallyTotal(IDPersonal uuid.UUID, year string) (data entities.TransactionInvestmentTotals)
 		InvestAnnuallyDetail(IDPersonal uuid.UUID, year string) (data []entities.TransactionInvestmentDetail)
 		ByNote(IDPersonal uuid.UUID, dateFilter string) (data []entities.TransactionByNotes)
+		Suggestion(IDPersoalAccount uuid.UUID) (data []entities.TransactionSuggestionNotes, err error)
 	}
 )
 
@@ -560,4 +561,14 @@ GROUP BY td.note,budget, tmec.expense_types`, dateFilter, IDPersonal).Scan(&data
 		return []entities.TransactionByNotes{}
 	}
 	return data
+}
+
+func (r *TransactionRepository) Suggestion(IDPersoalAccount uuid.UUID) (data []entities.TransactionSuggestionNotes, err error) {
+	if err = r.db.Raw(`SELECT DISTINCT td.note FROM tbl_transactions t
+INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
+INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
+WHERE t.id_personal_account=? AND tmtt.type='EXPENSE'`, IDPersoalAccount).Scan(&data).Error; err != nil {
+		return []entities.TransactionSuggestionNotes{}, err
+	}
+	return data, nil
 }

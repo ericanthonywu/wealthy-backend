@@ -8,6 +8,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
+	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -26,6 +27,7 @@ type (
 		IncomeSpending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Investment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ByNotes(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		Suggestion(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -655,4 +657,45 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 	}
 
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
+}
+
+func (s *TransactionUseCase) Suggestion(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		dataResponse         []entities.TransactionSuggestionNotes
+		suggestionCollection []string
+		err                  error
+	)
+
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		httpCode = http.StatusNotFound
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return []string{}, httpCode, errInfo
+	}
+
+	dataResponse, err = s.repo.Suggestion(personalAccount.ID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return []string{}, http.StatusInternalServerError, errInfo
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	if len(dataResponse) == 0 {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "data not found")
+		return []string{}, http.StatusBadRequest, errInfo
+	}
+
+	if len(dataResponse) > 0 {
+		for _, v := range dataResponse {
+			suggestionCollection = append(suggestionCollection, v.Note)
+		}
+	}
+
+	return suggestionCollection, http.StatusOK, errInfo
 }

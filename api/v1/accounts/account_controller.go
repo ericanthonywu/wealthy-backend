@@ -25,6 +25,7 @@ type (
 		ValidateRefCode(ctx *gin.Context)
 		SetAvatar(ctx *gin.Context)
 		RemoveAvatar(ctx *gin.Context)
+		Sharing(ctx *gin.Context)
 	}
 )
 
@@ -227,5 +228,23 @@ func (c *AccountController) RemoveAvatar(ctx *gin.Context) {
 	c.useCase.RemoveAvatar(ctx, id)
 
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
+	return
+}
+
+func (c *AccountController) Sharing(ctx *gin.Context) {
+	var (
+		dtoRequest dtos.AccountGroupSharing
+		errInfo    []errorsinfo.Errors
+		httpCode   int
+	)
+
+	// binding
+	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		response.SendBack(ctx, dtos.AccountAvatarResponse{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	response.SendBack(ctx, nil, errInfo, httpCode)
 	return
 }

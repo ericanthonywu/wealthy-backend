@@ -132,6 +132,10 @@ type (
 		TransactionNote     string  `gorm:"column:transaction_note"`
 		TransactionCategory string  `gorm:"column:expense_types"`
 	}
+
+	TransactionSuggestionNotes struct {
+		Note string `gorm:"column:note"`
+	}
 )
 
 func (TransactionEntity) TableName() string {

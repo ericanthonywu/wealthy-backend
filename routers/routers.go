@@ -77,6 +77,11 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			{
 				accountReferral.POST("/validate", account.ValidateRefCode)
 			}
+
+			sharingGroup := accountGroup.Group("/sharing")
+			{
+				sharingGroup.GET("", account.Sharing)
+			}
 		}
 
 		budgetGroup := v1group.Group("/budgets", tokenSignature())
@@ -133,6 +138,11 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				transactionHistory.GET("/transfer", transaction.TransferTransactionHistory)
 				transactionHistory.GET("/invest", transaction.InvestTransactionHistory)
 				transactionHistory.GET("/travel", transaction.TravelTransactionHistory)
+			}
+
+			suggestionGroup := transactionGroup.Group("/suggestions")
+			{
+				suggestionGroup.GET("/notes", transaction.Suggestion)
 			}
 		}
 

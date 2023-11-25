@@ -30,6 +30,9 @@ type (
 		GetLevelReferenceCode(referralCode string) (level int, err error)
 		WriteRewardsList(model *entities.AccountRewards) (err error)
 		WriteOrUpdateReward(model *entities.AccountRewards, idPersonalAccount uuid.UUID) (err error)
+		DuplicateExpenseCategory(IDPersonalAccount uuid.UUID) (err error)
+		DuplicateExpenseSUbCategory(IDPersonalAccount uuid.UUID) (err error)
+		DuplicateIncomeCategory(IDPersonalAccount uuid.UUID) (err error)
 	}
 )
 
@@ -210,6 +213,42 @@ func (r *AccountRepository) WriteOrUpdateReward(modelData *entities.AccountRewar
 		if err = r.db.Create(&modelData).Error; err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (r *AccountRepository) DuplicateExpenseCategory(IDPersonalAccount uuid.UUID) (err error) {
+	var model interface{}
+
+	if err = r.db.Raw(`INSERT INTO tbl_master_expense_categories_editable (id,expense_types, active, id_personal_accounts,filename, image_path)
+SELECT gen_random_uuid(), expense_types, active, ?, filename, image_path
+FROM tbl_master_expense_categories`, IDPersonalAccount).Scan(&model).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+	return nil
+}
+
+func (r *AccountRepository) DuplicateExpenseSUbCategory(IDPersonalAccount uuid.UUID) (err error) {
+	var model interface{}
+
+	if err = r.db.Raw(`INSERT INTO tbl_master_expense_subcategories_editable (id,subcategories, id_master_expense_categories, active, id_personal_accounts,filename, image_path)
+SELECT gen_random_uuid(), subcategories, id_master_expense_categories,active, ?, filename, image_path
+FROM tbl_master_expense_subcategories`, IDPersonalAccount).Scan(&model).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+	return nil
+}
+
+func (r *AccountRepository) DuplicateIncomeCategory(IDPersonalAccount uuid.UUID) (err error) {
+	var model interface{}
+
+	if err = r.db.Raw(`INSERT INTO tbl_master_income_categories_editable (id,income_types, active, id_personal_accounts,filename, image_path)
+SELECT gen_random_uuid(), income_types,active, ?, filename, image_path
+FROM tbl_master_income_categories`, IDPersonalAccount).Scan(&model).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
 	}
 	return nil
 }

@@ -93,7 +93,6 @@ func (s *AccountUseCase) SignUp(request *dtos.AccountSignUpRequest) (response dt
 
 		if request.RefCodeReference == "" {
 			level = 0
-
 		}
 	}
 
@@ -129,6 +128,11 @@ func (s *AccountUseCase) SignUp(request *dtos.AccountSignUpRequest) (response dt
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
+
+	// duplicate category, sub-category, income
+	s.repo.DuplicateExpenseCategory(idPersonalAccount)
+	s.repo.DuplicateExpenseSUbCategory(idPersonalAccount)
+	s.repo.DuplicateIncomeCategory(idPersonalAccount)
 
 	return response, httpCode, errInfo
 }

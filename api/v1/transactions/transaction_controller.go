@@ -23,6 +23,7 @@ type (
 		Investment(ctx *gin.Context)
 		ByNotes(ctx *gin.Context)
 		TravelTransactionHistory(ctx *gin.Context)
+		Suggestion(ctx *gin.Context)
 	}
 )
 
@@ -128,9 +129,7 @@ func (c *TransactionController) ByNotes(ctx *gin.Context) {
 }
 
 func (c *TransactionController) TravelTransactionHistory(ctx *gin.Context) {
-	var (
-		errInfo []errorsinfo.Errors
-	)
+	var errInfo []errorsinfo.Errors
 
 	idTravel := ctx.Query("idTravel")
 
@@ -147,6 +146,12 @@ func (c *TransactionController) TravelTransactionHistory(ctx *gin.Context) {
 		errInfo = []errorsinfo.Errors{}
 	}
 
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *TransactionController) Suggestion(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.Suggestion(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
