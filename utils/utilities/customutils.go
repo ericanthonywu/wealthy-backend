@@ -1,6 +1,8 @@
 package utilities
 
 import (
+	"crypto/sha512"
+	"encoding/hex"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -108,4 +110,15 @@ func GetLastDay(dateOrigin string) int {
 	// Calculate the last day of the month
 	lastDay := time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC)
 	return lastDay.Day()
+}
+
+func CalculateSHA512(input string) (string, error) {
+	hash := sha512.New()
+	_, err := hash.Write([]byte(input))
+	if err != nil {
+		return "", err
+	}
+	hashInBytes := hash.Sum(nil)
+	hashString := hex.EncodeToString(hashInBytes)
+	return hashString, nil
 }
