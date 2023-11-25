@@ -436,17 +436,23 @@ GROUP BY transaction_period`, year, IDPersonal).Scan(&data).Error; err != nil {
 }
 
 func (r *TransactionRepository) IncomeSpendingAnnuallyDetail(IDPersonal uuid.UUID, year string) (data []entities.TransactionIncomeSpendingDetailAnnually) {
-	if err := r.db.Raw(`SELECT to_char(tt.date_time_transaction::DATE, 'MM') ::text          as month,
+	if err := r.db.Raw(`SELECT CONCAT(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-',
+              to_char(tt.date_time_transaction::DATE, 'MM'))         as date_origin,
+       to_char(tt.date_time_transaction::DATE, 'MM') ::text          as month,
        CONCAT(to_char(to_date(tt.date_time_transaction, 'YYYY-MM-DD'), 'Mon'), ' ',
               to_char(tt.date_time_transaction::DATE, 'YYYY'))::text as month_year,
        date_part('days', (date_trunc('month', tt.date_time_transaction::DATE) +
                           interval '1 month - 1 day')) ::numeric     as total_days_in_month,
-       COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000' ),
+       COALESCE(SUM(tt.amount)
+                FILTER ( WHERE tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000' ),
                 0) :: numeric                                        as total_income,
-       COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000' ),
+       COALESCE(SUM(tt.amount)
+                FILTER ( WHERE tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000' ),
                 0) :: numeric                                        as total_spending,
-       COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000' ),
-                0) - COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000' ),
+       COALESCE(SUM(tt.amount)
+                FILTER ( WHERE tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000' ),
+                0) - COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_expense_categories <>
+                                                            '00000000-0000-0000-0000-000000000000' ),
                               0) :: numeric                          as net_income
 FROM tbl_transactions tt
          LEFT JOIN tbl_master_expense_categories tmec ON tt.id_master_expense_categories = tmec.id
@@ -454,7 +460,7 @@ FROM tbl_transactions tt
                    ON tt.id_master_income_categories = tmic.id
 WHERE to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
   AND tt.id_personal_account = ?
-GROUP BY month_year, month, total_days_in_month
+GROUP BY month_year, month, total_days_in_month, date_origin
 ORDER BY month DESC`, year, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionIncomeSpendingDetailAnnually{}
 	}

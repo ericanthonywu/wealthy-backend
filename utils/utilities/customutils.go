@@ -100,3 +100,12 @@ func ValidateBetweenTwoDateRange(startDateOrigin, endDateOrigin string) bool {
 
 	return false
 }
+
+func GetLastDay(dateOrigin string) int {
+	dateNow, _ := time.Parse("2006-01", dateOrigin)
+	year, month, _ := dateNow.Date()
+
+	// Calculate the last day of the month
+	lastDay := time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC)
+	return lastDay.Day()
+}

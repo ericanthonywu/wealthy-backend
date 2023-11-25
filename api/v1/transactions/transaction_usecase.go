@@ -7,6 +7,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/entities"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
 	"net/http"
 )
 
@@ -316,9 +317,14 @@ func (s *TransactionUseCase) InvestTransactionHistory(ctx *gin.Context) (respons
 
 func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		dtoResponse                  dtos.TransactionIncomeSpendingInvestment
-		responseIncomeSpendingTotal  interface{}
-		responseIncomeSpendingDetail interface{}
+		dtoResponse                          dtos.TransactionIncomeSpendingInvestment
+		dtoResponseAnnually                  dtos.TransactionIncomeSpendingInvestmentAnnually
+		dtoAnnualyDetail                     []dtos.TransactionDetailAnnually
+		responseIncomeSpendingTotal          interface{}
+		responseIncomeSpendingDetailMonthly  []entities.TransactionIncomeSpendingDetailMonthly
+		responseIncomeSpendingDetailAnnually []entities.TransactionIncomeSpendingDetailAnnually
+		detailsMonthly                       []dtos.TransactionIncomeSpendingInvestmentDetail
+		deepDetailsMonthly                   []dtos.TransactionDetails
 	)
 
 	month := ctx.Query("month")
@@ -334,31 +340,128 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context) (response interfac
 	}
 
 	if month == "" && year == "" {
-		httpCode = http.StatusBadGateway
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "need month information")
-		return response, httpCode, errInfo
+		return response, http.StatusBadGateway, errInfo
 	}
 
 	if month != "" && year != "" {
 		responseIncomeSpendingTotal = s.repo.IncomeSpendingMonthlyTotal(personalAccount.ID, month, year)
-		responseIncomeSpendingDetail = s.repo.IncomeSpendingMonthlyDetail(personalAccount.ID, month, year)
+		responseIncomeSpendingDetailMonthly = s.repo.IncomeSpendingMonthlyDetail(personalAccount.ID, month, year)
 	}
 
 	if month == "" && year != "" {
 		responseIncomeSpendingTotal = s.repo.IncomeSpendingAnnuallyTotal(personalAccount.ID, year)
-		responseIncomeSpendingDetail = s.repo.IncomeSpendingAnnuallyDetail(personalAccount.ID, year)
+		responseIncomeSpendingDetailAnnually = s.repo.IncomeSpendingAnnuallyDetail(personalAccount.ID, year)
 	}
 
-	dtoResponse.Detail = responseIncomeSpendingDetail
-	dtoResponse.Summary = responseIncomeSpendingTotal
-	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	// todo : figure out the another way
+	//if len(responseIncomeSpendingDetailMonthly) == 0 {
+	//	return dtos.TransactionIncomeSpendingInvestment{}, http.StatusNotFound, errInfo
+	//}
+	//
+	//if len(responseIncomeSpendingDetailAnnually) == 0 {
+	//	return dtos.TransactionIncomeSpendingInvestmentAnnually{}, http.StatusNotFound, errInfo
+	//}
+
+	if len(responseIncomeSpendingDetailMonthly) > 0 {
+
+		var dateTempPrev string
+		length := len(responseIncomeSpendingDetailMonthly)
+
+		for k, v := range responseIncomeSpendingDetailMonthly {
+
+			// for first time
+			if dateTempPrev == "" {
+				dateTempPrev = v.TransactionDate
+
+				deepDetailsMonthly = append(deepDetailsMonthly, dtos.TransactionDetails{
+					TransactionCategory: v.TransactionCategory,
+					TransactionType:     v.TransactionType,
+					TransactionAmount: dtos.Amount{
+						CurrencyCode: "IDR",
+						Value:        float64(v.TransactionAmount),
+					},
+					TransactionNote: v.TransactionNote,
+				})
+			}
+
+			// if previous is different current
+			if dateTempPrev != v.TransactionDate {
+				deepDetailsMonthly = append(deepDetailsMonthly, dtos.TransactionDetails{
+					TransactionCategory: v.TransactionCategory,
+					TransactionType:     v.TransactionType,
+					TransactionAmount: dtos.Amount{
+						CurrencyCode: "IDR",
+						Value:        float64(v.TransactionAmount),
+					},
+					TransactionNote: v.TransactionNote,
+				})
+
+				detailsMonthly = append(detailsMonthly, dtos.TransactionIncomeSpendingInvestmentDetail{
+					TransactionDate:    dateTempPrev,
+					TransactionDetails: deepDetailsMonthly,
+				})
+
+				dtoResponse.Detail = append(dtoResponse.Detail, detailsMonthly...)
+
+				// clear data
+				detailsMonthly = []dtos.TransactionIncomeSpendingInvestmentDetail{}
+				deepDetailsMonthly = []dtos.TransactionDetails{}
+
+				dateTempPrev = v.TransactionDate
+
+				if k == (length - 1) {
+					deepDetailsMonthly = append(deepDetailsMonthly, dtos.TransactionDetails{
+						TransactionCategory: v.TransactionCategory,
+						TransactionType:     v.TransactionType,
+						TransactionAmount: dtos.Amount{
+							CurrencyCode: "IDR",
+							Value:        float64(v.TransactionAmount),
+						},
+						TransactionNote: v.TransactionNote,
+					})
+
+					detailsMonthly = append(detailsMonthly, dtos.TransactionIncomeSpendingInvestmentDetail{
+						TransactionDate:    dateTempPrev,
+						TransactionDetails: deepDetailsMonthly,
+					})
+				}
+			}
+		}
+		dtoResponse.Summary = responseIncomeSpendingTotal
+		return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
+	}
+
+	if len(responseIncomeSpendingDetailAnnually) > 0 {
+
+		for _, v := range responseIncomeSpendingDetailAnnually {
+			dtoAnnualyDetail = append(dtoAnnualyDetail, dtos.TransactionDetailAnnually{
+				LastDayInMonth:  utilities.GetLastDay(v.DateOrigin),
+				MonthYear:       v.MonthYear,
+				TotalDayInMonth: v.TotalDayInMonth,
+				TotalIncome:     v.TotalIncome,
+				TotalSpending:   v.TotalSpending,
+				NetIncome:       v.NetIncome,
+			})
+		}
+
+		dtoResponseAnnually.Summary = responseIncomeSpendingTotal
+		dtoResponseAnnually.Detail = dtoAnnualyDetail
+		return dtoResponseAnnually, http.StatusOK, []errorsinfo.Errors{}
+	}
+
+	return response, http.StatusPreconditionFailed, []errorsinfo.Errors{}
 }
 
 func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		dtoResponse              dtos.TransactionIncomeSpendingInvestment
-		responseInvestmentTotal  interface{}
-		responseInvestmentDetail interface{}
+		dtoResponse             dtos.TransactionIncomeSpendingInvestment
+		responseInvestmentTotal interface{}
+		//responseInvestmentDetail interface{}
 	)
 
 	month := ctx.Query("month")
@@ -381,16 +484,16 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 
 	if month != "" && year != "" {
 		responseInvestmentTotal = s.repo.InvestMonthlyTotal(personalAccount.ID, month, year)
-		responseInvestmentDetail = s.repo.InvestMonthlyDetail(personalAccount.ID, month, year)
+		//responseInvestmentDetail = s.repo.InvestMonthlyDetail(personalAccount.ID, month, year)
 	}
 
 	if month == "" && year != "" {
 		responseInvestmentTotal = s.repo.InvestAnnuallyTotal(personalAccount.ID, year)
-		responseInvestmentDetail = s.repo.InvestAnnuallyDetail(personalAccount.ID, year)
+		//responseInvestmentDetail = s.repo.InvestAnnuallyDetail(personalAccount.ID, year)
 	}
 
 	dtoResponse.Summary = responseInvestmentTotal
-	dtoResponse.Detail = responseInvestmentDetail
+	//dtoResponse.Detail = responseInvestmentDetail
 
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }

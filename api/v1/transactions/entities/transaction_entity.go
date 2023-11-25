@@ -104,6 +104,7 @@ type (
 	}
 
 	TransactionIncomeSpendingDetailAnnually struct {
+		DateOrigin      string  `gorm:"date_origin"`
 		MonthYear       string  `gorm:"column:month_year" json:"month_year"`
 		TotalDayInMonth int     `gorm:"column:total_day_in_month" json:"total_day_in_month"`
 		TotalIncome     int     `gorm:"column:total_income" json:"total_income"`
