@@ -462,7 +462,7 @@ func (s *StatisticUseCase) ExpenseDetail(ctx *gin.Context, month, year string) (
 	var (
 		dtoResponse   dtos.ExpenseDetail
 		stringBuilder strings.Builder
-		totalExpense  int
+		totalExpense  int64
 	)
 
 	usrEmail := ctx.MustGet("email").(string)
@@ -487,11 +487,11 @@ func (s *StatisticUseCase) ExpenseDetail(ctx *gin.Context, month, year string) (
 			Category: v.Category,
 			Amount: dtos.ExpDetailTransaction{
 				CurrencyCode: "IDR",
-				Value:        v.Amount,
+				Value:        int64(v.Amount),
 			},
 		})
 
-		totalExpense += v.Amount
+		totalExpense += int64(v.Amount)
 	}
 
 	monthINT, err := strconv.Atoi(month)

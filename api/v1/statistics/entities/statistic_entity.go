@@ -76,7 +76,7 @@ type (
 	StatisticDetailExpense struct {
 		ID       uuid.UUID `gorm:"column:id"`
 		Category string    `gorm:"column:category"`
-		Amount   int       `gorm:"column:amount"`
+		Amount   float64   `gorm:"column:amount"`
 	}
 
 	StatisticAnalyticsTrends struct {

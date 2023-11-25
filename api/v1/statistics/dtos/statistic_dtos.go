@@ -83,7 +83,7 @@ type (
 
 	ExpenseDetail struct {
 		Period       string      `json:"period"`
-		TotalExpense int         `json:"total_expense"`
+		TotalExpense int64       `json:"total_expense"`
 		Expense      []ExpDetail `json:"details"`
 	}
 
@@ -95,7 +95,7 @@ type (
 
 	ExpDetailTransaction struct {
 		CurrencyCode string `json:"currency_code"`
-		Value        int    `json:"value"`
+		Value        int64  `json:"value"`
 	}
 
 	WeeklySubExpense struct {
