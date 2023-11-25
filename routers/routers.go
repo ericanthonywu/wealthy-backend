@@ -17,6 +17,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 	subscriptions := Subscriptions(db)
 	referrals := Referrals(db)
 	payments := Payments(db)
+	tracks := Tracks(db)
 
 	v1group := router.Group("/v1")
 	{
@@ -166,6 +167,11 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		paymentGroup := v1group.Group("/payments", tokenSignature())
 		{
 			paymentGroup.POST("/subscriptions", payments.Subscriptions)
+		}
+
+		trackGroup := v1group.Group("/tracks", tokenSignature())
+		{
+			trackGroup.POST("/screen-time", tracks.ScreenTime)
 		}
 
 		imageGroup := v1group.Group("/images")
