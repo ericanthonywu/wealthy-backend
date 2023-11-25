@@ -499,6 +499,12 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 }
 
 func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		dtoResponse dtos.TransactionNotes
+		dataNotes   []entities.TransactionByNotes
+		detailNotes []dtos.TransactionNotesDetail
+	)
+
 	month := ctx.Query("month")
 	year := ctx.Query("year")
 
@@ -506,20 +512,104 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
+		return response, http.StatusBadRequest, errInfo
 	}
 
 	if month == "" && year == "" {
-		httpCode = http.StatusBadGateway
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "need month and or year information")
-		return response, httpCode, errInfo
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "both month, year need in query url")
+		return response, http.StatusBadRequest, errInfo
 	}
 
 	if month != "" && year != "" {
-		response = s.repo.ByNote(personalAccount.ID, month, year)
+		dateFilter := year + "-" + month + "-" + "01"
+		dataNotes = s.repo.ByNote(personalAccount.ID, dateFilter)
 	}
 
-	return response, http.StatusOK, []errorsinfo.Errors{}
+	lengthData := len(dataNotes)
+
+	if len(dataNotes) > 0 {
+		var catPrev string
+
+		for k, v := range dataNotes {
+
+			if catPrev == v.TransactionCategory {
+				detailNotes = append(detailNotes, dtos.TransactionNotesDetail{
+					TransactionCategory: catPrev,
+					TransactionAmount: dtos.Amount{
+						CurrencyCode: "IDR",
+						Value:        v.Amount,
+					},
+					TransactionLimit: dtos.Amount{
+						CurrencyCode: "IDR",
+						Value:        v.Budget,
+					},
+					TransactionNote: v.TransactionNote,
+				})
+			}
+
+			if catPrev == "" {
+				catPrev = v.TransactionCategory
+
+				detailNotes = append(detailNotes, dtos.TransactionNotesDetail{
+					TransactionCategory: catPrev,
+					TransactionAmount: dtos.Amount{
+						CurrencyCode: "IDR",
+						Value:        v.Amount,
+					},
+					TransactionLimit: dtos.Amount{
+						CurrencyCode: "IDR",
+						Value:        v.Budget,
+					},
+					TransactionNote: v.TransactionNote,
+				})
+			}
+
+			if catPrev != v.TransactionCategory {
+				if k == (lengthData - 1) {
+					detailNotes = append(detailNotes, dtos.TransactionNotesDetail{
+						TransactionCategory: catPrev,
+						TransactionAmount: dtos.Amount{
+							CurrencyCode: "IDR",
+							Value:        v.Amount,
+						},
+						TransactionLimit: dtos.Amount{
+							CurrencyCode: "IDR",
+							Value:        v.Budget,
+						},
+						TransactionNote: v.TransactionNote,
+					})
+					dtoResponse.TransactionNotesDetail = append(dtoResponse.TransactionNotesDetail, detailNotes...)
+
+					// clear
+					detailNotes = []dtos.TransactionNotesDetail{}
+				} else {
+					dtoResponse.TransactionNotesDetail = append(dtoResponse.TransactionNotesDetail, detailNotes...)
+
+					// clear
+					detailNotes = []dtos.TransactionNotesDetail{}
+
+					catPrev = v.TransactionCategory
+
+					detailNotes = append(detailNotes, dtos.TransactionNotesDetail{
+						TransactionCategory: catPrev,
+						TransactionAmount: dtos.Amount{
+							CurrencyCode: "IDR",
+							Value:        v.Amount,
+						},
+						TransactionLimit: dtos.Amount{
+							CurrencyCode: "IDR",
+							Value:        v.Budget,
+						},
+						TransactionNote: v.TransactionNote,
+					})
+				}
+			}
+		}
+
+		dtoResponse.TransactionDate = month + "-" + year
+
+	}
+
+	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }

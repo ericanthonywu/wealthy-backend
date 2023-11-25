@@ -127,10 +127,12 @@ type (
 	}
 
 	TransactionByNotes struct {
-		MonthYear           string `gorm:"column:month_year" json:"month_year"`
-		Quantity            int    `gorm:"column:quantity" json:"quantity"`
-		TransactionNote     string `gorm:"column:transaction_note" json:"transaction_note"`
-		TransactionCategory string `gorm:"column:transaction_category" json:"transaction_category"`
+		Budget              float64 `gorm:"column:budget"`
+		Amount              float64 `gorm:"column:amount"`
+		MonthYear           string  `gorm:"column:month_year" json:"month_year"`
+		Quantity            int     `gorm:"column:quantity" json:"quantity"`
+		TransactionNote     string  `gorm:"column:transaction_note" json:"transaction_note"`
+		TransactionCategory string  `gorm:"column:transaction_category" json:"transaction_category"`
 	}
 )
 

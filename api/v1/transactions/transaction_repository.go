@@ -46,7 +46,7 @@ type (
 		InvestMonthlyDetail(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionInvestmentDetail)
 		InvestAnnuallyTotal(IDPersonal uuid.UUID, year string) (data entities.TransactionInvestmentTotals)
 		InvestAnnuallyDetail(IDPersonal uuid.UUID, year string) (data []entities.TransactionInvestmentDetail)
-		ByNote(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionByNotes)
+		ByNote(IDPersonal uuid.UUID, dateFilter string) (data []entities.TransactionByNotes)
 	}
 )
 
@@ -542,24 +542,25 @@ ORDER BY t.date_time_transaction::DATE DESC`, year, IDPersonal).Scan(&data).Erro
 	return data
 }
 
-func (r *TransactionRepository) ByNote(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionByNotes) {
-	if err := r.db.Raw(`SELECT to_char(t.date_time_transaction::DATE, 'MM')           as month,
-       concat(to_char(to_date(t.date_time_transaction, 'YYYY-MM-DD'), 'Mon'), ' ',
-              to_char(t.date_time_transaction::DATE, 'YYYY'))::text as month_year,
-       count(td.note)::text                                         as quantity,
-       td.note::text                                                as transaction_note,
-       tmec.expense_types ::text                                    as transaction_category
+func (r *TransactionRepository) ByNote(IDPersonal uuid.UUID, dateFilter string) (data []entities.TransactionByNotes) {
+	if err := r.db.Raw(`SELECT
+    CASE WHEN tb.amount IS NULL THEN '0' ELSE tb.amount END as budget,
+    t.amount,
+    TO_CHAR(t.date_time_transaction::timestamp, 'MM') as month,
+    TO_CHAR(t.date_time_transaction::timestamp, 'Mon YYYY') as month_year,
+    COUNT(td.note) as quantity,
+    td.note as transaction_note,
+    tmec.expense_types as transaction_category
 FROM tbl_transactions t
-         INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
-         INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
-         INNER JOIN tbl_master_expense_categories tmec
-                    on t.id_master_expense_categories = tmec.id
-WHERE to_char(t.date_time_transaction::DATE, 'MM') = ?
-  AND to_char(t.date_time_transaction::DATE, 'YYYY') = ?
+INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
+INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
+LEFT JOIN tbl_budgets tb ON tb.id_master_categories = t.id_master_expense_categories
+INNER JOIN tbl_master_expense_categories tmec ON t.id_master_expense_categories = tmec.id
+WHERE DATE_TRUNC('month', t.date_time_transaction::timestamp) = ?::timestamp
   AND t.id_personal_account = ?
-  AND tmtt.type = 'EXPENSE'
-GROUP BY month_year, td.note, expense_types, month
-ORDER BY month DESC, month_year`, month, year, IDPersonal).Scan(&data).Error; err != nil {
+  AND (tmtt.type = 'EXPENSE' OR tmtt.type='TRAVEL')
+GROUP BY month_year, td.note, tmec.expense_types, month, t.amount, tb.amount
+ORDER BY month DESC`, dateFilter, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionByNotes{}
 	}
 	return data

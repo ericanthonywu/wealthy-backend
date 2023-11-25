@@ -95,4 +95,16 @@ type (
 		TransactionAmount   Amount `json:"transaction_amount"`
 		TransactionNote     string `json:"transaction_note"`
 	}
+
+	TransactionNotes struct {
+		TransactionDate        string                   `json:"transaction_date"`
+		TransactionNotesDetail []TransactionNotesDetail `json:"details"`
+	}
+
+	TransactionNotesDetail struct {
+		TransactionCategory string `json:"transaction_category"`
+		TransactionAmount   Amount `json:"transaction_amount"`
+		TransactionLimit    Amount `json:"transaction_limit"`
+		TransactionNote     string `json:"transaction_note"`
+	}
 )
