@@ -15,6 +15,7 @@ type (
 
 	IPaymentController interface {
 		Subscriptions(ctx *gin.Context)
+		MidtransWebhook(ctx *gin.Context)
 	}
 )
 
@@ -38,4 +39,21 @@ func (c *PaymentController) Subscriptions(ctx *gin.Context) {
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 
+}
+
+func (c *PaymentController) MidtransWebhook(ctx *gin.Context) {
+	var (
+		dtoRequest dtos.MidTransWebhook
+		errInfo    []errorsinfo.Errors
+	)
+
+	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		response.SendBack(ctx, dtos.PaymentSubscription{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	data, httpCode, errInfo := c.useCase.MidtransWebhook(ctx, &dtoRequest)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
 }

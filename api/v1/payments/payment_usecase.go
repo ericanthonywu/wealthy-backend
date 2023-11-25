@@ -24,6 +24,7 @@ type (
 
 	IPaymentUseCase interface {
 		Subscriptions(ctx *gin.Context, request *dtos.PaymentSubscription) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		MidtransWebhook(ctx *gin.Context, request *dtos.MidTransWebhook) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -33,6 +34,8 @@ func NewPaymentUseCase(repo IPaymentRepository) *PaymentUseCase {
 
 func (s *PaymentUseCase) Subscriptions(ctx *gin.Context, request *dtos.PaymentSubscription) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var midTransResponse dtos.MidTansResponse
+
+	orderID := orderid.Generator()
 
 	usrEmail := ctx.MustGet("email").(string)
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
@@ -50,7 +53,7 @@ func (s *PaymentUseCase) Subscriptions(ctx *gin.Context, request *dtos.PaymentSu
 
 	bodyPayload := dtos.PaymentSnapRequest{
 		Details: dtos.PaymentSnapDetails{
-			OrderId:     orderid.Generator(),
+			OrderId:     orderID,
 			GrossAmount: dataPrice.Price,
 		},
 	}
@@ -111,6 +114,7 @@ func (s *PaymentUseCase) Subscriptions(ctx *gin.Context, request *dtos.PaymentSu
 			Token:             midTransResponse.Token,
 			SubscriptionID:    request.PackageID,
 			Amount:            dataPrice.Price,
+			OrderID:           orderID,
 		}
 
 		result, err := s.repo.SaveSubscriptionPayment(&model)
@@ -128,4 +132,18 @@ func (s *PaymentUseCase) Subscriptions(ctx *gin.Context, request *dtos.PaymentSu
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "payment gateway problem")
 		return midTransResponse, resp.StatusCode, errInfo
 	}
+}
+
+func (s *PaymentUseCase) MidtransWebhook(ctx *gin.Context, request *dtos.MidTransWebhook) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	if err := s.repo.MidtransWebhook(request.OrderId); err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return response, http.StatusInternalServerError, errInfo
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return response, http.StatusOK, errInfo
 }

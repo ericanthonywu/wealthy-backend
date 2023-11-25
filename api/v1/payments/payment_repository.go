@@ -15,6 +15,7 @@ type (
 	IPaymentRepository interface {
 		GetPrice(subs uuid.UUID) (data entities.DataPriceInfo)
 		SaveSubscriptionPayment(model *entities.SubsTransaction) (result bool, err error)
+		MidtransWebhook(orderID string) (err error)
 	}
 )
 
@@ -37,4 +38,14 @@ func (r *PaymentRepository) SaveSubscriptionPayment(model *entities.SubsTransact
 		return false, err
 	}
 	return true, nil
+}
+
+func (r *PaymentRepository) MidtransWebhook(orderID string) (err error) {
+	var model interface{}
+
+	if err := r.db.Raw(`UPDATE tbl_subscriptions_transaction SET status=? WHERE order_id=?`, 1, orderID).Scan(&model).Error; err != nil {
+		return err
+	}
+
+	return nil
 }

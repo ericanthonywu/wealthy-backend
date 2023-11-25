@@ -198,6 +198,10 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		paymentGroup := v1group.Group("/payments", tokenSignature())
 		{
 			paymentGroup.POST("/subscriptions", payments.Subscriptions)
+			webhookGroup := paymentGroup.Group("/webhooks")
+			{
+				webhookGroup.POST("/midtrans", payments.MidtransWebhook)
+			}
 		}
 
 		trackGroup := v1group.Group("/tracks", tokenSignature())
