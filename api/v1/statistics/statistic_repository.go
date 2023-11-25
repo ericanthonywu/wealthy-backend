@@ -42,7 +42,7 @@ func (r *StatisticRepository) SummaryMonthly(IDPersonal uuid.UUID, month, year s
 }
 
 func (r *StatisticRepository) Priority(IDPersonal uuid.UUID, month, year string) (data entities.StatisticPriority) {
-	if err := r.db.Raw(`SELECT count(tt.id)::numeric as total_transaction,
+	if err := r.db.Raw(`SELECT count(tt.id) FILTER ( WHERE  tmtp.priority = 'NEED' OR tmtp.priority = 'WANT' OR tmtp.priority = 'MUST')::numeric as total_transaction,
        count(tt.id)  FILTER (WHERE tmtp.priority = 'NEED')::numeric as priority_need,
        count(tt.id) FILTER (WHERE tmtp.priority = 'WANT')::numeric as priority_want,
        count(tt.id) FILTER (WHERE tmtp.priority = 'MUST')::numeric as priorityl_must
