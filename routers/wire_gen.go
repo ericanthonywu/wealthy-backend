@@ -12,6 +12,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/images"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/internals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/notifications"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/payments"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/referrals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
@@ -106,4 +107,11 @@ func Tracks(db *gorm.DB) *tracks.TrackController {
 	trackUseCase := tracks.NewTrackUseCase(trackRepository)
 	trackController := tracks.NewTrackController(trackUseCase)
 	return trackController
+}
+
+func Notifications(db *gorm.DB) *notifications.NotificationController {
+	notificationRepository := notifications.NewNotificationRepository(db)
+	notificationUseCase := notifications.NewNotificationUseCase(notificationRepository)
+	notificationController := notifications.NewNotificationController(notificationUseCase)
+	return notificationController
 }

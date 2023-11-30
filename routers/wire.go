@@ -10,6 +10,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/images"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/internals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/notifications"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/payments"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/referrals"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
@@ -162,4 +163,16 @@ func Tracks(db *gorm.DB) *tracks.TrackController {
 		wire.Bind(new(tracks.ITrackRepository), new(*tracks.TrackRepository)),
 	)))
 	return &tracks.TrackController{}
+}
+
+func Notifications(db *gorm.DB) *notifications.NotificationController {
+	panic(wire.Build(wire.NewSet(
+		notifications.NewNotificationController,
+		notifications.NewNotificationUseCase,
+		notifications.NewNotificationRepository,
+		wire.Bind(new(notifications.INotificationController), new(*notifications.NotificationController)),
+		wire.Bind(new(notifications.INotificationUseCase), new(*notifications.NotificationUseCase)),
+		wire.Bind(new(notifications.INotificationRepository), new(*notifications.NotificationRepository)),
+	)))
+	return &notifications.NotificationController{}
 }

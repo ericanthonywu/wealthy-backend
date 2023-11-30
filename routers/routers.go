@@ -104,6 +104,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				sharingGroup.POST("/search", account.SearchAccount)
 				sharingGroup.POST("/invite", account.InviteSharing)
 				sharingGroup.POST("/accept", account.AcceptSharing)
+				sharingGroup.POST("/reject", account.AcceptSharing)
 			}
 		}
 
@@ -209,6 +210,11 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		trackGroup := v1group.Group("/tracks", tokenSignature())
 		{
 			trackGroup.POST("/screen-time", tracks.ScreenTime)
+		}
+
+		notificationGroup := v1group.Group("/", tokenSignature())
+		{
+			notificationGroup.GET("/")
 		}
 
 		imageGroup := v1group.Group("/images")
