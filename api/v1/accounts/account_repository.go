@@ -33,6 +33,9 @@ type (
 		DuplicateExpenseCategory(IDPersonalAccount uuid.UUID) (err error)
 		DuplicateExpenseSUbCategory(IDPersonalAccount uuid.UUID) (err error)
 		DuplicateIncomeCategory(IDPersonalAccount uuid.UUID) (err error)
+		SearchAccount(email string) (data entities.AccountSearchEmail, err error)
+		InviteSharing(model *entities.AccountGroupSharing) (err error)
+		GetProfileByEmail(email string) (data entities.AccountProfile, err error)
 	}
 )
 
@@ -63,7 +66,7 @@ func (r *AccountRepository) SignUp(personalEntity *entities.AccountSignUpPersona
 	IDPersonalAccount, err := r.SignUpPersonalAccount(personalEntity)
 	if err != nil {
 		logrus.Error(err.Error())
-		return "", uuid.Nil, http.StatusBadRequest, errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return "", uuid.Nil, http.StatusInternalServerError, errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 	}
 
 	authEntity.IDPersonalAccounts = IDPersonalAccount
@@ -77,7 +80,7 @@ func (r *AccountRepository) SignUp(personalEntity *entities.AccountSignUpPersona
 }
 
 func (r *AccountRepository) SignUpPersonalAccount(model *entities.AccountSignUpPersonalAccountEntity) (IDPersonalAccount uuid.UUID, err error) {
-	result := r.db.First(&model, "email", model.Email)
+	_ = r.db.First(&model, "email", model.Email)
 	if model.ID != uuid.Nil {
 		return model.ID, errors.New("email already exist on system")
 	}
@@ -87,8 +90,8 @@ func (r *AccountRepository) SignUpPersonalAccount(model *entities.AccountSignUpP
 		logrus.Error(err.Error())
 	}
 
-	result = r.db.Create(&model)
-	if result.RowsAffected == 0 {
+	if err = r.db.Create(&model).Error; err != nil {
+		logrus.Error(err.Error())
 		return uuid.Nil, err
 	}
 
@@ -251,4 +254,36 @@ FROM tbl_master_income_categories`, IDPersonalAccount).Scan(&model).Error; err !
 		return err
 	}
 	return nil
+}
+
+func (r *AccountRepository) SearchAccount(email string) (data entities.AccountSearchEmail, err error) {
+	if err = r.db.Raw(`SELECT tpa.id FROM tbl_personal_accounts tpa WHERE  tpa.email=?`, email).Scan(&data).Error; err != nil {
+		return entities.AccountSearchEmail{}, err
+	}
+	return data, nil
+}
+
+func (r *AccountRepository) InviteSharing(modelGroupSharing *entities.AccountGroupSharing) (err error) {
+	if err := r.db.Create(&modelGroupSharing).Error; err != nil {
+		return err
+	}
+
+	//if err := r.db.Raw(``).Scan(&model).Error; err != nil {
+	//	return err
+	//}
+
+	return nil
+}
+
+func (r *AccountRepository) GetProfileByEmail(email string) (data entities.AccountProfile, err error) {
+	if err := r.db.Raw(`SELECT tmg.id as id_gender, pa.file_name ,pa.image_path, pa.id,pa.username, pa.name, pa.dob as date_of_birth, pa.refer_code, pa.email, tmat.account_type, tmg.gender_name as gender, tmr.roles as user_roles
+FROM tbl_personal_accounts pa
+INNER JOIN tbl_master_account_types tmat ON tmat.id = pa.id_master_account_types
+LEFT JOIN tbl_master_genders tmg ON tmg.id = pa.id_master_gender
+INNER JOIN tbl_authentications ta ON ta.id_personal_accounts = pa.id
+INNER JOIN tbl_master_roles tmr ON tmr.id = ta.id_master_roles
+WHERE pa.email=?`, email).Scan(&data).Error; err != nil {
+		return entities.AccountProfile{}, err
+	}
+	return data, nil
 }

@@ -99,9 +99,11 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				accountReferral.POST("/validate", account.ValidateRefCode)
 			}
 
-			sharingGroup := accountGroup.Group("/sharing")
+			sharingGroup := accountGroup.Group("/shares", tokenSignature())
 			{
-				sharingGroup.GET("", account.Sharing)
+				sharingGroup.POST("/search", account.SearchAccount)
+				sharingGroup.POST("/invite", account.InviteSharing)
+				sharingGroup.POST("/accept", account.AcceptSharing)
 			}
 		}
 

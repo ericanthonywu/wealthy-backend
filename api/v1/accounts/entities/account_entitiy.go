@@ -87,6 +87,17 @@ type (
 		RefCodeReference string    `gorm:"column:ref_code_reference"`
 		Level            int       `gorm:"column:level"`
 	}
+
+	AccountSearchEmail struct {
+		ID uuid.UUID `gorm:"column:id"`
+	}
+
+	AccountGroupSharing struct {
+		ID         uuid.UUID `gorm:"column:id"`
+		ShareFrom  uuid.UUID `gorm:"column:id_personal_accounts_share_from"`
+		ShareTo    uuid.UUID `gorm:"column:id_personal_accounts_share_to"`
+		IsAccepted bool      `gorm:"column:is_accepted"`
+	}
 )
 
 func (AccountAuthorization) TableName() string {
@@ -116,4 +127,8 @@ func (AccountSignUpAuthenticationsEntity) TableName() string {
 
 func (AccountRewards) TableName() string {
 	return "tbl_user_rewards"
+}
+
+func (AccountGroupSharing) TableName() string {
+	return "tbl_group_sharing"
 }

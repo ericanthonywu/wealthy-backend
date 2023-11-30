@@ -110,7 +110,10 @@ type (
 	}
 
 	AccountGroupSharing struct {
-		IDPersonalAccount       uuid.UUID `json:"id_personal_accounts"`
-		IDPersonalAccountTarget uuid.UUID `json:"id_personal_accounts_target"`
+		EmailAccount string `json:"email_account"`
+	}
+
+	AccountSearch struct {
+		ID uuid.UUID `json:"account_id"`
 	}
 )

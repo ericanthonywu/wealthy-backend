@@ -26,7 +26,7 @@ type (
 
 	IAccountUseCase interface {
 		SignIn(request *dtos.AccountSignInRequest) (response dtos.AccountSignInResponse, httpCode int, errInfo []errorsinfo.Errors)
-		SignUp(request *dtos.AccountSignUpRequest) (response dtos.AccountSignUpResponse, httpCode int, errInfo []errorsinfo.Errors)
+		SignUp(request *dtos.AccountSignUpRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		SignOut()
 		GetProfile(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		UpdateProfile(ctx *gin.Context, customerID uuid.UUID, request map[string]interface{}) (response map[string]bool, httpCode int, errInfo []errorsinfo.Errors)
@@ -34,6 +34,8 @@ type (
 		ValidateRefCode(request *dtos.AccountRefCodeValidationRequest) (response dtos.AccountRefCodeValidationResponse, httpCode int, errInfo []errorsinfo.Errors)
 		SetAvatar(ctx *gin.Context, request *dtos.AccountAvatarRequest) (response dtos.AccountAvatarResponse, httpCode int, errInfo []errorsinfo.Errors)
 		RemoveAvatar(ctx *gin.Context, customerID uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		SearchAccount(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharing) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		InviteSharing(ctx *gin.Context, dtoResponse *dtos.AccountGroupSharing) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -41,8 +43,9 @@ func NewAccountUseCase(repo IAccountRepository) *AccountUseCase {
 	return &AccountUseCase{repo: repo}
 }
 
-func (s *AccountUseCase) SignUp(request *dtos.AccountSignUpRequest) (response dtos.AccountSignUpResponse, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *AccountUseCase) SignUp(request *dtos.AccountSignUpRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
+		dtoResponse       dtos.AccountSignUpResponse
 		role              string
 		idPersonalAccount uuid.UUID
 		level             int
@@ -61,39 +64,53 @@ func (s *AccountUseCase) SignUp(request *dtos.AccountSignUpRequest) (response dt
 		Active:   true,
 	}
 
-	role, idPersonalAccount, httpCode, errInfo = s.repo.SignUp(&personalAccountEntity, &authAccountActivity)
+	// get all referral code that registered
+	listRefCodeExist := s.repo.ListRefCode()
 
-	if len(errInfo) > 0 {
-		return response, httpCode, errInfo
+	// is new referral code already exist
+	if utilities.Contains(listRefCodeExist, request.RefCode) {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("referral code is already registered").Error())
+		return response, http.StatusBadRequest, errInfo
 	}
 
+	// save data into db
+	role, idPersonalAccount, httpCode, errInfo = s.repo.SignUp(&personalAccountEntity, &authAccountActivity)
+
+	// can not save data into db
+	if len(errInfo) > 0 {
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{}
+		return resp, http.StatusBadRequest, errInfo
+	}
+
+	// check referral code reference is not or empty
 	if request.RefCodeReference != "" {
-		// Check reference first
-		listRefCodeExist := s.repo.ListRefCode()
+
+		// check referral code reference from payload is existed in database
 		if !utilities.Contains(listRefCodeExist, request.RefCodeReference) {
-			httpCode = http.StatusBadRequest
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("referrals code reference not exist").Error())
-			return response, httpCode, errInfo
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("unknown referrals code reference").Error())
+			return response, http.StatusBadRequest, errInfo
 		}
 
-		if request.RefCodeReference != "" {
-			level, err = s.repo.GetLevelReferenceCode(request.RefCodeReference)
-			if err != nil {
-				logrus.Error(err.Error())
-			}
-
-			if err == nil {
-				level = level + 1
-			}
-
-			if level == 0 {
-				level = level + 1
-			}
+		// set up for reward position ( determined level )
+		level, err = s.repo.GetLevelReferenceCode(request.RefCodeReference)
+		if err != nil {
+			logrus.Error(err.Error())
 		}
 
-		if request.RefCodeReference == "" {
-			level = 0
+		if err == nil {
+			level = level + 1
 		}
+
+		if level == 0 {
+			level = level + 1
+		}
+	}
+
+	// set up for reward level section
+	if request.RefCodeReference == "" {
+		level = 0
 	}
 
 	newID, err := uuid.NewUUID()
@@ -101,7 +118,7 @@ func (s *AccountUseCase) SignUp(request *dtos.AccountSignUpRequest) (response dt
 		logrus.Error(err.Error())
 	}
 
-	// WRITING FOR REFERENCE CODE
+	// writing for user reference table
 	model := entities.AccountRewards{
 		ID:               newID,
 		RefCode:          request.RefCode,
@@ -114,14 +131,14 @@ func (s *AccountUseCase) SignUp(request *dtos.AccountSignUpRequest) (response dt
 		logrus.Error(err.Error())
 	}
 
-	response.Customer = dtos.CustomerDetail{
+	dtoResponse.Customer = dtos.CustomerDetail{
 		ID:       idPersonalAccount,
 		Name:     request.Name,
 		Username: request.Username,
 		Email:    request.Email,
 	}
 
-	response.Account = dtos.Account{
+	dtoResponse.Account = dtos.Account{
 		Role: role,
 	}
 
@@ -129,12 +146,25 @@ func (s *AccountUseCase) SignUp(request *dtos.AccountSignUpRequest) (response dt
 		errInfo = []errorsinfo.Errors{}
 	}
 
-	// duplicate category, sub-category, income
-	s.repo.DuplicateExpenseCategory(idPersonalAccount)
-	s.repo.DuplicateExpenseSUbCategory(idPersonalAccount)
-	s.repo.DuplicateIncomeCategory(idPersonalAccount)
+	// move contents of duplicate
+	err = s.repo.DuplicateExpenseCategory(idPersonalAccount)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
 
-	return response, httpCode, errInfo
+	// move contents of sub-category
+	err = s.repo.DuplicateExpenseSUbCategory(idPersonalAccount)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	// move contents of income category
+	err = s.repo.DuplicateIncomeCategory(idPersonalAccount)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	return dtoResponse, httpCode, errInfo
 }
 
 func (s *AccountUseCase) SignIn(request *dtos.AccountSignInRequest) (response dtos.AccountSignInResponse, httpCode int, errInfo []errorsinfo.Errors) {
@@ -392,4 +422,115 @@ func (s *AccountUseCase) RemoveAvatar(ctx *gin.Context, customerID uuid.UUID) (r
 
 	dtoResponse.Success = true
 	return dtoResponse, http.StatusOK, errInfo
+}
+
+func (s *AccountUseCase) SearchAccount(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharing) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var dtoResponse dtos.AccountSearch
+
+	dataPersonalAccounts, err := s.repo.SearchAccount(dtoRequest.EmailAccount)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return response, http.StatusInternalServerError, errInfo
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	if dataPersonalAccounts.ID == uuid.Nil {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "account email not existed",
+		}
+		return resp, http.StatusNotFound, errInfo
+	}
+
+	dtoResponse.ID = dataPersonalAccounts.ID
+	return dtoResponse, http.StatusOK, errInfo
+}
+
+func (s *AccountUseCase) InviteSharing(ctx *gin.Context, dtoResponse *dtos.AccountGroupSharing) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		model              utilities.NotificationEntities
+		modelInviteSharing entities.AccountGroupSharing
+		err                error
+	)
+
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return response, http.StatusUnauthorized, errInfo
+	}
+
+	// get profile for email sender
+	dataProfileSender, err := s.repo.GetProfileByEmail(usrEmail)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	// get profile for email target
+	dataProfile, err := s.repo.GetProfileByEmail(dtoResponse.EmailAccount)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	// if target email same as email sender in token
+	if dataProfile.Email == usrEmail {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not share with the same email")
+		return response, http.StatusUnauthorized, errInfo
+	}
+
+	// for first row
+	IDSender := uuid.New()
+	modelInviteSharing.ID = IDSender
+	modelInviteSharing.ShareFrom = personalAccount.ID
+	modelInviteSharing.ShareTo = dataProfile.ID
+	modelInviteSharing.IsAccepted = false
+
+	err = s.repo.InviteSharing(&modelInviteSharing)
+	if err != nil {
+		return nil, 0, nil
+	}
+
+	// for second row
+	IDReceipt := uuid.New()
+	modelInviteSharing.ID = IDReceipt
+	modelInviteSharing.ShareFrom = dataProfile.ID
+	modelInviteSharing.ShareTo = personalAccount.ID
+	modelInviteSharing.IsAccepted = false
+
+	err = s.repo.InviteSharing(&modelInviteSharing)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	// set notifications
+	model.ID = uuid.New()
+	model.IDPersonalAccounts = dataProfile.ID
+	model.IsRead = false
+	model.NotificationTitle = "Group Sharing"
+	model.NotificationDescription = dataProfileSender.Name + " has invite you to become group sharing member"
+	model.IDGroupSender = IDSender
+	model.IDGroupReceipt = IDReceipt
+
+	err = utilities.SetNotifications(ctx, model)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	resp := struct {
+		Message string `json:"message"`
+	}{
+		Message: "invitation has been sent successfully",
+	}
+
+	return resp, http.StatusOK, errInfo
 }

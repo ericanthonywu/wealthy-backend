@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"os"
 	"path/filepath"
 	"strings"
@@ -121,4 +122,14 @@ func CalculateSHA512(input string) (string, error) {
 	hashInBytes := hash.Sum(nil)
 	hashString := hex.EncodeToString(hashInBytes)
 	return hashString, nil
+}
+
+func SetNotifications(ctx *gin.Context, data NotificationEntities) (err error) {
+	db := ctx.MustGet("db").(*gorm.DB)
+
+	if err := db.Create(&data).Error; err != nil {
+		return err
+	}
+
+	return nil
 }

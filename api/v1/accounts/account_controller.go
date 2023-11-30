@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts/dtos"
@@ -25,7 +26,9 @@ type (
 		ValidateRefCode(ctx *gin.Context)
 		SetAvatar(ctx *gin.Context)
 		RemoveAvatar(ctx *gin.Context)
-		Sharing(ctx *gin.Context)
+		SearchAccount(ctx *gin.Context)
+		InviteSharing(ctx *gin.Context)
+		AcceptSharing(ctx *gin.Context)
 	}
 )
 
@@ -35,20 +38,75 @@ func NewAccountController(useCase IAccountUseCase) *AccountController {
 
 func (c *AccountController) SignUp(ctx *gin.Context) {
 	var (
-		dtoRequest  dtos.AccountSignUpRequest
-		dtoResponse dtos.AccountSignUpResponse
-		httpCode    int
-		errInfo     []errorsinfo.Errors
+		dtoRequest dtos.AccountSignUpRequest
+		httpCode   int
+		errInfo    []errorsinfo.Errors
 	)
 
+	// binding
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		response.SendBack(ctx, dtos.AccountSignUpResponse{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
-	dtoResponse, httpCode, errInfo = c.useCase.SignUp(&dtoRequest)
-	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
+	// validate
+	if dtoRequest.Password == "" {
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{}
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("password empty in payload").Error())
+		response.SendBack(ctx, resp, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	if dtoRequest.Username == "" {
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{}
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("username empty in payload").Error())
+		response.SendBack(ctx, resp, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	if dtoRequest.Name == "" {
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{}
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("name empty in payload").Error())
+		response.SendBack(ctx, resp, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	if dtoRequest.Email == "" {
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{}
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("email empty in payload").Error())
+		response.SendBack(ctx, resp, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	if dtoRequest.RefCode == "" {
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{}
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("referral code empty in payload").Error())
+		response.SendBack(ctx, resp, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	if dtoRequest.RefCode == dtoRequest.RefCodeReference {
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{}
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("referral code and referral code reference identically value in payload").Error())
+		response.SendBack(ctx, resp, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	dataResponse, httpCode, errInfo := c.useCase.SignUp(&dtoRequest)
+	response.SendBack(ctx, dataResponse, errInfo, httpCode)
 	return
 
 }
@@ -231,7 +289,7 @@ func (c *AccountController) RemoveAvatar(ctx *gin.Context) {
 	return
 }
 
-func (c *AccountController) Sharing(ctx *gin.Context) {
+func (c *AccountController) SearchAccount(ctx *gin.Context) {
 	var (
 		dtoRequest dtos.AccountGroupSharing
 		errInfo    []errorsinfo.Errors
@@ -245,6 +303,30 @@ func (c *AccountController) Sharing(ctx *gin.Context) {
 		return
 	}
 
-	response.SendBack(ctx, nil, errInfo, httpCode)
+	data, httpCode, errInfo := c.useCase.SearchAccount(ctx, &dtoRequest)
+	response.SendBack(ctx, data, errInfo, httpCode)
 	return
+}
+
+func (c *AccountController) InviteSharing(ctx *gin.Context) {
+	var (
+		dtoRequest dtos.AccountGroupSharing
+		errInfo    []errorsinfo.Errors
+		httpCode   int
+	)
+
+	// binding
+	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		response.SendBack(ctx, dtos.AccountAvatarResponse{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	data, httpCode, errInfo := c.useCase.InviteSharing(ctx, &dtoRequest)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *AccountController) AcceptSharing(ctx *gin.Context) {
+
 }
