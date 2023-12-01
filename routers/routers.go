@@ -18,6 +18,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 	referrals := Referrals(db)
 	payments := Payments(db)
 	tracks := Tracks(db)
+	notification := Notifications(db)
 
 	v1group := router.Group("/v1")
 	{
@@ -212,9 +213,9 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			trackGroup.POST("/screen-time", tracks.ScreenTime)
 		}
 
-		notificationGroup := v1group.Group("/", tokenSignature())
+		notificationGroup := v1group.Group("/notifications", tokenSignature())
 		{
-			notificationGroup.GET("/")
+			notificationGroup.GET("", notification.GetNotification)
 		}
 
 		imageGroup := v1group.Group("/images")
