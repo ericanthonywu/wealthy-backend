@@ -38,7 +38,7 @@ func (s *NotificationUseCase) GetNotification(ctx *gin.Context) (response interf
 		logrus.Error(err.Error())
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		resp := struct {
-			Message string `json:"message"`
+			Message string `json:"message,omitempty"`
 		}{}
 		return resp, http.StatusInternalServerError, errInfo
 	}
@@ -51,7 +51,7 @@ func (s *NotificationUseCase) GetNotification(ctx *gin.Context) (response interf
 	// if data not found
 	if len(dataNotification) == 0 {
 		resp := struct {
-			Message string `json:"message"`
+			Message string `json:"message,omitempty"`
 		}{
 			Message: "no new notification update",
 		}

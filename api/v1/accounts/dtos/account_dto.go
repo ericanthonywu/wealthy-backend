@@ -113,6 +113,15 @@ type (
 		EmailAccount string `json:"email_account"`
 	}
 
+	AccountGroupSharingAccept struct {
+		IDSender    string `json:"id_group_sender"`
+		IDRecipient string `json:"id_group_recipient"`
+	}
+
+	AccountGroupSharingRemove struct {
+		EmailAccount string `json:"email_account"`
+	}
+
 	AccountSearch struct {
 		ID uuid.UUID `json:"account_id"`
 	}

@@ -98,6 +98,12 @@ type (
 		ShareTo    uuid.UUID `gorm:"column:id_personal_accounts_share_to"`
 		IsAccepted bool      `gorm:"column:is_accepted"`
 	}
+
+	AccountPersonalIDGroupSharing struct {
+		ID         uuid.UUID `gorm:"column:id_personal_accounts"`
+		IsAccepted bool      `gorm:"column:is_accepted"`
+		Name       string    `gorm:"column:name"`
+	}
 )
 
 func (AccountAuthorization) TableName() string {

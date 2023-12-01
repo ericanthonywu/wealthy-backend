@@ -36,6 +36,12 @@ type (
 		SearchAccount(email string) (data entities.AccountSearchEmail, err error)
 		InviteSharing(model *entities.AccountGroupSharing) (err error)
 		GetProfileByEmail(email string) (data entities.AccountProfile, err error)
+		AcceptSharing(IDSender, IDReceipt uuid.UUID) (err error)
+		RejectSharing(IDSender, IDReceipt uuid.UUID) (err error)
+		RemoveSharing(IDPASender, IDPARecipient uuid.UUID) (err error)
+		RemoveGroupSharingByID(IDGroupSharing uuid.UUID) (err error)
+		IDPersonalAccountFromGroupSharing(IDReceiptUUID uuid.UUID) (data entities.AccountPersonalIDGroupSharing)
+		GroupSharingInfoByIDPersonalAccount(IDFirstAccount, IDSecondAccount uuid.UUID) (dataFirstAccount entities.AccountGroupSharing, dataSecondAccount entities.AccountGroupSharing)
 	}
 )
 
@@ -267,11 +273,6 @@ func (r *AccountRepository) InviteSharing(modelGroupSharing *entities.AccountGro
 	if err := r.db.Create(&modelGroupSharing).Error; err != nil {
 		return err
 	}
-
-	//if err := r.db.Raw(``).Scan(&model).Error; err != nil {
-	//	return err
-	//}
-
 	return nil
 }
 
@@ -286,4 +287,92 @@ WHERE pa.email=?`, email).Scan(&data).Error; err != nil {
 		return entities.AccountProfile{}, err
 	}
 	return data, nil
+}
+
+func (r *AccountRepository) AcceptSharing(IDSender, IDReceipt uuid.UUID) (err error) {
+	var model interface{}
+
+	// update sender
+	if err = r.db.Raw(`UPDATE tbl_group_sharing SET is_accepted=true WHERE id=?`, IDSender).Scan(&model).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+
+	// update receiver
+	if err = r.db.Raw(`UPDATE tbl_group_sharing SET is_accepted=true WHERE id=?`, IDReceipt).Scan(&model).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (r *AccountRepository) RejectSharing(IDSender, IDReceipt uuid.UUID) (err error) {
+	var model interface{}
+
+	// delete sender
+	if err = r.db.Raw(`DELETE FROM tbl_group_sharing WHERE id=?`, IDSender).Scan(&model).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+
+	// delete receiver
+	if err = r.db.Raw(`DELETE FROM tbl_group_sharing WHERE id=?`, IDReceipt).Scan(&model).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+	return nil
+}
+
+func (r *AccountRepository) RemoveSharing(IDPASender, IDPARecipient uuid.UUID) (err error) {
+	var model interface {
+	}
+	// delete sender
+	if err = r.db.Raw(`DELETE FROM tbl_group_sharing WHERE id_personal_accounts_share_from=? AND id_personal_accounts_share_to=?`, IDPASender, IDPARecipient).Scan(&model).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+
+	// delete receiver
+	if err = r.db.Raw(`DELETE FROM tbl_group_sharing WHERE id_personal_accounts_share_from=? AND id_personal_accounts_share_to=?`, IDPARecipient, IDPASender).Scan(&model).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+	return nil
+}
+
+func (r *AccountRepository) RemoveGroupSharingByID(IDGroupSharing uuid.UUID) (err error) {
+	var model interface{}
+
+	// remove group sharing
+	if err = r.db.Raw(`DELETE FROM tbl_group_sharing WHERE id=?`, IDGroupSharing).Scan(&model).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (r *AccountRepository) IDPersonalAccountFromGroupSharing(IDReceiptUUID uuid.UUID) (data entities.AccountPersonalIDGroupSharing) {
+	if err := r.db.Raw(`SELECT tpa.id as id_personal_accounts, tgs.is_accepted, tpa.name
+FROM tbl_group_sharing tgs INNER JOIN tbl_personal_accounts tpa ON tpa.id= tgs.id_personal_accounts_share_from
+WHERE tgs.id=?`, IDReceiptUUID).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.AccountPersonalIDGroupSharing{}
+	}
+	return data
+}
+
+func (r *AccountRepository) GroupSharingInfoByIDPersonalAccount(IDFirstAccount, IDSecondAccount uuid.UUID) (dataFirstAccount entities.AccountGroupSharing, dataSecondAccount entities.AccountGroupSharing) {
+	if err := r.db.Raw(`SELECT * FROM tbl_group_sharing tgs WHERE tgs.id_personal_accounts_share_from = ? AND tgs.id_personal_accounts_share_to = ?`, IDFirstAccount, IDSecondAccount).Scan(&dataFirstAccount).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.AccountGroupSharing{}, entities.AccountGroupSharing{}
+	}
+
+	if err := r.db.Raw(`SELECT * FROM tbl_group_sharing tgs WHERE tgs.id_personal_accounts_share_to = ? AND tgs.id_personal_accounts_share_from = ?`, IDFirstAccount, IDSecondAccount).Scan(&dataSecondAccount).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.AccountGroupSharing{}, entities.AccountGroupSharing{}
+	}
+
+	return dataFirstAccount, dataSecondAccount
 }

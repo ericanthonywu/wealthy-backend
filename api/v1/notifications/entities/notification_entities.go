@@ -10,6 +10,6 @@ type (
 		IDPersonalAccounts      uuid.UUID `gorm:"column:id_personal_accounts" json:"id_personal_accounts"`
 		IsRead                  bool      `gorm:"column:is_read" json:"is_read"`
 		IDGroupSender           uuid.UUID `gorm:"column:id_group_sender" json:"id_group_sender"`
-		IDGroupReceipt          uuid.UUID `gorm:"column:id_group_receive" json:"id_group_receipt"`
+		IDGroupRecipient        uuid.UUID `gorm:"column:id_group_recipient" json:"id_group_recipient"`
 	}
 )

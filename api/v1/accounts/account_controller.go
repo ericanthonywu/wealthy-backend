@@ -29,6 +29,8 @@ type (
 		SearchAccount(ctx *gin.Context)
 		InviteSharing(ctx *gin.Context)
 		AcceptSharing(ctx *gin.Context)
+		RejectSharing(ctx *gin.Context)
+		RemoveSharing(ctx *gin.Context)
 	}
 )
 
@@ -52,55 +54,33 @@ func (c *AccountController) SignUp(ctx *gin.Context) {
 
 	// validate
 	if dtoRequest.Password == "" {
-		resp := struct {
-			Message string `json:"message,omitempty"`
-		}{}
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("password empty in payload").Error())
-		response.SendBack(ctx, resp, errInfo, http.StatusBadRequest)
-		return
 	}
 
 	if dtoRequest.Username == "" {
-		resp := struct {
-			Message string `json:"message,omitempty"`
-		}{}
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("username empty in payload").Error())
-		response.SendBack(ctx, resp, errInfo, http.StatusBadRequest)
-		return
 	}
 
 	if dtoRequest.Name == "" {
-		resp := struct {
-			Message string `json:"message,omitempty"`
-		}{}
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("name empty in payload").Error())
-		response.SendBack(ctx, resp, errInfo, http.StatusBadRequest)
-		return
 	}
 
 	if dtoRequest.Email == "" {
-		resp := struct {
-			Message string `json:"message,omitempty"`
-		}{}
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("email empty in payload").Error())
-		response.SendBack(ctx, resp, errInfo, http.StatusBadRequest)
-		return
 	}
 
 	if dtoRequest.RefCode == "" {
-		resp := struct {
-			Message string `json:"message,omitempty"`
-		}{}
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("referral code empty in payload").Error())
-		response.SendBack(ctx, resp, errInfo, http.StatusBadRequest)
-		return
 	}
 
 	if dtoRequest.RefCode == dtoRequest.RefCodeReference {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("referral code and referral code reference identically value in payload").Error())
+	}
+
+	if len(errInfo) > 0 {
 		resp := struct {
 			Message string `json:"message,omitempty"`
 		}{}
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("referral code and referral code reference identically value in payload").Error())
 		response.SendBack(ctx, resp, errInfo, http.StatusBadRequest)
 		return
 	}
@@ -299,7 +279,14 @@ func (c *AccountController) SearchAccount(ctx *gin.Context) {
 	// binding
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
-		response.SendBack(ctx, dtos.AccountAvatarResponse{}, errInfo, http.StatusBadRequest)
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	// validate
+	if dtoRequest.EmailAccount == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "email account value empty")
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
@@ -318,7 +305,14 @@ func (c *AccountController) InviteSharing(ctx *gin.Context) {
 	// binding
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
-		response.SendBack(ctx, dtos.AccountAvatarResponse{}, errInfo, http.StatusBadRequest)
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	// validate
+	if dtoRequest.EmailAccount == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "email account value empty")
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
@@ -328,5 +322,99 @@ func (c *AccountController) InviteSharing(ctx *gin.Context) {
 }
 
 func (c *AccountController) AcceptSharing(ctx *gin.Context) {
+	var (
+		dtoRequest dtos.AccountGroupSharingAccept
+		errInfo    []errorsinfo.Errors
+		httpCode   int
+	)
 
+	// binding
+	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	// validate process
+	if dtoRequest.IDRecipient == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "ID Receipt can not be empty")
+	}
+
+	if dtoRequest.IDSender == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "ID Sender can not be empty")
+	}
+
+	if dtoRequest.IDSender == dtoRequest.IDRecipient {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "ID Sender and ID Receipt cannot be identically")
+	}
+
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	data, httpCode, errInfo := c.useCase.AcceptSharing(ctx, &dtoRequest)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *AccountController) RejectSharing(ctx *gin.Context) {
+	var (
+		dtoRequest dtos.AccountGroupSharingAccept
+		errInfo    []errorsinfo.Errors
+		httpCode   int
+	)
+
+	// binding
+	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	// validate process
+	if dtoRequest.IDRecipient == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "ID Receipt can not be empty")
+	}
+
+	if dtoRequest.IDSender == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "ID Sender can not be empty")
+	}
+
+	if dtoRequest.IDSender == dtoRequest.IDRecipient {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "ID Sender and ID Receipt cannot be identically")
+	}
+
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	data, httpCode, errInfo := c.useCase.RejectSharing(ctx, &dtoRequest)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *AccountController) RemoveSharing(ctx *gin.Context) {
+	var (
+		dtoRequest dtos.AccountGroupSharingRemove
+		errInfo    []errorsinfo.Errors
+	)
+
+	// binding
+	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	if dtoRequest.EmailAccount == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	data, httpCode, errInfo := c.useCase.RemoveSharing(ctx, &dtoRequest)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
 }
