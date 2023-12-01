@@ -42,6 +42,7 @@ type (
 		RemoveGroupSharingByID(IDGroupSharing uuid.UUID) (err error)
 		IDPersonalAccountFromGroupSharing(IDReceiptUUID uuid.UUID) (data entities.AccountPersonalIDGroupSharing)
 		GroupSharingInfoByIDPersonalAccount(IDFirstAccount, IDSecondAccount uuid.UUID) (dataFirstAccount entities.AccountGroupSharing, dataSecondAccount entities.AccountGroupSharing)
+		GroupSharingList(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error)
 	}
 )
 
@@ -375,4 +376,18 @@ func (r *AccountRepository) GroupSharingInfoByIDPersonalAccount(IDFirstAccount, 
 	}
 
 	return dataFirstAccount, dataSecondAccount
+}
+
+func (r *AccountRepository) GroupSharingList(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error) {
+	if err := r.db.Raw(`SELECT tpa.email, tpa.file_name as file_name, tpa.image_path as image_path,
+       CASE
+           WHEN tgs.is_accepted = false THEN 'pending'
+           ELSE 'accepted'
+           END AS status
+FROM tbl_group_sharing tgs
+         INNER JOIN tbl_personal_accounts tpa ON tgs.id_personal_accounts_share_to = tpa.id
+WHERE tgs.id_personal_accounts_share_from = ?`, IDPersonalAccount).Scan(&data).Error; err != nil {
+		return []entities.AccountGroupSharingWithProfileInfo{}, err
+	}
+	return data, nil
 }

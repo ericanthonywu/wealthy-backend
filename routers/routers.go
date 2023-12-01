@@ -107,6 +107,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				sharingGroup.POST("/accept", account.AcceptSharing)
 				sharingGroup.POST("/reject", account.RejectSharing)
 				sharingGroup.POST("/remove", account.RemoveSharing)
+				sharingGroup.GET("/list", account.ListGroupSharing)
 			}
 		}
 

@@ -104,6 +104,13 @@ type (
 		IsAccepted bool      `gorm:"column:is_accepted"`
 		Name       string    `gorm:"column:name"`
 	}
+
+	AccountGroupSharingWithProfileInfo struct {
+		Email     string `gorm:"column:email" json:"email"`
+		Filename  string `gorm:"column:file_name" json:"file_name"`
+		ImagePath string `gorm:"column:image_path" json:"image_path"`
+		Status    string `gorm:"column:status" json:"status"`
+	}
 )
 
 func (AccountAuthorization) TableName() string {

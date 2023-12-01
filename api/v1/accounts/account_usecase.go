@@ -39,6 +39,7 @@ type (
 		AcceptSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingAccept) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		RejectSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingAccept) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		RemoveSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingRemove) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		ListGroupSharing(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -483,7 +484,13 @@ func (s *AccountUseCase) InviteSharing(ctx *gin.Context, dtoResponse *dtos.Accou
 	// if target email same as email sender in token
 	if dataProfile.Email == usrEmail {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not share with the same email")
-		return struct{}{}, http.StatusUnauthorized, errInfo
+		return struct{}{}, http.StatusBadRequest, errInfo
+	}
+
+	// if email target empty from db
+	if dataProfile.Email == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not share with the unregistered email")
+		return struct{}{}, http.StatusBadRequest, errInfo
 	}
 
 	// for first row
@@ -728,4 +735,39 @@ func (s *AccountUseCase) RemoveSharing(ctx *gin.Context, dtoRequest *dtos.Accoun
 	}
 
 	return resp, http.StatusOK, errInfo
+}
+
+func (s *AccountUseCase) ListGroupSharing(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return struct{}{}, http.StatusUnauthorized, errInfo
+	}
+
+	// get profile by email target
+	dataGroupSharingWithProfile, err := s.repo.GroupSharingList(personalAccount.ID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// if not found
+	if len(dataGroupSharingWithProfile) == 0 {
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{
+			Message: "this token has not shared with other accounts",
+		}
+		return resp, http.StatusNotFound, errInfo
+	}
+
+	// clear error info
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return dataGroupSharingWithProfile, http.StatusOK, errInfo
 }

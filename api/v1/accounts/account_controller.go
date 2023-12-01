@@ -31,6 +31,7 @@ type (
 		AcceptSharing(ctx *gin.Context)
 		RejectSharing(ctx *gin.Context)
 		RemoveSharing(ctx *gin.Context)
+		ListGroupSharing(ctx *gin.Context)
 	}
 )
 
@@ -415,6 +416,12 @@ func (c *AccountController) RemoveSharing(ctx *gin.Context) {
 	}
 
 	data, httpCode, errInfo := c.useCase.RemoveSharing(ctx, &dtoRequest)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *AccountController) ListGroupSharing(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.ListGroupSharing(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
