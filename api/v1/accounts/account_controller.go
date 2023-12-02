@@ -102,10 +102,16 @@ func (c *AccountController) SignIn(ctx *gin.Context) {
 		errInfo     []errorsinfo.Errors
 	)
 
+	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
 		response.SendBack(ctx, dtos.AccountSignUpResponse{}, errInfo, http.StatusBadRequest)
 		return
+	}
+
+	// validate
+	if dtoRequest.Email == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
 	}
 
 	dtoResponse, httpCode, errInfo = c.useCase.SignIn(&dtoRequest)
