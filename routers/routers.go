@@ -87,7 +87,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			accountProfileGroup := accountGroup.Group("/profiles", tokenSignature())
 			{
 				accountProfileGroup.POST("/avatar", account.SetAvatar)
-				accountProfileGroup.DELETE("/avatar/:customer-id", account.RemoveAvatar)
+				accountProfileGroup.DELETE("/avatar", account.RemoveAvatar)
 			}
 
 			accountPasswordGroup := accountGroup.Group("/password")

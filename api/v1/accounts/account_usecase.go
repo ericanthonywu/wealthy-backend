@@ -38,7 +38,7 @@ type (
 		ForgotPassword(ctx *gin.Context, request *dtos.AccountForgotPasswordRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ValidateRefCode(request *dtos.AccountRefCodeValidationRequest) (response dtos.AccountRefCodeValidationResponse, httpCode int, errInfo []errorsinfo.Errors)
 		SetAvatar(ctx *gin.Context, request *dtos.AccountAvatarRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		RemoveAvatar(ctx *gin.Context, customerID uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		RemoveAvatar(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		SearchAccount(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharing) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		InviteSharing(ctx *gin.Context, dtoResponse *dtos.AccountGroupSharing) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		AcceptSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingAccept) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
@@ -629,42 +629,60 @@ func (s *AccountUseCase) SetAvatar(ctx *gin.Context, request *dtos.AccountAvatar
 	return resp, http.StatusOK, errInfo
 }
 
-func (s *AccountUseCase) RemoveAvatar(ctx *gin.Context, customerID uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *AccountUseCase) RemoveAvatar(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
 		err         error
 		dtoResponse dtos.AccountAvatarResponse
 	)
 
 	updateProfile := make(map[string]interface{})
-	dataProfile := s.repo.GetProfile(customerID)
 
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		httpCode = http.StatusUnauthorized
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return dtos.AccountAvatarResponse{}, httpCode, errInfo
+	}
+
+	// get profile by customer id
+	dataProfile := s.repo.GetProfile(personalAccount.ID)
+
+	// remove previous image
 	if dataProfile.ImagePath != "" || dataProfile.FileName != "" {
 		target := "assets/avatar/" + dataProfile.FileName
 		err = os.Remove(target)
 		if err != nil {
 			logrus.Error(err.Error())
-			dtoResponse.Success = false
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-			return dtoResponse, http.StatusInternalServerError, errInfo
+			return struct{}{}, http.StatusInternalServerError, errInfo
 		}
 	}
 
+	// setup empty value
 	updateProfile["image_path"] = ""
 	updateProfile["file_name"] = ""
-	err = s.repo.UpdateProfile(customerID, updateProfile)
+
+	// update column with empty value
+	err = s.repo.UpdateProfile(personalAccount.ID, updateProfile)
 	if err != nil {
 		logrus.Error(err.Error())
-		dtoResponse.Success = false
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return dtoResponse, http.StatusInternalServerError, errInfo
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
 
+	resp := struct {
+		Message string `json:"message,omitempty"`
+	}{
+		Message: "delete avatar from profile successfully",
+	}
 	dtoResponse.Success = true
-	return dtoResponse, http.StatusOK, errInfo
+	return resp, http.StatusOK, errInfo
 }
 
 func (s *AccountUseCase) SearchAccount(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharing) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {

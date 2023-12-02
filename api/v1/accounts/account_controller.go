@@ -256,6 +256,13 @@ func (c *AccountController) SetAvatar(ctx *gin.Context) {
 		errInfo    []errorsinfo.Errors
 	)
 
+	// check method
+	if ctx.Request.Method != http.MethodPost {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "invalid method")
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusMethodNotAllowed)
+		return
+	}
+
 	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
@@ -282,26 +289,19 @@ func (c *AccountController) SetAvatar(ctx *gin.Context) {
 
 func (c *AccountController) RemoveAvatar(ctx *gin.Context) {
 	var (
-		dtoResponse dtos.AccountAvatarResponse
-		errInfo     []errorsinfo.Errors
-		httpCode    int
+		errInfo  []errorsinfo.Errors
+		httpCode int
 	)
 
-	customerID := ctx.Param("customer-id")
-	if customerID == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "customer ID required in URL parameter")
-		response.SendBack(ctx, dtos.AccountAvatarResponse{}, errInfo, http.StatusBadRequest)
+	// check method
+	if ctx.Request.Method != http.MethodDelete {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "invalid method")
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusMethodNotAllowed)
 		return
 	}
 
-	id, err := uuid.Parse(customerID)
-	if err != nil {
-		logrus.Error(err.Error())
-	}
-
-	c.useCase.RemoveAvatar(ctx, id)
-
-	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
+	dataResponse, httpCode, errInfo := c.useCase.RemoveAvatar(ctx)
+	response.SendBack(ctx, dataResponse, errInfo, httpCode)
 	return
 }
 

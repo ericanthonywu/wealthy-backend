@@ -18,7 +18,6 @@ func tokenSignature() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var (
 			errInfo []errorsinfo.Errors
-			//tokenAccessString utilities
 		)
 
 		claims := jwt.MapClaims{}
@@ -43,7 +42,7 @@ func tokenSignature() gin.HandlerFunc {
 		if err != nil {
 			logrus.Error(err.Error())
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "unauthorized token")
-			response.SendBack(c, nil, errInfo, http.StatusUnauthorized)
+			response.SendBack(c, struct{}{}, errInfo, http.StatusUnauthorized)
 			c.Abort()
 			return
 		}
@@ -52,7 +51,7 @@ func tokenSignature() gin.HandlerFunc {
 		if !ok {
 			logrus.Error("couldn't parse claims")
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "couldn't parse claims")
-			response.SendBack(c, nil, errInfo, http.StatusUnauthorized)
+			response.SendBack(c, struct{}{}, errInfo, http.StatusUnauthorized)
 			c.Abort()
 			return
 		}
@@ -60,7 +59,7 @@ func tokenSignature() gin.HandlerFunc {
 		exp := claims["exp"].(float64)
 		if int64(exp) < time.Now().Local().Unix() {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token expired")
-			response.SendBack(c, nil, errInfo, http.StatusUnauthorized)
+			response.SendBack(c, struct{}{}, errInfo, http.StatusUnauthorized)
 			c.Abort()
 			return
 		}
