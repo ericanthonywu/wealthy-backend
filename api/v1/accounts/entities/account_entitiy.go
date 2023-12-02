@@ -1,6 +1,9 @@
 package entities
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
 type (
 	AccountMasterRoles struct {
@@ -111,6 +114,15 @@ type (
 		ImagePath string `gorm:"column:image_path" json:"image_path"`
 		Status    string `gorm:"column:status" json:"status"`
 	}
+
+	AccountForgotPassword struct {
+		ID                uuid.UUID `gorm:"column:id"`
+		OTPCode           string    `gorm:"column:otp_code"`
+		IDPersonalAccount uuid.UUID `gorm:"column:id_personal_accounts"`
+		IsVerified        bool      `gorm:"column:is_verified"`
+		Expired           time.Time `gorm:"column:expired"`
+		CreatedAt         time.Time `gorm:"column:created_at"`
+	}
 )
 
 func (AccountAuthorization) TableName() string {
@@ -144,4 +156,8 @@ func (AccountRewards) TableName() string {
 
 func (AccountGroupSharing) TableName() string {
 	return "tbl_group_sharing"
+}
+
+func (AccountForgotPassword) TableName() string {
+	return "tbl_forgot_password"
 }

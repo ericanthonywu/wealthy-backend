@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -132,4 +133,17 @@ func SetNotifications(ctx *gin.Context, data NotificationEntities) (err error) {
 	}
 
 	return nil
+}
+
+func GenerateRandomSixDigitNumber() int {
+	rand.NewSource(time.Now().UnixNano())
+	return rand.Intn(900000) + 100000
+}
+
+func HTMLContentReplacer(htmlContent string, variables map[string]string) string {
+	for key, value := range variables {
+		placeholder := fmt.Sprintf("{{ %s }}", key)
+		htmlContent = strings.Replace(htmlContent, placeholder, value, -1)
+	}
+	return htmlContent
 }

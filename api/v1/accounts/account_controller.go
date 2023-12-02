@@ -23,6 +23,7 @@ type (
 		GetProfile(ctx *gin.Context)
 		UpdateProfile(ctx *gin.Context)
 		ChangePassword(ctx *gin.Context)
+		ForgotPassword(ctx *gin.Context)
 		ValidateRefCode(ctx *gin.Context)
 		SetAvatar(ctx *gin.Context)
 		RemoveAvatar(ctx *gin.Context)
@@ -32,6 +33,7 @@ type (
 		RejectSharing(ctx *gin.Context)
 		RemoveSharing(ctx *gin.Context)
 		ListGroupSharing(ctx *gin.Context)
+		VerifyOTP(ctx *gin.Context)
 	}
 )
 
@@ -163,40 +165,59 @@ func (c *AccountController) UpdateProfile(ctx *gin.Context) {
 
 func (c *AccountController) ChangePassword(ctx *gin.Context) {
 	var (
-		dtoRequest   dtos.AccountChangePassword
-		errInfo      []errorsinfo.Errors
-		custUUID     uuid.UUID
-		err          error
-		httpCode     int
-		dataResponse = make(map[string]bool)
+		dtoRequest dtos.AccountChangePassword
+		errInfo    []errorsinfo.Errors
+		httpCode   int
 	)
 
-	dataResponse["success"] = false
-
-	customerID := ctx.Param("id")
-	if customerID == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "customer id required in url parameter")
-		response.SendBack(ctx, dataResponse, errInfo, http.StatusBadRequest)
-		return
-	}
-
+	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
-		response.SendBack(ctx, dataResponse, errInfo, http.StatusBadRequest)
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
-	custUUID, err = uuid.Parse(customerID)
-	if err != nil {
-		logrus.Error(err.Error())
+	// validation
+	if dtoRequest.NewPassword == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "new password attribute empty value")
 	}
 
-	dataResponse, httpCode, errInfo = c.useCase.ChangePassword(ctx, custUUID, &dtoRequest)
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
+	if dtoRequest.OldPassword == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "old password attribute empty value")
 	}
 
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	dataResponse, httpCode, errInfo := c.useCase.ChangePassword(ctx, &dtoRequest)
 	response.SendBack(ctx, dataResponse, errInfo, httpCode)
+	return
+}
+
+func (c *AccountController) ForgotPassword(ctx *gin.Context) {
+	var (
+		dtoRequest dtos.AccountForgotPasswordRequest
+		errInfo    []errorsinfo.Errors
+	)
+
+	// bind
+	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		response.SendBack(ctx, dtos.AccountRefCodeValidationResponse{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	// validation
+	if dtoRequest.EmailAccount == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "email account empty value")
+		response.SendBack(ctx, dtos.AccountRefCodeValidationResponse{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	dtoResponse, httpCode, errInfo := c.useCase.ForgotPassword(ctx, &dtoRequest)
+	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
 	return
 }
 
@@ -208,6 +229,7 @@ func (c *AccountController) ValidateRefCode(ctx *gin.Context) {
 		httpCode    int
 	)
 
+	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
 		response.SendBack(ctx, dtos.AccountRefCodeValidationResponse{}, errInfo, http.StatusBadRequest)
@@ -410,7 +432,7 @@ func (c *AccountController) RemoveSharing(ctx *gin.Context) {
 	}
 
 	if dtoRequest.EmailAccount == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "email account empty value")
 		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
@@ -422,6 +444,38 @@ func (c *AccountController) RemoveSharing(ctx *gin.Context) {
 
 func (c *AccountController) ListGroupSharing(ctx *gin.Context) {
 	data, httpCode, errInfo := c.useCase.ListGroupSharing(ctx)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *AccountController) VerifyOTP(ctx *gin.Context) {
+	var (
+		dtoRequest dtos.AccountOTPVerify
+		errInfo    []errorsinfo.Errors
+	)
+
+	// binding
+	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	// validate
+	if dtoRequest.EmailAccount == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "email account empty value")
+	}
+
+	if dtoRequest.OTPCode == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "otp code empty value")
+	}
+
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	data, httpCode, errInfo := c.useCase.VerifyOTP(ctx, &dtoRequest)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }

@@ -26,6 +26,7 @@ type (
 		GetProfilePassword(IDPersonal uuid.UUID) (data entities.AccountProfilePassword)
 		UpdateProfile(customerID uuid.UUID, request map[string]interface{}) (err error)
 		UpdatePassword(customerID uuid.UUID, data map[string]interface{}) (err error)
+		ForgotPassword(model *entities.AccountForgotPassword) (err error)
 		ListRefCode() []string
 		GetLevelReferenceCode(referralCode string) (level int, err error)
 		WriteRewardsList(model *entities.AccountRewards) (err error)
@@ -43,6 +44,8 @@ type (
 		IDPersonalAccountFromGroupSharing(IDReceiptUUID uuid.UUID) (data entities.AccountPersonalIDGroupSharing)
 		GroupSharingInfoByIDPersonalAccount(IDFirstAccount, IDSecondAccount uuid.UUID) (dataFirstAccount entities.AccountGroupSharing, dataSecondAccount entities.AccountGroupSharing)
 		GroupSharingList(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error)
+		ForgotPasswordData(IDPersonalAccount uuid.UUID) (data entities.AccountForgotPassword, err error)
+		UpdateForgotPassword(ID uuid.UUID) (err error)
 	}
 )
 
@@ -177,6 +180,14 @@ func (r *AccountRepository) UpdatePassword(customerID uuid.UUID, data map[string
 		return err
 	}
 
+	return nil
+}
+
+func (r *AccountRepository) ForgotPassword(model *entities.AccountForgotPassword) (err error) {
+	if err = r.db.Create(&model).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
 	return nil
 }
 
@@ -390,4 +401,23 @@ WHERE tgs.id_personal_accounts_share_from = ?`, IDPersonalAccount).Scan(&data).E
 		return []entities.AccountGroupSharingWithProfileInfo{}, err
 	}
 	return data, nil
+}
+
+func (r *AccountRepository) ForgotPasswordData(IDPersonalAccount uuid.UUID) (data entities.AccountForgotPassword, err error) {
+	if err := r.db.Raw(`SELECT * FROM tbl_forgot_password tfp
+         WHERE tfp.id_personal_accounts=? ORDER BY tfp.created_at DESC LIMIT 1`, IDPersonalAccount).Scan(&data).Error; err != nil {
+		return entities.AccountForgotPassword{}, err
+	}
+
+	return data, nil
+}
+
+func (r *AccountRepository) UpdateForgotPassword(ID uuid.UUID) (err error) {
+	var model interface{}
+
+	if err = r.db.Raw(`UPDATE tbl_forgot_password SET is_verified=true WHERE id=?`, ID).Scan(&model).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+	return nil
 }

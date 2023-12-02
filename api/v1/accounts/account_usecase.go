@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts/entities"
+	"github.com/semicolon-indonesia/wealthy-backend/constants"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/password"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
@@ -15,7 +17,9 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"net/smtp"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -30,7 +34,8 @@ type (
 		SignOut()
 		GetProfile(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		UpdateProfile(ctx *gin.Context, customerID uuid.UUID, request map[string]interface{}) (response map[string]bool, httpCode int, errInfo []errorsinfo.Errors)
-		ChangePassword(ctx *gin.Context, customerID uuid.UUID, request *dtos.AccountChangePassword) (response map[string]bool, httpCode int, errInfo []errorsinfo.Errors)
+		ChangePassword(ctx *gin.Context, request *dtos.AccountChangePassword) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		ForgotPassword(ctx *gin.Context, request *dtos.AccountForgotPasswordRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ValidateRefCode(request *dtos.AccountRefCodeValidationRequest) (response dtos.AccountRefCodeValidationResponse, httpCode int, errInfo []errorsinfo.Errors)
 		SetAvatar(ctx *gin.Context, request *dtos.AccountAvatarRequest) (response dtos.AccountAvatarResponse, httpCode int, errInfo []errorsinfo.Errors)
 		RemoveAvatar(ctx *gin.Context, customerID uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
@@ -40,6 +45,7 @@ type (
 		RejectSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingAccept) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		RemoveSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingRemove) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ListGroupSharing(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		VerifyOTP(ctx *gin.Context, request *dtos.AccountOTPVerify) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -284,32 +290,230 @@ func (s *AccountUseCase) UpdateProfile(ctx *gin.Context, customerID uuid.UUID, r
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
 
-func (s *AccountUseCase) ChangePassword(ctx *gin.Context, customerID uuid.UUID, request *dtos.AccountChangePassword) (response map[string]bool, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *AccountUseCase) ChangePassword(ctx *gin.Context, request *dtos.AccountChangePassword) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
 		update      = make(map[string]interface{})
 		dtoResponse = make(map[string]bool)
 	)
 
-	dtoResponse["success"] = false
-	dataProfile := s.repo.GetProfilePassword(customerID)
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
+	if personalAccount.ID == uuid.Nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return struct{}{}, http.StatusUnauthorized, errInfo
+	}
+
+	// get data that stored in db
+	dataProfile := s.repo.GetProfilePassword(personalAccount.ID)
+
+	// check if dataProfile existed from database
+	if dataProfile.Email == "" || dataProfile.ID == uuid.Nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "system can not change password due to data has deleted improperly")
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// compare old password from payload between old password stored in database
 	resultOfCompare := password.Compare(dataProfile.Password, []byte(request.OldPassword))
 	if !resultOfCompare {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "old password incorrect")
 		return dtoResponse, http.StatusUnprocessableEntity, errInfo
 	}
 
+	// generate new password with encryption
 	newPassword := password.Generate(request.NewPassword)
+
+	// set new password
 	update["password"] = newPassword
 
-	err := s.repo.UpdatePassword(customerID, update)
+	err := s.repo.UpdatePassword(personalAccount.ID, update)
 	if err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return dtoResponse, http.StatusInternalServerError, errInfo
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
-	dtoResponse["success"] = true
-	return dtoResponse, http.StatusOK, errInfo
+	// reset error info if empty
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	resp := struct {
+		Message string `json:"message,omitempty"`
+	}{
+		Message: "change password successfully",
+	}
+
+	return resp, http.StatusOK, errInfo
+}
+
+func (s *AccountUseCase) ForgotPassword(ctx *gin.Context, request *dtos.AccountForgotPasswordRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+
+	dataProfile, err := s.repo.GetProfileByEmail(request.EmailAccount)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusBadRequest, errInfo
+	}
+
+	if dataProfile.Email == "" || dataProfile.ID == uuid.Nil {
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{
+			Message: "email account not registered in system",
+		}
+		return resp, http.StatusBadRequest, errInfo
+	}
+
+	// get six digit random
+	otpCode := utilities.GenerateRandomSixDigitNumber()
+
+	// static path for email template
+	templatePath := "./assets/files/reset-pass.html"
+	logoPath := constants.LogoPrimary
+
+	// keys that will be used in HTML template
+	contents := map[string]string{
+		"username": dataProfile.Username,
+		"otp":      fmt.Sprintf("%d", otpCode),
+		"logo":     logoPath,
+	}
+
+	// reading email template file based on static path before
+	htmlContent, err := os.ReadFile(templatePath)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not find email template. reason : "+err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// replace variable in origin html
+	modifiedHTML := utilities.HTMLContentReplacer(string(htmlContent), contents)
+
+	// credential email server
+	portNumber, _ := strconv.Atoi(os.Getenv("SMTP_PORT"))
+	smtpServer := os.Getenv("SMTP_SERVER")
+	smtpPort := portNumber
+	senderEmail := os.Getenv("SMTP_SENDER")
+	senderPassword := os.Getenv("SMTP_SENDER_PASS")
+	recipientEmail := request.EmailAccount
+
+	// email subject
+	subject := constants.EmailSubject
+
+	// SMTP authentication
+	auth := smtp.PlainAuth("", senderEmail, senderPassword, smtpServer)
+
+	// tls configuration
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: false,
+		ServerName:         smtpServer,
+	}
+
+	// try to connect to SMTP server
+	smtpAddress := fmt.Sprintf("%s:%d", smtpServer, smtpPort)
+	conn, err := tls.Dial("tcp", smtpAddress, tlsConfig)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not connecting to SMTP. reason : "+err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// Create an SMTP client
+	client, err := smtp.NewClient(conn, smtpServer)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not creating SMTP client. reason : "+err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// Authenticate with the Gmail SMTP server
+	err = client.Auth(auth)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not authenticating with SMTP server. reason : "+err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// setting from address
+	from := senderEmail
+
+	// compose the email message with MIME headers
+	message := fmt.Sprintf("From: %s\r\n", from)
+	message += fmt.Sprintf("To: %s\r\n", recipientEmail)
+	message += fmt.Sprintf("Subject: %s\r\n", subject)
+	message += "MIME-version: 1.0;\r\n"
+	message += "Content-Type: text/html; charset=\"UTF-8\";\r\n"
+	message += "Content-Transfer-Encoding: 7bit;\r\n"
+	message += "\r\n" + modifiedHTML
+
+	// set the sender and recipient
+	err = client.Mail(senderEmail)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not setting sender. reason : "+err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	err = client.Rcpt(recipientEmail)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not setting recipient. reason : "+err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// send the email message
+	wc, err := client.Data()
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not opening data connection. reason : "+err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	_, err = wc.Write([]byte(message))
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not opening writing email message. reason : "+err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	err = wc.Close()
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not closing data connection. reason : "+err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	err = client.Quit()
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not quitting SMTP session. reason : "+err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// store into db with preparation model
+	currentTime := time.Now()
+	expiredTime := currentTime.Add(30 * time.Minute)
+
+	model := entities.AccountForgotPassword{
+		ID:                uuid.New(),
+		OTPCode:           fmt.Sprintf("%d", otpCode),
+		IDPersonalAccount: dataProfile.ID,
+		IsVerified:        false,
+		Expired:           expiredTime,
+		CreatedAt:         currentTime,
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	// store into db
+	err = s.repo.ForgotPassword(&model)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	resp := struct {
+		Message string `json:"message,omitempty"`
+	}{
+		Message: "otp has been sent to email",
+	}
+
+	return resp, http.StatusOK, errInfo
 }
 
 func (s *AccountUseCase) ValidateRefCode(request *dtos.AccountRefCodeValidationRequest) (response dtos.AccountRefCodeValidationResponse, httpCode int, errInfo []errorsinfo.Errors) {
@@ -770,4 +974,67 @@ func (s *AccountUseCase) ListGroupSharing(ctx *gin.Context) (response interface{
 	}
 
 	return dataGroupSharingWithProfile, http.StatusOK, errInfo
+}
+
+func (s *AccountUseCase) VerifyOTP(ctx *gin.Context, request *dtos.AccountOTPVerify) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	// getting profile
+	dataProfile, err := s.repo.GetProfileByEmail(request.EmailAccount)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusBadRequest, errInfo
+	}
+
+	// validate result
+	if dataProfile.Email == "" || dataProfile.ID == uuid.Nil {
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{
+			Message: "email account not registered in system",
+		}
+		return resp, http.StatusBadRequest, errInfo
+	}
+
+	// getting forgot pass data
+	dataForgotPassword, err := s.repo.ForgotPasswordData(dataProfile.ID)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	// validate result
+	if dataForgotPassword.OTPCode == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no data found for this otp : "+request.OTPCode)
+		return struct{}{}, http.StatusBadRequest, errInfo
+	}
+
+	// duration expired
+	duration := dataForgotPassword.Expired.Sub(dataForgotPassword.CreatedAt)
+	if duration <= 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "otp code has expired",
+		}
+
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
+
+	// update
+	err = s.repo.UpdateForgotPassword(dataForgotPassword.ID)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	resp := struct {
+		Message string `json:"message"`
+	}{
+		Message: "otp has been verified",
+	}
+
+	return resp, http.StatusOK, errInfo
 }

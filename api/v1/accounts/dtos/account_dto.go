@@ -125,4 +125,13 @@ type (
 	AccountSearch struct {
 		ID uuid.UUID `json:"account_id"`
 	}
+
+	AccountForgotPasswordRequest struct {
+		EmailAccount string `json:"email_account"`
+	}
+
+	AccountOTPVerify struct {
+		OTPCode      string `json:"otp_code"`
+		EmailAccount string `json:"email_account"`
+	}
 )
