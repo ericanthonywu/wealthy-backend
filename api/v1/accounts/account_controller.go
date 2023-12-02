@@ -96,29 +96,32 @@ func (c *AccountController) SignUp(ctx *gin.Context) {
 
 func (c *AccountController) SignIn(ctx *gin.Context) {
 	var (
-		dtoRequest  dtos.AccountSignInRequest
-		dtoResponse dtos.AccountSignInResponse
-		httpCode    int
-		errInfo     []errorsinfo.Errors
+		dtoRequest dtos.AccountSignInRequest
+		errInfo    []errorsinfo.Errors
 	)
 
 	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
-		response.SendBack(ctx, dtos.AccountSignUpResponse{}, errInfo, http.StatusBadRequest)
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
 	// validate
 	if dtoRequest.Email == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "email account empty value")
 	}
 
-	dtoResponse, httpCode, errInfo = c.useCase.SignIn(&dtoRequest)
-
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
+	if dtoRequest.Password == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "password empty value")
 	}
+
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	dtoResponse, httpCode, errInfo := c.useCase.SignIn(&dtoRequest)
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
 	return
 }
@@ -249,25 +252,29 @@ func (c *AccountController) ValidateRefCode(ctx *gin.Context) {
 
 func (c *AccountController) SetAvatar(ctx *gin.Context) {
 	var (
-		dtoRequest  dtos.AccountAvatarRequest
-		dtoResponse dtos.AccountAvatarResponse
-		errInfo     []errorsinfo.Errors
-		httpCode    int
+		dtoRequest dtos.AccountAvatarRequest
+		errInfo    []errorsinfo.Errors
 	)
 
+	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
-		response.SendBack(ctx, dtos.AccountAvatarResponse{}, errInfo, http.StatusBadRequest)
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
+	// validate
 	if dtoRequest.ImageBase64 == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "image_base64 attribute can not be empty")
-		response.SendBack(ctx, dtos.AccountAvatarResponse{}, errInfo, http.StatusBadRequest)
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{
+			Message: "image base64 empty value",
+		}
+		response.SendBack(ctx, resp, errInfo, http.StatusBadRequest)
 		return
 	}
 
-	dtoResponse, httpCode, errInfo = c.useCase.SetAvatar(ctx, &dtoRequest)
+	dtoResponse, httpCode, errInfo := c.useCase.SetAvatar(ctx, &dtoRequest)
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
 	return
 

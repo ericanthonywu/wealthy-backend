@@ -34,10 +34,15 @@ type (
 	}
 
 	AccountSignInResponse struct {
-		Customer CustomerSignIn `json:"customer,omitempty"`
-		Account  Account        `json:"account_info,omitempty"`
-		Token    string         `json:"token,omitempty"`
-		TokenExp int64          `json:"token_exp,omitempty"`
+		Customer    CustomerSignIn `json:"customer,omitempty"`
+		Account     Account        `json:"account_info,omitempty"`
+		AccountType AccountType    `json:"account_type,omitempty"`
+		Token       string         `json:"token,omitempty"`
+		TokenExp    int64          `json:"token_exp,omitempty"`
+	}
+
+	AccountType struct {
+		Type string `json:"type,omitempty"`
 	}
 
 	CustomerSignIn struct {

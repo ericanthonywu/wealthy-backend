@@ -29,7 +29,7 @@ type (
 	}
 
 	IAccountUseCase interface {
-		SignIn(request *dtos.AccountSignInRequest) (response dtos.AccountSignInResponse, httpCode int, errInfo []errorsinfo.Errors)
+		SignIn(request *dtos.AccountSignInRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		SignUp(request *dtos.AccountSignUpRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		SignOut()
 		GetProfile(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
@@ -37,7 +37,7 @@ type (
 		ChangePassword(ctx *gin.Context, request *dtos.AccountChangePassword) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ForgotPassword(ctx *gin.Context, request *dtos.AccountForgotPasswordRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ValidateRefCode(request *dtos.AccountRefCodeValidationRequest) (response dtos.AccountRefCodeValidationResponse, httpCode int, errInfo []errorsinfo.Errors)
-		SetAvatar(ctx *gin.Context, request *dtos.AccountAvatarRequest) (response dtos.AccountAvatarResponse, httpCode int, errInfo []errorsinfo.Errors)
+		SetAvatar(ctx *gin.Context, request *dtos.AccountAvatarRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		RemoveAvatar(ctx *gin.Context, customerID uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		SearchAccount(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharing) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		InviteSharing(ctx *gin.Context, dtoResponse *dtos.AccountGroupSharing) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
@@ -177,9 +177,10 @@ func (s *AccountUseCase) SignUp(request *dtos.AccountSignUpRequest) (response in
 	return dtoResponse, httpCode, errInfo
 }
 
-func (s *AccountUseCase) SignIn(request *dtos.AccountSignInRequest) (response dtos.AccountSignInResponse, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *AccountUseCase) SignIn(request *dtos.AccountSignInRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		err error
+		dtoResponse dtos.AccountSignInResponse
+		err         error
 	)
 
 	authentication := entities.AccountSignInAuthenticationEntity{
@@ -187,30 +188,47 @@ func (s *AccountUseCase) SignIn(request *dtos.AccountSignInRequest) (response dt
 		Password: request.Password,
 	}
 
+	// check get data based on email
 	data := s.repo.SignInAuth(authentication)
+
+	// if data not found based on email and password
+	if data.ID == uuid.Nil || data.Email == "" {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "email address, " + request.Email + " , not registered",
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
+
+	// if email found but password not match
 	resultOfCompare := password.Compare(data.Password, []byte(request.Password))
-
 	if !resultOfCompare {
-		response.Customer.CustomerID = ""
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "email or password doesn't match")
-		return dtos.AccountSignInResponse{}, http.StatusBadRequest, errInfo
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "password invalid for email address : " + request.Email,
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
 	}
 
-	response.Token, response.TokenExp, err = token.JWTBuilder(request.Email, data.Roles)
+	// generate token
+	dtoResponse.Token, dtoResponse.TokenExp, err = token.JWTBuilder(request.Email, data.Roles)
 	if err != nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not give proper token")
-		return dtos.AccountSignInResponse{}, http.StatusUnprocessableEntity, errInfo
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
+
+	dtoResponse.Customer.Email = request.Email
+	dtoResponse.Customer.CustomerID = data.ID.String()
+	dtoResponse.Account.Role = data.Roles
+	dtoResponse.AccountType.Type = data.Type
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
 
-	response.Customer.Email = request.Email
-	response.Customer.CustomerID = data.ID.String()
-	response.Account.Role = data.Roles
-
-	return response, httpCode, errInfo
+	return dtoResponse, httpCode, errInfo
 }
 
 func (s *AccountUseCase) SignOut() {
@@ -533,16 +551,8 @@ func (s *AccountUseCase) ValidateRefCode(request *dtos.AccountRefCodeValidationR
 	return dtoResponse, http.StatusOK, errInfo
 }
 
-func (s *AccountUseCase) SetAvatar(ctx *gin.Context, request *dtos.AccountAvatarRequest) (response dtos.AccountAvatarResponse, httpCode int, errInfo []errorsinfo.Errors) {
-	var dtoResponse dtos.AccountAvatarResponse
+func (s *AccountUseCase) SetAvatar(ctx *gin.Context, request *dtos.AccountAvatarRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	updateProfile := make(map[string]interface{})
-
-	imageData, err := base64.StdEncoding.DecodeString(request.ImageBase64)
-	if err != nil {
-		httpCode = http.StatusBadRequest
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return dtos.AccountAvatarResponse{}, httpCode, errInfo
-	}
 
 	usrEmail := ctx.MustGet("email").(string)
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
@@ -553,16 +563,28 @@ func (s *AccountUseCase) SetAvatar(ctx *gin.Context, request *dtos.AccountAvatar
 		return dtos.AccountAvatarResponse{}, httpCode, errInfo
 	}
 
+	// decode base64 image from string
+	imageData, err := base64.StdEncoding.DecodeString(request.ImageBase64)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// get profile from customer ID
 	dataProfile := s.repo.GetProfile(personalAccount.ID)
 
+	// remove old image from storage
 	if dataProfile.ImagePath != "" || dataProfile.FileName != "" {
 		target := "assets/avatar/" + dataProfile.FileName
 		err = os.Remove(target)
 		if err != nil {
 			logrus.Error(err.Error())
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
 		}
 	}
 
+	// remove empty column after remove file
 	updateProfile["image_path"] = ""
 	updateProfile["file_name"] = ""
 	err = s.repo.UpdateProfile(personalAccount.ID, updateProfile)
@@ -570,27 +592,41 @@ func (s *AccountUseCase) SetAvatar(ctx *gin.Context, request *dtos.AccountAvatar
 		logrus.Error(err.Error())
 	}
 
+	// setup new file name and target path
 	filename := fmt.Sprintf("%d", time.Now().Unix()) + ".png"
 	targetPath := "assets/avatar/" + filename
 
+	// save image into storage
 	err = utilities.SaveImage(imageData, targetPath)
 	if err != nil {
 		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// setup for new data
+	updateProfile["image_path"] = "images/avatar/" + filename
+	updateProfile["file_name"] = filename
+
+	// update table with new data
+	err = s.repo.UpdateProfile(personalAccount.ID, updateProfile)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
 
-	updateProfile["image_path"] = "images/avatar/" + filename
-	updateProfile["file_name"] = filename
-	err = s.repo.UpdateProfile(personalAccount.ID, updateProfile)
-	if err != nil {
-		logrus.Error(err.Error())
+	resp := struct {
+		Message string `json:"message,omitempty"`
+	}{
+		Message: "set avatar for profile successfully",
 	}
 
-	dtoResponse.Success = true
-	return dtoResponse, http.StatusOK, errInfo
+	return resp, http.StatusOK, errInfo
 }
 
 func (s *AccountUseCase) RemoveAvatar(ctx *gin.Context, customerID uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {

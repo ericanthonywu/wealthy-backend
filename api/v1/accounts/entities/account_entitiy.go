@@ -42,6 +42,7 @@ type (
 		Password string    `gorm:"column:password"`
 		Active   bool      `gorm:"column:active"`
 		Roles    string    `gorm:"column:role"`
+		Type     string    `gorm:"column:type"`
 	}
 
 	AccountProfile struct {

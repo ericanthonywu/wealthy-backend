@@ -117,9 +117,11 @@ func (r *AccountRepository) SignUpAuth(model *entities.AccountSignUpAuthenticati
 }
 
 func (r *AccountRepository) SignInAuth(model entities.AccountSignInAuthenticationEntity) (data entities.AccountSignInAuthenticationEntity) {
-	r.db.Raw(`SELECT pa.id, pa.email, a.active, a.password, mr.roles as role 
-					FROM tbl_personal_accounts pa INNER JOIN tbl_authentications a ON a.id_personal_accounts = pa.id 
-		    INNER JOIN tbl_master_roles mr ON mr.id = a.id_master_roles WHERE email= ? AND a.active = true`, model.Email).Scan(&data)
+	r.db.Raw(`SELECT pa.id, pa.email, a.active, a.password, mr.roles as role, tmat.account_type as type
+FROM tbl_personal_accounts pa
+    INNER JOIN tbl_authentications a ON a.id_personal_accounts = pa.id
+    INNER JOIN tbl_master_account_types tmat ON tmat.id = pa.id_master_account_types
+INNER JOIN tbl_master_roles mr ON mr.id = a.id_master_roles WHERE email= ? AND a.active = true`, model.Email).Scan(&data)
 
 	return data
 }
