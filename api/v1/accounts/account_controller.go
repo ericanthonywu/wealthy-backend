@@ -3,11 +3,9 @@ package accounts
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
-	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -131,43 +129,34 @@ func (c *AccountController) SignOut(ctx *gin.Context) {
 }
 
 func (c *AccountController) GetProfile(ctx *gin.Context) {
-	data, httpCode, errInfo := c.useCase.GetProfile(ctx)
+	var errInfo []errorsinfo.Errors
 
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
+	// check method
+	if ctx.Request.Method != http.MethodGet {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "invalid method")
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusMethodNotAllowed)
+		return
 	}
 
+	data, httpCode, errInfo := c.useCase.GetProfile(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
 
 func (c *AccountController) UpdateProfile(ctx *gin.Context) {
 	var (
-		dtoRequest  map[string]interface{}
-		dtoResponse map[string]bool
-		errInfo     []errorsinfo.Errors
-		httpCode    int
+		dtoRequest map[string]interface{}
+		errInfo    []errorsinfo.Errors
 	)
 
-	customerID := ctx.Param("id")
-	if customerID == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id in url address is required")
-		response.SendBack(ctx, dtos.AccountSetProfileRequest{}, errInfo, http.StatusBadRequest)
-		return
-	}
-
+	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
 		response.SendBack(ctx, dtos.AccountSetProfileRequest{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
-	customerIDUUID, err := uuid.Parse(customerID)
-	if err != nil {
-		logrus.Error(err.Error())
-	}
-
-	dtoResponse, httpCode, errInfo = c.useCase.UpdateProfile(ctx, customerIDUUID, dtoRequest)
+	dtoResponse, httpCode, errInfo := c.useCase.UpdateProfile(ctx, dtoRequest)
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
 	return
 }

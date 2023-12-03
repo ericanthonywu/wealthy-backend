@@ -10,6 +10,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts/entities"
 	"github.com/semicolon-indonesia/wealthy-backend/constants"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/datecustoms"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/password"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
@@ -33,7 +34,7 @@ type (
 		SignUp(request *dtos.AccountSignUpRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		SignOut()
 		GetProfile(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		UpdateProfile(ctx *gin.Context, customerID uuid.UUID, request map[string]interface{}) (response map[string]bool, httpCode int, errInfo []errorsinfo.Errors)
+		UpdateProfile(ctx *gin.Context, request map[string]interface{}) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ChangePassword(ctx *gin.Context, request *dtos.AccountChangePassword) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ForgotPassword(ctx *gin.Context, request *dtos.AccountForgotPasswordRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ValidateRefCode(request *dtos.AccountRefCodeValidationRequest) (response dtos.AccountRefCodeValidationResponse, httpCode int, errInfo []errorsinfo.Errors)
@@ -242,12 +243,17 @@ func (s *AccountUseCase) GetProfile(ctx *gin.Context) (response interface{}, htt
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
+		return struct{}{}, http.StatusUnauthorized, errInfo
 	}
 
+	// get profile by customer ID
 	dataProfile := s.repo.GetProfile(personalAccount.ID)
+
+	if dataProfile.Email == "" || dataProfile.ID == uuid.Nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not give profile info. profile not set properly")
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
 
 	dtoResponse.AccountCustomer.ID = dataProfile.ID
 	dtoResponse.AccountCustomer.Name = dataProfile.Name
@@ -255,25 +261,45 @@ func (s *AccountUseCase) GetProfile(ctx *gin.Context) (response interface{}, htt
 	dtoResponse.AccountCustomer.Username = dataProfile.Username
 	dtoResponse.AccountCustomer.Email = dataProfile.Email
 
-	dtoResponse.AccountCustomer.Gender.ID = dataProfile.IDGender
-	dtoResponse.AccountCustomer.Gender.Value = dataProfile.Gender
+	if dataProfile.IDGender == uuid.Nil {
+		dtoResponse.AccountGender.ID = ""
+	} else {
+		dtoResponse.AccountGender.ID = dataProfile.IDGender.String()
+	}
+	dtoResponse.AccountGender.Value = dataProfile.Gender
 
 	dtoResponse.AccountDetail.AccountType = dataProfile.AccountType
 	dtoResponse.AccountDetail.UserRoles = dataProfile.UserRoles
 
-	dtoResponse.AccountAvatar.URL = os.Getenv("APP_HOST") + "/v1/" + dataProfile.ImagePath
-	dtoResponse.AccountAvatar.FileName = dataProfile.FileName
+	if dataProfile.ImagePath == "" {
+		dtoResponse.AccountAvatar.URL = ""
+		dtoResponse.AccountAvatar.FileName = ""
+	} else {
+		dtoResponse.AccountAvatar.URL = os.Getenv("APP_HOST") + "/v1/" + dataProfile.ImagePath
+		dtoResponse.AccountAvatar.FileName = dataProfile.FileName
+	}
 
 	dtoResponse.AccountCustomer.DOB = dataProfile.DOB
 
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
 
-func (s *AccountUseCase) UpdateProfile(ctx *gin.Context, customerID uuid.UUID, request map[string]interface{}) (response map[string]bool, httpCode int, errInfo []errorsinfo.Errors) {
-	var err error
-	dtoResponse := make(map[string]bool)
-	dtoResponse["success"] = false
+func (s *AccountUseCase) UpdateProfile(ctx *gin.Context, request map[string]interface{}) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		err            error
+		dateOrigin     string
+		idMasterGender string
+	)
 
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return struct{}{}, http.StatusUnauthorized, errInfo
+	}
+
+	// validate restrict changes
 	if request["id"] != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("can not change customer ID").Error())
 	}
@@ -294,18 +320,85 @@ func (s *AccountUseCase) UpdateProfile(ctx *gin.Context, customerID uuid.UUID, r
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("can not change account type. use subscription API for switch to PRO account").Error())
 	}
 
+	// if error occurs
 	if len(errInfo) > 0 {
-		return dtoResponse, http.StatusBadRequest, errInfo
+		return struct{}{}, http.StatusBadRequest, errInfo
 	}
 
-	err = s.repo.UpdateProfile(customerID, request)
+	// check date of birth ( dob ) value
+	value, exists := request["dob"]
+	if exists {
+		dateOrigin = fmt.Sprintf("%v", value)
+
+		if dateOrigin == "" {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "date of birth empty value")
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
+	}
+
+	// check id master gender value
+	value, exists = request["id_master_gender"]
+	if exists {
+		idMasterGender = fmt.Sprintf("%v", value)
+
+		if idMasterGender == "" {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master gender empty value")
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
+	}
+
+	// latitude
+	value, exists = request["latitude"]
+	if exists {
+		latitudeOrigin := fmt.Sprintf("%v", value)
+
+		if latitudeOrigin == "" {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "latitude empty value")
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
+	}
+
+	// longitude
+	value, exists = request["longitude"]
+	if exists {
+		longitudeOrigin := fmt.Sprintf("%v", value)
+
+		if longitudeOrigin == "" {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "longitude empty value")
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
+	}
+
+	// validate format dob
+	if !datecustoms.ValidDateFormat(dateOrigin) {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "format date must following YYYY-MM-DD")
+		return struct{}{}, http.StatusBadRequest, errInfo
+	}
+
+	// check master gender
+	idUUID, err := uuid.Parse(idMasterGender)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	if !s.repo.GenderData(idUUID) {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master gender unregistered")
+		return struct{}{}, http.StatusBadRequest, errInfo
+	}
+
+	// update profile
+	err = s.repo.UpdateProfile(personalAccount.ID, request)
 	if err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return dtoResponse, http.StatusInternalServerError, errInfo
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
-	dtoResponse["success"] = true
-	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
+	resp := struct {
+		Message string `json:"message,omitempty"`
+	}{
+		Message: "update profile successfully",
+	}
+	return resp, http.StatusOK, []errorsinfo.Errors{}
 }
 
 func (s *AccountUseCase) ChangePassword(ctx *gin.Context, request *dtos.AccountChangePassword) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {

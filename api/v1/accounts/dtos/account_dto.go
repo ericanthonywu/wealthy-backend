@@ -63,34 +63,40 @@ type (
 	}
 
 	AccountProfile struct {
-		AccountCustomer AccountCustomerInfo `json:"customer_info,omitempty"`
-		AccountAvatar   AccountAvatar       `json:"avatar,omitempty"`
-		AccountDetail   AccountDetail       `json:"account_detail,omitempty"`
+		AccountCustomer AccountCustomerInfo `json:"customer_info"`
+		AccountGender   AccountGender       `json:"customer_gender"`
+		AccountAvatar   AccountAvatar       `json:"customer_avatar"`
+		AccountDetail   AccountDetail       `json:"customer_account"`
+		AccountGeo      AccountGeo          `json:"customer_geographic"`
 	}
 
 	AccountCustomerInfo struct {
-		Email     string        `json:"email"`
-		Username  string        `json:"username"`
-		Name      string        `json:"name"`
-		DOB       string        `json:"date_of_birth"`
-		ReferType string        `json:"refer_type"`
-		ID        uuid.UUID     `json:"id"`
-		Gender    AccountGender `json:"gender"`
+		ID        uuid.UUID `json:"customer_id"`
+		Email     string    `json:"customer_email"`
+		Username  string    `json:"customer_username"`
+		Name      string    `json:"customer_name"`
+		DOB       string    `json:"customer_dob"`
+		ReferType string    `json:"customer_referral_code"`
 	}
 
 	AccountGender struct {
-		ID    uuid.UUID `json:"id"`
-		Value string    `json:"value"`
+		ID    string `json:"gender_id"`
+		Value string `json:"gender_value"`
 	}
 
 	AccountDetail struct {
 		AccountType string `json:"account_type"`
-		UserRoles   string `json:"user_roles"`
+		UserRoles   string `json:"account_roles"`
 	}
 
 	AccountAvatar struct {
-		URL      string `json:"url"`
-		FileName string `json:"filename"`
+		URL      string `json:"avatar_url"`
+		FileName string `json:"avatar_filename"`
+	}
+
+	AccountGeo struct {
+		Latitude  string `json:"latitude"`
+		Longitude string `json:"longitude"`
 	}
 
 	AccountChangePassword struct {

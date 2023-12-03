@@ -58,6 +58,8 @@ type (
 		UserRoles   string    `gorm:"column:user_roles" json:"user_roles"`
 		ImagePath   string    `gorm:"column:image_path" json:"image_path"`
 		FileName    string    `gorm:"column:file_name" json:"file_name"`
+		Latitude    string    `gorm:"column:lat" json:"latitude"`
+		Longitude   string    `gorm:"column:long" json:"longitude"`
 	}
 
 	AccountProfilePassword struct {
@@ -123,6 +125,10 @@ type (
 		IsVerified        bool      `gorm:"column:is_verified"`
 		Expired           time.Time `gorm:"column:expired"`
 		CreatedAt         time.Time `gorm:"column:created_at"`
+	}
+
+	AccountGender struct {
+		Exists bool `gorm:"column:exists"`
 	}
 )
 
