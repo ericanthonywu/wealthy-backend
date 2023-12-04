@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets/entities"
+	"github.com/semicolon-indonesia/wealthy-backend/constants"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"net/http"
@@ -17,7 +18,7 @@ type (
 	}
 
 	IWalletUseCase interface {
-		Add(ctx *gin.Context, request *dtos.WalletAddRequest, usrEmail string) (response dtos.WalletAddResponse, httpCode int, errInfo []errorsinfo.Errors)
+		Add(ctx *gin.Context, request *dtos.WalletAddRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		List(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		UpdateAmount(IDWallet string, request *dtos.WalletUpdateAmountRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
@@ -27,9 +28,13 @@ func NewWalletUseCase(repo IWalletRepository) *WalletUseCase {
 	return &WalletUseCase{repo: repo}
 }
 
-func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest, usrEmail string) (response dtos.WalletAddResponse, httpCode int, errInfo []errorsinfo.Errors) {
-	var err error
+func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		err         error
+		dtoResponse dtos.WalletAddResponse
+	)
 
+	// setup wallet model
 	walletEntity := entities.WalletEntity{
 		Active:        true,
 		InvestType:    request.InvestType,
@@ -40,48 +45,58 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest, us
 		Amount:        request.Amount,
 	}
 
+	usrEmail := fmt.Sprintf("%v", ctx.MustGet("email"))
 	data := personalaccounts.Informations(ctx, usrEmail)
 
 	if data.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
-		return response, httpCode, errInfo
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
+		return struct{}{}, http.StatusNotFound, errInfo
 	}
 
 	walletEntity.ID = uuid.New()
 	walletEntity.IDAccount = data.ID
 
-	response.InvestType = request.InvestType
-	response.InvestName = request.InvestName
-	response.WalletType = request.WalletType
-	response.Amount = request.Amount
-	httpCode = http.StatusOK
+	dtoResponse.InvestType = request.InvestType
+	dtoResponse.InvestName = request.InvestName
+	dtoResponse.WalletType = request.WalletType
+	dtoResponse.Amount = request.Amount
 
+	// account type BASIC
 	if data.TotalWallets < 2 && data.AccountTypes == "BASIC" {
+
+		// add new wallets
 		err = s.repo.Add(&walletEntity)
 		if err != nil {
-			httpCode = http.StatusInternalServerError
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-			return response, httpCode, errInfo
+			return struct{}{}, http.StatusInternalServerError, errInfo
 		}
+
+		// record on transaction as initial
 	}
 
-	if data.AccountTypes == "PRO" {
-		err = s.repo.Add(&walletEntity)
-		if err != nil {
-			httpCode = http.StatusInternalServerError
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-			return response, httpCode, errInfo
-		}
-	}
-
+	// account type BASIC reach limit
 	if data.TotalWallets == 2 && data.AccountTypes == "BASIC" {
-		httpCode = http.StatusUnprocessableEntity
-		response = dtos.WalletAddResponse{}
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not add new wallet. please upgrade to PRO subscription")
+		return struct{}{}, http.StatusUnprocessableEntity, errInfo
 	}
 
-	return response, httpCode, errInfo
+	// account type PRO
+	if data.AccountTypes == "PRO" {
+		// add new wallets
+		err = s.repo.Add(&walletEntity)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
+		}
+
+		// record on transaction as initial
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return response, http.StatusOK, errInfo
 }
 
 func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {

@@ -1,7 +1,6 @@
 package wallets
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
@@ -27,25 +26,31 @@ func NewWalletController(useCase IWalletUseCase) *WalletController {
 
 func (c *WalletController) Add(ctx *gin.Context) {
 	var (
-		dtoRequest  dtos.WalletAddRequest
-		dtoResponse dtos.WalletAddResponse
-		httpCode    int
-		errInfo     []errorsinfo.Errors
+		dtoRequest dtos.WalletAddRequest
+		errInfo    []errorsinfo.Errors
 	)
 
+	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
-		response.SendBack(ctx, dtoResponse, errInfo, http.StatusBadRequest)
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
-	usrEmail := fmt.Sprintf("%v", ctx.MustGet("email"))
-	dtoResponse, httpCode, errInfo = c.useCase.Add(ctx, &dtoRequest, usrEmail)
+	// validate
+	//InvestType    string       `json:"invest_type"`
+	//InvestName    string       `json:"invest_name"`
+	//WalletType    string       `json:"id_master_wallet_type"`
+	//WalletAmount  WalletAmount `json:"wallet_amount"`
+	//FeeInvestBuy  int64        `json:"fee_invest_buy"`
+	//FeeInvestSell int64        `json:"fee_invest_sell"`
+	//Amount        int64        `json:"amount"
 
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
+	if dtoRequest.InvestType == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
 	}
 
+	dtoResponse, httpCode, errInfo := c.useCase.Add(ctx, &dtoRequest)
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
 	return
 }
