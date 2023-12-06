@@ -7,6 +7,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets/entities"
 	"github.com/semicolon-indonesia/wealthy-backend/constants"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/datecustoms"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/sirupsen/logrus"
@@ -96,7 +97,7 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 	// setup trx
 	trx := entities.WalletInitTransaction{
 		ID:                            uuid.New(),
-		Date:                          "",
+		Date:                          datecustoms.NowTransaction(),
 		Fees:                          0,
 		Amount:                        float64(request.TotalAsset),
 		IDPersonalAccount:             data.ID,
@@ -104,6 +105,9 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 		IDMasterIncomeCategories:      incomeCategoryUUID,
 		IDMasterTransactionPriorities: trxPriorityUUID,
 		IDMasterTransactionTypes:      trxTypeUUID,
+		Credit:                        float64(request.TotalAsset),
+		Debit:                         0,
+		Balance:                       float64(request.TotalAsset),
 	}
 
 	// no setup trx detail
@@ -187,6 +191,7 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 		return struct{}{}, http.StatusUnauthorized, errInfo
 	}
 
+	// get data wallet
 	dataList, err = s.repo.List(personalData.ID)
 	if err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -204,6 +209,11 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 	}
 
 	for _, v := range dataList {
+		dataTrx, err := s.repo.LatestAmountWalletInTransaction(v.ID)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
 		dtoResponse = append(dtoResponse, dtos.WalletListResponse{
 			IDAccount: v.IDAccount,
 			WalletDetails: dtos.WalletDetails{
@@ -215,7 +225,7 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 			Active:        v.Active,
 			FeeInvestBuy:  v.FeeInvestBuy,
 			FeeInvestSell: v.FeeInvestSell,
-			TotalAssets:   v.TotalAssets,
+			TotalAssets:   int64(dataTrx.Balance),
 		})
 	}
 

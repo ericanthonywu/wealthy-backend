@@ -37,6 +37,9 @@ type (
 		IDMasterReksanadaTypes        uuid.UUID `gorm:"column:id_master_reksadana_types"`
 		IDMasterTransactionPriorities uuid.UUID `gorm:"column:id_master_transaction_priorities"`
 		IDMasterTransactionTypes      uuid.UUID `gorm:"column:id_master_transaction_types"`
+		Credit                        float64   `gorm:"column:credit"`
+		Debit                         float64   `gorm:"column:debit"`
+		Balance                       float64   `gorm:"column:balance"`
 	}
 
 	WalletInitTransactionDetail struct {

@@ -34,3 +34,8 @@ func ValidDateFormat(dateOrigin string) bool {
 func TimeRFC3339ToString(timeString time.Time) string {
 	return timeString.Format("2006-01-02 15:04:05")
 }
+
+func NowTransaction() string {
+	timeNow := time.Now()
+	return timeNow.Format("2006-01-02")
+}

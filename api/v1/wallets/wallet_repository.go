@@ -19,6 +19,7 @@ type (
 		List(IDPersonal uuid.UUID) (data []entities.WalletEntity, err error)
 		UpdateAmount(IDWallet string, amount int64) (data []entities.WalletEntity, httpCode int, err error)
 		InitTransaction(trx *entities.WalletInitTransaction, trxDetail *entities.WalletInitTransactionDetail) (err error)
+		LatestAmountWalletInTransaction(IDWallet uuid.UUID) (data entities.WalletInitTransaction, err error)
 	}
 )
 
@@ -72,4 +73,11 @@ func (r *WalletRepository) InitTransaction(trx *entities.WalletInitTransaction, 
 	})
 
 	return err
+}
+
+func (r *WalletRepository) LatestAmountWalletInTransaction(IDWallet uuid.UUID) (data entities.WalletInitTransaction, err error) {
+	if err := r.db.Where("id_wallets = ?", IDWallet).Order("created_at desc").First(&data).Error; err != nil {
+		return entities.WalletInitTransaction{}, err
+	}
+	return data, nil
 }
