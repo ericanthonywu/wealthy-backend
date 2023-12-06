@@ -47,6 +47,7 @@ type (
 		ForgotPasswordData(IDPersonalAccount uuid.UUID) (data entities.AccountForgotPassword, err error)
 		UpdateForgotPassword(ID uuid.UUID) (err error)
 		GenderData(ID uuid.UUID) bool
+		IsAlreadySharing(idSender, idRecipient uuid.UUID) bool
 	}
 )
 
@@ -429,6 +430,16 @@ func (r *AccountRepository) GenderData(ID uuid.UUID) bool {
 	var data entities.AccountGender
 
 	if err := r.db.Raw(`SELECT EXISTS ( SELECT 1 FROM tbl_master_genders tmg WHERE tmg.id=?)`, ID).Scan(&data).Error; err != nil {
+		return data.Exists
+	}
+	return data.Exists
+}
+
+func (r *AccountRepository) IsAlreadySharing(idSender, idRecipient uuid.UUID) bool {
+	var data entities.AccountAlreadySharing
+
+	if err := r.db.Raw(`SELECT EXISTS (SELECT 1 FROM tbl_group_sharing tgs WHERE tgs.id_personal_accounts_share_from=? AND tgs.id_personal_accounts_share_to=?)`, idSender, idRecipient).
+		Scan(&data).Error; err != nil {
 		return data.Exists
 	}
 	return data.Exists
