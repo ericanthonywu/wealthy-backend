@@ -2,6 +2,7 @@ package datecustoms
 
 import (
 	"regexp"
+	"time"
 )
 
 func IntToMonthName(month int) string {
@@ -28,4 +29,8 @@ func ValidDateFormat(dateOrigin string) bool {
 	} else {
 		return false
 	}
+}
+
+func TimeRFC3339ToString(timeString time.Time) string {
+	return timeString.Format("2006-01-02 15:04:05")
 }

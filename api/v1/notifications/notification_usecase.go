@@ -3,6 +3,8 @@ package notifications
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/notifications/dtos"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/datecustoms"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/sirupsen/logrus"
@@ -24,6 +26,8 @@ func NewNotificationUseCase(repo INotificationRepository) *NotificationUseCase {
 }
 
 func (s *NotificationUseCase) GetNotification(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var dtoResponse []dtos.Notification
+
 	usrEmail := ctx.MustGet("email").(string)
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
@@ -58,5 +62,18 @@ func (s *NotificationUseCase) GetNotification(ctx *gin.Context) (response interf
 		return resp, http.StatusOK, errInfo
 	}
 
-	return dataNotification, http.StatusOK, errInfo
+	for _, v := range dataNotification {
+		dtoResponse = append(dtoResponse, dtos.Notification{
+			ID:                      v.ID,
+			NotificationTitle:       v.NotificationTitle,
+			NotificationDescription: v.NotificationDescription,
+			IDPersonalAccounts:      v.IDPersonalAccounts,
+			IsRead:                  v.IsRead,
+			IDGroupSender:           v.IDGroupSender,
+			IDGroupRecipient:        v.IDGroupRecipient,
+			CreatedAt:               datecustoms.TimeRFC3339ToString(v.CreatedAt),
+		})
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
 }

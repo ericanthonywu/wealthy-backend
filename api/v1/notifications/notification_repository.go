@@ -21,7 +21,7 @@ func NewNotificationRepository(db *gorm.DB) *NotificationRepository {
 }
 
 func (r *NotificationRepository) GetNotification(personalAccount uuid.UUID) (data []entities.NotificationEntities, err error) {
-	if err := r.db.Raw(`SELECT  tn.id, tn.notification_title, tn.notification_description, tn.id_personal_accounts, tn.is_read, tn.id_group_sender, tn.id_group_recipient
+	if err := r.db.Raw(`SELECT  tn.id, tn.notification_title, tn.notification_description, tn.id_personal_accounts, tn.is_read, tn.id_group_sender, tn.id_group_recipient, tn.created_at
 FROM tbl_notifications tn WHERE tn.id_personal_accounts=? AND tn.is_read=false ORDER BY created_at DESC`, personalAccount).Scan(&data).Error; err != nil {
 		return []entities.NotificationEntities{}, err
 	}
