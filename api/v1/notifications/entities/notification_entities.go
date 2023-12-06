@@ -14,6 +14,8 @@ type (
 		IsRead                  bool      `gorm:"column:is_read"`
 		IDGroupSender           uuid.UUID `gorm:"column:id_group_sender"`
 		IDGroupRecipient        uuid.UUID `gorm:"column:id_group_recipient"`
+		ImagePath               string    `gorm:"column:image_path"`
+		Type                    string    `gorm:"column:type"`
 		CreatedAt               time.Time `gorm:"column:created_at"`
 	}
 )
