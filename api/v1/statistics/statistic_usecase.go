@@ -29,7 +29,7 @@ type (
 		subExpenseWeekly(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (categoryName string, data []dtos.WeeklySubExpenseDetail, err error)
 		incomeWeekly(IDPersonal uuid.UUID, month, year string) (data []dtos.IncomeWeekly)
 		investmentWeekly(IDPersonal uuid.UUID, month, year string) (data []dtos.InvestmentWeekly)
-		ExpenseDetail(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		ExpenseDetail(ctx *gin.Context, month, year, email string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		SubExpenseDetail(ctx *gin.Context, month, year string, IDCategory uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		isDataPriorityNotEmpty(data entities.StatisticPriority) bool
 		AnalyticsTrend(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
@@ -506,27 +506,40 @@ func (s *StatisticUseCase) Trend(ctx *gin.Context, month, year string) (response
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
 
-func (s *StatisticUseCase) ExpenseDetail(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *StatisticUseCase) ExpenseDetail(ctx *gin.Context, month, year, email string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
 		dtoResponse   dtos.ExpenseDetail
 		stringBuilder strings.Builder
 		totalExpense  int64
+		IDUser        uuid.UUID
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	// if email empty
+	if email == "" {
+		usrEmail := ctx.MustGet("email").(string)
+		personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
+		if personalAccount.ID == uuid.Nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+			return struct{}{}, http.StatusUnauthorized, errInfo
+		}
+		IDUser = personalAccount.ID
 	}
 
-	dataExpenseDetail, err := s.repo.ExpenseDetail(personalAccount.ID, month, year)
+	// if email not empty
+	if email != "" {
+		dataProfile, err := s.repo.GetProfileByEmail(email)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
+		}
+		IDUser = dataProfile.ID
+	}
+
+	dataExpenseDetail, err := s.repo.ExpenseDetail(IDUser, month, year)
 	if err != nil {
-		httpCode = http.StatusInternalServerError
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return response, httpCode, errInfo
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
 	for _, v := range dataExpenseDetail {
@@ -554,9 +567,11 @@ func (s *StatisticUseCase) ExpenseDetail(ctx *gin.Context, month, year string) (
 	dtoResponse.Period = stringBuilder.String()
 	dtoResponse.TotalExpense = totalExpense
 
+	// errInfo empty
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
+
 	return dtoResponse, http.StatusOK, errInfo
 }
 

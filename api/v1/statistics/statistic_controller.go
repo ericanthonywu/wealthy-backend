@@ -141,28 +141,30 @@ func (c *StatisticController) AnalyticsTrend(ctx *gin.Context) {
 }
 
 func (c *StatisticController) ExpenseDetail(ctx *gin.Context) {
-	var (
-		errInfo []errorsinfo.Errors
-	)
+	var errInfo []errorsinfo.Errors
 
+	// get value from parameter url
 	month := ctx.Query("month")
 	year := ctx.Query("year")
+	email := ctx.Query("email")
 
-	if month == "" || year == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month or year required in query url")
-		response.SendBack(ctx, nil, errInfo, http.StatusBadRequest)
+	// validate
+	if month == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month required in query url")
+	}
+
+	if year == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "year required in query url")
+	}
+
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
-	data, httpCode, errInfo := c.useCase.ExpenseDetail(ctx, month, year)
-
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
-	}
-
+	data, httpCode, errInfo := c.useCase.ExpenseDetail(ctx, month, year, email)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
-
 }
 
 func (c *StatisticController) SubExpenseDetail(ctx *gin.Context) {

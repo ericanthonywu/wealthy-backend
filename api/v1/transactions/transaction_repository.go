@@ -13,7 +13,6 @@ type (
 
 	ITransactionRepository interface {
 		Add(trx *entities.TransactionEntity, trxDetail *entities.TransactionDetailEntity) (err error)
-
 		ExpenseDetailHistoryWithoutDate(IDPersonal uuid.UUID) (data []entities.TransactionDetailHistory)
 		ExpenseDetailHistoryWithDate(IDPersonal uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailHistory)
 		ExpenseTotalHistoryWithoutDate(IDPersonal uuid.UUID) (data entities.TransactionExpenseTotalHistory)

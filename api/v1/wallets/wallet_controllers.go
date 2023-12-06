@@ -3,9 +3,11 @@ package wallets
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets/dtos"
+	"github.com/semicolon-indonesia/wealthy-backend/constants"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
 	"net/http"
+	"strings"
 )
 
 type (
@@ -38,16 +40,40 @@ func (c *WalletController) Add(ctx *gin.Context) {
 	}
 
 	// validate
-	//InvestType    string       `json:"invest_type"`
-	//InvestName    string       `json:"invest_name"`
-	//WalletType    string       `json:"id_master_wallet_type"`
-	//WalletAmount  WalletAmount `json:"wallet_amount"`
-	//FeeInvestBuy  int64        `json:"fee_invest_buy"`
-	//FeeInvestSell int64        `json:"fee_invest_sell"`
-	//Amount        int64        `json:"amount"
+	if dtoRequest.WalletName == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "wallet name empty")
+	}
 
-	if dtoRequest.InvestType == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
+	if dtoRequest.WalletType == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "wallet type empty")
+	}
+
+	if dtoRequest.TotalAsset == 0 {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "total assets empty")
+	}
+
+	// is wallet type match with these :
+	isTypeMatch := strings.ToUpper(dtoRequest.WalletType) == constants.Cash || strings.ToUpper(dtoRequest.WalletType) == constants.CreditCard ||
+		strings.ToUpper(dtoRequest.WalletType) == constants.DebitCard || strings.ToUpper(dtoRequest.WalletType) == constants.Investment ||
+		strings.ToUpper(dtoRequest.WalletType) == constants.Saving
+
+	if !isTypeMatch {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "wallet type must contain one of values. [ CASH, CREDIT_CARD, DEBIT_CARD, INVESTMENT, SAVING ]")
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	if dtoRequest.FeeInvestBuy == 0 {
+		dtoRequest.FeeInvestSell = 0.15
+	}
+
+	if dtoRequest.FeeInvestSell == 0 {
+		dtoRequest.FeeInvestSell = 0.25
+	}
+
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
 	}
 
 	dtoResponse, httpCode, errInfo := c.useCase.Add(ctx, &dtoRequest)
