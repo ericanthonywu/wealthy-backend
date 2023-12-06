@@ -60,21 +60,27 @@ func (c *StatisticController) Summary(ctx *gin.Context) {
 		data       interface{}
 		statusCode int
 	)
+
+	// get query parameter
 	month := ctx.Query("month")
 	year := ctx.Query("year")
+	email := ctx.Query("email")
 
-	if month == "" || year == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month or year required in query url")
-		response.SendBack(ctx, nil, errInfo, http.StatusBadRequest)
+	// validate
+	if month == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month required in query url")
+	}
+
+	if year == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "year required in query url")
+	}
+
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
-	data, statusCode, errInfo = c.useCase.Summary(ctx, month, year)
-
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
-	}
-
+	data, statusCode, errInfo = c.useCase.Summary(ctx, month, year, email)
 	response.SendBack(ctx, data, errInfo, statusCode)
 	return
 }

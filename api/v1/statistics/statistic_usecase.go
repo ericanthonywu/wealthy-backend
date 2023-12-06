@@ -22,7 +22,7 @@ type (
 
 	IStatisticUseCase interface {
 		Weekly(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		Summary(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		Summary(ctx *gin.Context, month, year, email string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Priority(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Trend(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		expenseWeekly(IDPersonal uuid.UUID, month, year string) (data []dtos.ExpenseWeekly)
@@ -248,7 +248,7 @@ func (s *StatisticUseCase) investmentWeekly(IDPersonal uuid.UUID, month, year st
 	return investmentWeekly
 }
 
-func (s *StatisticUseCase) Summary(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *StatisticUseCase) Summary(ctx *gin.Context, month, year, email string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
 		monthPrevious        string
 		yearPrevious         string
@@ -257,22 +257,10 @@ func (s *StatisticUseCase) Summary(ctx *gin.Context, month, year string) (respon
 		investmentPercentage int
 		netIncomePercentage  int
 		stringBuilder        strings.Builder
+		dataCurrentSummary   entities.StatisticSummaryMonthly
+		dataPreviousSummary  entities.StatisticSummaryMonthly
+		err                  error
 	)
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
-		return response, httpCode, errInfo
-	}
-
-	dataCurrentSummary, err := s.repo.SummaryMonthly(personalAccount.ID, month, year)
-	if err != nil {
-		httpCode = http.StatusInternalServerError
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return response, httpCode, errInfo
-	}
 
 	monthINT, err := strconv.Atoi(month)
 	if err != nil {
@@ -284,16 +272,67 @@ func (s *StatisticUseCase) Summary(ctx *gin.Context, month, year string) (respon
 		logrus.Error(err.Error())
 	}
 
-	if monthINT-1 < 0 {
-		monthPrevious = "12"
-		yearPrevious = strconv.Itoa(yearINT - 1)
+	// if email is empty
+	if email == "" {
+		usrEmail := ctx.MustGet("email").(string)
+		personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
-	} else {
-		monthPrevious = strconv.Itoa(monthINT - 1)
-		yearPrevious = year
+		if personalAccount.ID == uuid.Nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+			return response, http.StatusNotFound, errInfo
+		}
+
+		dataCurrentSummary, err = s.repo.SummaryMonthly(personalAccount.ID, month, year)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return response, http.StatusInternalServerError, errInfo
+		}
+
+		if monthINT-1 < 0 {
+			monthPrevious = "12"
+			yearPrevious = strconv.Itoa(yearINT - 1)
+
+		} else {
+			monthPrevious = strconv.Itoa(monthINT - 1)
+			yearPrevious = year
+		}
+
+		dataPreviousSummary, err = s.repo.SummaryMonthly(personalAccount.ID, monthPrevious, yearPrevious)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return response, http.StatusInternalServerError, errInfo
+		}
 	}
 
-	dataPreviousSummary, err := s.repo.SummaryMonthly(personalAccount.ID, monthPrevious, yearPrevious)
+	// if email is not empty
+	if email != "" {
+		dataProfile, err := s.repo.GetProfileByEmail(email)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return response, http.StatusInternalServerError, errInfo
+		}
+
+		dataCurrentSummary, err = s.repo.SummaryMonthly(dataProfile.ID, month, year)
+		if err != nil {
+			httpCode = http.StatusInternalServerError
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return response, httpCode, errInfo
+		}
+
+		if monthINT-1 < 0 {
+			monthPrevious = "12"
+			yearPrevious = strconv.Itoa(yearINT - 1)
+		} else {
+			monthPrevious = strconv.Itoa(monthINT - 1)
+			yearPrevious = year
+		}
+
+		dataPreviousSummary, err = s.repo.SummaryMonthly(dataProfile.ID, monthPrevious, yearPrevious)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return response, http.StatusInternalServerError, errInfo
+		}
+	}
 
 	if dataCurrentSummary.TotalExpense > 0 {
 		expensePercentage = (dataPreviousSummary.TotalExpense / dataCurrentSummary.TotalExpense) * 100
@@ -303,8 +342,8 @@ func (s *StatisticUseCase) Summary(ctx *gin.Context, month, year string) (respon
 		investmentPercentage = (dataPreviousSummary.TotalInvest / dataCurrentSummary.TotalInvest) * 100
 	}
 
+	// calculate net income, previous and current
 	netIncome := dataCurrentSummary.TotalIncome - dataCurrentSummary.TotalExpense
-
 	previousNetIncome := dataPreviousSummary.TotalIncome - dataPreviousSummary.TotalExpense
 	currentNetIncome := dataCurrentSummary.TotalIncome - dataCurrentSummary.TotalExpense
 
@@ -336,8 +375,12 @@ func (s *StatisticUseCase) Summary(ctx *gin.Context, month, year string) (respon
 
 	dtoResponse.Period = stringBuilder.String()
 
-	return dtoResponse, http.StatusOK, errInfo
+	// err info empty
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
 
+	return dtoResponse, http.StatusOK, errInfo
 }
 
 func (s *StatisticUseCase) Priority(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
@@ -397,7 +440,12 @@ func (s *StatisticUseCase) Priority(ctx *gin.Context, month, year string) (respo
 
 	dtoResponse.Period = stringBuilder.String()
 
-	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
+	// if err info is empty
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
 }
 
 func (s *StatisticUseCase) Trend(ctx *gin.Context, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
