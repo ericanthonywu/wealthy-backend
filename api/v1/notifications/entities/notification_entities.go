@@ -1,6 +1,9 @@
 package entities
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
 type (
 	NotificationEntities struct {
@@ -11,5 +14,6 @@ type (
 		IsRead                  bool      `gorm:"column:is_read" json:"is_read"`
 		IDGroupSender           uuid.UUID `gorm:"column:id_group_sender" json:"id_group_sender"`
 		IDGroupRecipient        uuid.UUID `gorm:"column:id_group_recipient" json:"id_group_recipient"`
+		CreatedAt               time.Time `gorm:"column:created_at" json:"created_at"`
 	}
 )
