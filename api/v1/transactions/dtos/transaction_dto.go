@@ -17,12 +17,12 @@ type (
 		StockCode                     string    `json:"stock_code,omitempty"`
 		Lot                           int64     `json:"lot,omitempty"`
 		SellBuy                       int       `json:"sellbuy,omitempty"`
-		IDWallet                      uuid.UUID `json:"id_wallets,omitempty"`
+		IDWallet                      string    `json:"id_wallets,omitempty"`
 		IDMasterIncomeCategories      uuid.UUID `json:"id_master_income_categories,omitempty"`
 		IDMasterExpenseCategories     uuid.UUID `json:"id_master_expense_categories,omitempty"`
 		IDMasterExpenseSubCategories  uuid.UUID `json:"id_master_expense_subcategories,omitempty"`
-		IDMasterInvest                uuid.UUID `json:"id_master_invest,omitempty"`
-		IDMasterBroker                uuid.UUID `json:"id_master_broker,omitempty"`
+		IDMasterInvest                string    `json:"id_master_invest,omitempty"`
+		IDMasterBroker                string    `json:"id_master_broker,omitempty"`
 		IDMasterReksanadaTypes        uuid.UUID `json:"id_master_reksadana_types,omitempty"`
 		IDMasterTransactionPriorities uuid.UUID `json:"id_master_transaction_priorities,omitempty"`
 		IDMasterTransactionTypes      uuid.UUID `json:"id_master_transaction_types,omitempty"`

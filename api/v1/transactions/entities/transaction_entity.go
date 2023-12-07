@@ -136,6 +136,10 @@ type (
 	TransactionSuggestionNotes struct {
 		Note string `gorm:"column:note"`
 	}
+
+	TransactionWalletExist struct {
+		Exists bool `gorm:"column:exists"`
+	}
 )
 
 func (TransactionEntity) TableName() string {

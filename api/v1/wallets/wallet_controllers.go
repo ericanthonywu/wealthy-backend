@@ -52,7 +52,7 @@ func (c *WalletController) Add(ctx *gin.Context) {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "total assets empty")
 	}
 
-	// is wallet type match with these :
+	// check wallet types
 	isTypeMatch := strings.ToUpper(dtoRequest.WalletType) == constants.Cash || strings.ToUpper(dtoRequest.WalletType) == constants.CreditCard ||
 		strings.ToUpper(dtoRequest.WalletType) == constants.DebitCard || strings.ToUpper(dtoRequest.WalletType) == constants.Investment ||
 		strings.ToUpper(dtoRequest.WalletType) == constants.Saving

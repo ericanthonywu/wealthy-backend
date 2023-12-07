@@ -12,6 +12,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"strings"
 )
 
 type (
@@ -36,7 +37,7 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 		IDMasterWalletType string
 	)
 
-	switch request.WalletType {
+	switch strings.ToUpper(request.WalletType) {
 	case constants.Cash:
 		IDMasterWalletType = constants.IDCash
 	case constants.DebitCard:
@@ -58,10 +59,10 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 	walletEntity := entities.WalletEntity{
 		Active:             true,
 		WalletName:         request.WalletName,
-		WalletType:         request.WalletType,
+		WalletType:         strings.ToUpper(request.WalletType),
 		IDMasterWalletType: UUIDIDMasterWalletType,
 		FeeInvestBuy:       request.FeeInvestBuy,
-		FeeInvestSell:      request.FeeInvestBuy,
+		FeeInvestSell:      request.FeeInvestSell,
 		TotalAssets:        request.TotalAsset,
 	}
 

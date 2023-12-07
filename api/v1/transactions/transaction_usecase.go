@@ -53,7 +53,25 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 	trxID, err = uuid.NewUUID()
 	if err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return nil, http.StatusUnprocessableEntity, errInfo
+		return struct{}{}, http.StatusUnprocessableEntity, errInfo
+	}
+
+	// convert string to UUID
+	IDWalletUUID, err := uuid.Parse(request.IDWallet)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	IDMasterInvestUUID, err := uuid.Parse(request.IDMasterInvest)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+	IDMasterBrokerUUID, err := uuid.Parse(request.IDMasterBroker)
+
+	// is wallet true exists
+	if !s.repo.WalletExist(IDWalletUUID) {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet unregistered before")
+		return struct{}{}, http.StatusBadRequest, errInfo
 	}
 
 	modelTransaction := entities.TransactionEntity{
@@ -62,12 +80,12 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		Fees:                          float64(request.Fees),
 		Amount:                        float64(request.Amount),
 		IDPersonalAccount:             personalAccount.ID,
-		IDWallet:                      request.IDWallet,
+		IDWallet:                      IDWalletUUID,
 		IDMasterIncomeCategories:      request.IDMasterIncomeCategories,
 		IDMasterExpenseCategories:     request.IDMasterExpenseCategories,
 		IDMasterExpenseSubCategories:  request.IDMasterExpenseSubCategories,
-		IDMasterInvest:                request.IDMasterInvest,
-		IDMasterBroker:                request.IDMasterBroker,
+		IDMasterInvest:                IDMasterInvestUUID,
+		IDMasterBroker:                IDMasterBrokerUUID,
 		IDMasterReksanadaTypes:        request.IDMasterReksanadaTypes,
 		IDMasterTransactionPriorities: request.IDMasterTransactionPriorities,
 		IDMasterTransactionTypes:      request.IDMasterTransactionTypes,
@@ -86,6 +104,7 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		IDTravel:          request.IDTravel,
 	}
 
+	// save transaction
 	err = s.repo.Add(&modelTransaction, &modelTransactionDetail)
 	if err != nil {
 		data := struct {

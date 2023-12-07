@@ -35,18 +35,45 @@ func (c *TransactionController) Add(ctx *gin.Context) {
 	var (
 		dtoRequest dtos.TransactionRequest
 		errInfo    []errorsinfo.Errors
-		httpCode   int
-		data       interface{}
 	)
 
 	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
-		response.SendBack(ctx, dtos.TransactionRequest{}, errInfo, http.StatusBadRequest)
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
-	data, httpCode, errInfo = c.useCase.Add(ctx, &dtoRequest)
+	// validation
+	if dtoRequest.Date == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "date transaction empty value")
+	}
+
+	if dtoRequest.IDWallet == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet empty value")
+	}
+
+	// transaction for investment
+	if dtoRequest.IDMasterInvest != "" || dtoRequest.IDMasterBroker != "" {
+		if dtoRequest.StockCode == "" {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "stock code empty value")
+		}
+
+		if dtoRequest.Lot == 0 {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "lot must greater than 0 value")
+		}
+
+		if dtoRequest.IDMasterInvest == "" {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master invest empty value")
+		}
+	}
+
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	data, httpCode, errInfo := c.useCase.Add(ctx, &dtoRequest)
 	response.SendBack(ctx, data, []errorsinfo.Errors{}, httpCode)
 	return
 }

@@ -47,6 +47,8 @@ type (
 		InvestAnnuallyDetail(IDPersonal uuid.UUID, year string) (data []entities.TransactionInvestmentDetail)
 		ByNote(IDPersonal uuid.UUID, dateFilter string) (data []entities.TransactionByNotes)
 		Suggestion(IDPersoalAccount uuid.UUID) (data []entities.TransactionSuggestionNotes, err error)
+
+		WalletExist(IDWallet uuid.UUID) bool
 	}
 )
 
@@ -570,4 +572,13 @@ WHERE t.id_personal_account=? AND tmtt.type='EXPENSE'`, IDPersoalAccount).Scan(&
 		return []entities.TransactionSuggestionNotes{}, err
 	}
 	return data, nil
+}
+
+func (r *TransactionRepository) WalletExist(IDWallet uuid.UUID) bool {
+	var model entities.TransactionWalletExist
+
+	if err := r.db.Raw(`SELECT EXISTS (SELECT 1 FROM tbl_wallets tw WHERE tw.id=?`, IDWallet).Scan(&model).Error; err != nil {
+		return model.Exists
+	}
+	return model.Exists
 }
