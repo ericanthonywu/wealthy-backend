@@ -180,13 +180,15 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 	for _, v := range dataList {
 		var totalAsset int64
 
-		dataTrx, err := s.repo.LatestAmountWalletInTransaction(v.ID)
-		if err != nil {
-			logrus.Error(err.Error())
-		}
-
 		// if wallet type is not investment
 		if strings.ToUpper(v.WalletType) != constants.Investment {
+
+			// fetch data from transaction latest row to get balance information
+			dataTrx, err := s.repo.LatestAmountWalletInTransaction(v.ID)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
+
 			totalAsset = int64(dataTrx.Balance)
 		}
 
