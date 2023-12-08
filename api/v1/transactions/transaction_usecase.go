@@ -66,7 +66,11 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 	if err != nil {
 		logrus.Error(err.Error())
 	}
+
 	IDMasterBrokerUUID, err := uuid.Parse(request.IDMasterBroker)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
 
 	// is wallet true exists
 	if !s.repo.WalletExist(IDWalletUUID) {
@@ -121,7 +125,12 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 	}{
 		IDTransaction: trxID,
 	}
-	return data, http.StatusOK, []errorsinfo.Errors{}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return data, http.StatusOK, errInfo
 }
 
 func (s *TransactionUseCase) ExpenseTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {

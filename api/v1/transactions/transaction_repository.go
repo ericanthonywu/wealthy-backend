@@ -577,7 +577,7 @@ WHERE t.id_personal_account=? AND tmtt.type='EXPENSE'`, IDPersoalAccount).Scan(&
 func (r *TransactionRepository) WalletExist(IDWallet uuid.UUID) bool {
 	var model entities.TransactionWalletExist
 
-	if err := r.db.Raw(`SELECT EXISTS (SELECT 1 FROM tbl_wallets tw WHERE tw.id=?`, IDWallet).Scan(&model).Error; err != nil {
+	if err := r.db.Raw(`SELECT EXISTS (SELECT 1 FROM tbl_wallets tw WHERE tw.id=?)`, IDWallet).Scan(&model).Error; err != nil {
 		return model.Exists
 	}
 	return model.Exists

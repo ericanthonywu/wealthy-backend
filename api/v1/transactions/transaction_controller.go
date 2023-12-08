@@ -75,7 +75,7 @@ func (c *TransactionController) Add(ctx *gin.Context) {
 	}
 
 	data, httpCode, errInfo := c.useCase.Add(ctx, &dtoRequest)
-	response.SendBack(ctx, data, []errorsinfo.Errors{}, httpCode)
+	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
 
