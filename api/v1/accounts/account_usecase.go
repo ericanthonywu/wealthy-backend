@@ -371,6 +371,17 @@ func (s *AccountUseCase) UpdateProfile(ctx *gin.Context, request map[string]inte
 		}
 	}
 
+	// fcmtoken
+	value, exists = request["fcmtoken"]
+	if exists {
+		fcmToken := fmt.Sprintf("%v", value)
+
+		if fcmToken == "" {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "fcm token empty value")
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
+	}
+
 	// validate format dob
 	if !datecustoms.ValidDateFormat(dateOrigin) {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "format date must following YYYY-MM-DD")
