@@ -21,6 +21,7 @@ import (
 	"net/smtp"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -1099,6 +1100,8 @@ func (s *AccountUseCase) RemoveSharing(ctx *gin.Context, dtoRequest *dtos.Accoun
 }
 
 func (s *AccountUseCase) ListGroupSharing(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var dtoResponse []dtos.AccountShare
+
 	usrEmail := ctx.MustGet("email").(string)
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
@@ -1125,12 +1128,30 @@ func (s *AccountUseCase) ListGroupSharing(ctx *gin.Context) (response interface{
 		return resp, http.StatusNotFound, errInfo
 	}
 
+	// append to dto response
+	for _, v := range dataGroupSharingWithProfile {
+
+		ImagePath := ""
+		if v.ImagePath != "" {
+			ImagePath = os.Getenv("APP_HOST") + "/v1/" + v.ImagePath
+		}
+
+		dtoResponse = append(dtoResponse, dtos.AccountShare{
+			AccountShareDetail: dtos.AccountShareDetail{
+				Email:     v.Email,
+				ImagePath: ImagePath,
+				Type:      v.Type,
+			},
+			Status: strings.ToUpper(v.Status),
+		})
+	}
+
 	// clear error info
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
 
-	return dataGroupSharingWithProfile, http.StatusOK, errInfo
+	return dtoResponse, http.StatusOK, errInfo
 }
 
 func (s *AccountUseCase) VerifyOTP(ctx *gin.Context, request *dtos.AccountOTPVerify) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {

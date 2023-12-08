@@ -2,6 +2,7 @@ package wallets
 
 import (
 	"errors"
+	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets/entities"
 	"gorm.io/gorm"
 	"net/http"
@@ -15,8 +16,10 @@ type (
 	IWalletRepository interface {
 		PersonalAccount(email string) (data entities.WalletPersonalInformationEntity)
 		Add(model *entities.WalletEntity) (err error)
-		List(email string) (data []entities.WalletEntity, httpCode int, err error)
+		List(IDPersonal uuid.UUID) (data []entities.WalletEntity, err error)
 		UpdateAmount(IDWallet string, amount int64) (data []entities.WalletEntity, httpCode int, err error)
+		InitTransaction(trx *entities.WalletInitTransaction, trxDetail *entities.WalletInitTransactionDetail) (err error)
+		LatestAmountWalletInTransaction(IDWallet uuid.UUID) (data entities.WalletInitTransaction, err error)
 	}
 )
 
@@ -40,18 +43,11 @@ func (r *WalletRepository) Add(model *entities.WalletEntity) (err error) {
 	return nil
 }
 
-func (r *WalletRepository) List(email string) (data []entities.WalletEntity, httpCode int, err error) {
-	personalAccountData := r.PersonalAccount(email)
-
-	result := r.db.Where("id_account=?", personalAccountData.ID).Find(&data)
-	if result.RowsAffected == 0 {
-		return []entities.WalletEntity{}, http.StatusNotFound, errors.New("not found")
+func (r *WalletRepository) List(IDPersonal uuid.UUID) (data []entities.WalletEntity, err error) {
+	if err := r.db.Where("id_account=?", IDPersonal).Find(&data).Error; err != nil {
+		return []entities.WalletEntity{}, err
 	}
-
-	if result.Error != nil {
-		return []entities.WalletEntity{}, http.StatusInternalServerError, err
-	}
-	return data, http.StatusOK, nil
+	return data, nil
 }
 
 func (r *WalletRepository) UpdateAmount(IDWallet string, amount int64) (data []entities.WalletEntity, httpCode int, err error) {
@@ -62,4 +58,26 @@ func (r *WalletRepository) UpdateAmount(IDWallet string, amount int64) (data []e
 	}
 
 	return data, http.StatusOK, nil
+}
+
+func (r *WalletRepository) InitTransaction(trx *entities.WalletInitTransaction, trxDetail *entities.WalletInitTransactionDetail) (err error) {
+	err = r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&trx).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Create(&trxDetail).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+
+	return err
+}
+
+func (r *WalletRepository) LatestAmountWalletInTransaction(IDWallet uuid.UUID) (data entities.WalletInitTransaction, err error) {
+	if err := r.db.Where("id_wallets = ?", IDWallet).Order("created_at desc").First(&data).Error; err != nil {
+		return entities.WalletInitTransaction{}, err
+	}
+	return data, nil
 }

@@ -3,6 +3,7 @@ package transactions
 import (
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/entities"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -13,7 +14,6 @@ type (
 
 	ITransactionRepository interface {
 		Add(trx *entities.TransactionEntity, trxDetail *entities.TransactionDetailEntity) (err error)
-
 		ExpenseDetailHistoryWithoutDate(IDPersonal uuid.UUID) (data []entities.TransactionDetailHistory)
 		ExpenseDetailHistoryWithDate(IDPersonal uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailHistory)
 		ExpenseTotalHistoryWithoutDate(IDPersonal uuid.UUID) (data entities.TransactionExpenseTotalHistory)
@@ -48,6 +48,9 @@ type (
 		InvestAnnuallyDetail(IDPersonal uuid.UUID, year string) (data []entities.TransactionInvestmentDetail)
 		ByNote(IDPersonal uuid.UUID, dateFilter string) (data []entities.TransactionByNotes)
 		Suggestion(IDPersoalAccount uuid.UUID) (data []entities.TransactionSuggestionNotes, err error)
+
+		WalletExist(IDWallet uuid.UUID) bool
+		BudgetWithCurrency(IDTravel uuid.UUID) (data entities.TransactionWithCurrency, rr error)
 	}
 )
 
@@ -569,6 +572,25 @@ INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
 INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
 WHERE t.id_personal_account=? AND tmtt.type='EXPENSE'`, IDPersoalAccount).Scan(&data).Error; err != nil {
 		return []entities.TransactionSuggestionNotes{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) WalletExist(IDWallet uuid.UUID) bool {
+	var model entities.TransactionWalletExist
+
+	if err := r.db.Raw(`SELECT EXISTS (SELECT 1 FROM tbl_wallets tw WHERE tw.id=?)`, IDWallet).Scan(&model).Error; err != nil {
+		return model.Exists
+	}
+	return model.Exists
+}
+
+func (r *TransactionRepository) BudgetWithCurrency(IDTravel uuid.UUID) (data entities.TransactionWithCurrency, rr error) {
+	if err := r.db.Raw(`SELECT tmec.currency_value FROM tbl_budgets tb INNER JOIN tbl_master_exchange_currency tmec ON tmec.id = tb.id_master_exchance_currency
+WHERE tb.id=?`, IDTravel).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.TransactionWithCurrency{}, err
 	}
 	return data, nil
 }

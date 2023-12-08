@@ -26,6 +26,7 @@ type (
 		BudgetEachCategory(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.BudgetEachCategory, err error)
 		CategoryInfo(IDCategory uuid.UUID) (data entities.CategoryInfo, err error)
 		Travels(IDPersonal uuid.UUID) (data []entities.BudgetTravel, err error)
+		GetXchangeCurrency(IDMasterExchange uuid.UUID) (data entities.BudgetExistsExchangeExist, err error)
 	}
 )
 
@@ -212,6 +213,15 @@ FROM tbl_budgets tb WHERE tb.id_personal_accounts = ? AND id_master_transaction_
 		Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return []entities.BudgetTravel{}, err
+	}
+	return data, nil
+}
+
+func (r *BudgetRepository) GetXchangeCurrency(IDMasterExchange uuid.UUID) (data entities.BudgetExistsExchangeExist, err error) {
+	if err := r.db.Raw(`SELECT EXISTS( SELECT 1 FROM tbl_master_exchange_currency tmec WHERE tmec.id= ?)`, IDMasterExchange).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.BudgetExistsExchangeExist{}, err
 	}
 	return data, nil
 }
