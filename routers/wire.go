@@ -9,6 +9,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/images"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/internals"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/investments"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/notifications"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/payments"
@@ -175,4 +176,16 @@ func Notifications(db *gorm.DB) *notifications.NotificationController {
 		wire.Bind(new(notifications.INotificationRepository), new(*notifications.NotificationRepository)),
 	)))
 	return &notifications.NotificationController{}
+}
+
+func Investments(db *gorm.DB) *investments.InvestmentController {
+	panic(wire.Build(wire.NewSet(
+		investments.NewInvestmentController,
+		investments.NewInvestmentUseCase,
+		investments.NewInvestmentRepository,
+		wire.Bind(new(investments.IInvestmentController), new(*investments.InvestmentController)),
+		wire.Bind(new(investments.IInvestmentUseCase), new(*investments.InvestmentUseCase)),
+		wire.Bind(new(investments.IInvestmentRepository), new(*investments.InvestmentRepository)),
+	)))
+	return &investments.InvestmentController{}
 }

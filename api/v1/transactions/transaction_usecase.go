@@ -37,8 +37,10 @@ func NewTransactionUseCase(repo ITransactionRepository) *TransactionUseCase {
 
 func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		trxID uuid.UUID
-		err   error
+		trxID         uuid.UUID
+		err           error
+		convertAmount int64
+		IDTravelUUID  uuid.UUID
 	)
 
 	usrEmail := ctx.MustGet("email").(string)
@@ -50,24 +52,60 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		return nil, httpCode, errInfo
 	}
 
-	trxID, err = uuid.NewUUID()
+	trxID = uuid.New()
+
+	// convert string to UUID
+	IDWalletUUID, err := uuid.Parse(request.IDWallet)
 	if err != nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return nil, http.StatusUnprocessableEntity, errInfo
+		logrus.Error(err.Error())
+	}
+
+	IDMasterInvestUUID, err := uuid.Parse(request.IDMasterInvest)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	IDMasterBrokerUUID, err := uuid.Parse(request.IDMasterBroker)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	if request.IDTravel != "" {
+		IDTravelUUID, err = uuid.Parse(request.IDTravel)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		dataCurrency, err := s.repo.BudgetWithCurrency(IDTravelUUID)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+		convertAmount = dataCurrency.CurrencyValue * request.Amount
+	}
+
+	if request.IDTravel == "" {
+		convertAmount = request.Amount
+		IDTravelUUID = uuid.Nil
+
+		// is wallet true exists
+		if !s.repo.WalletExist(IDWalletUUID) {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet unregistered before")
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
 	}
 
 	modelTransaction := entities.TransactionEntity{
 		ID:                            trxID,
 		Date:                          request.Date,
 		Fees:                          float64(request.Fees),
-		Amount:                        float64(request.Amount),
+		Amount:                        float64(convertAmount),
 		IDPersonalAccount:             personalAccount.ID,
-		IDWallet:                      request.IDWallet,
+		IDWallet:                      IDWalletUUID,
 		IDMasterIncomeCategories:      request.IDMasterIncomeCategories,
 		IDMasterExpenseCategories:     request.IDMasterExpenseCategories,
 		IDMasterExpenseSubCategories:  request.IDMasterExpenseSubCategories,
-		IDMasterInvest:                request.IDMasterInvest,
-		IDMasterBroker:                request.IDMasterBroker,
+		IDMasterInvest:                IDMasterInvestUUID,
+		IDMasterBroker:                IDMasterBrokerUUID,
 		IDMasterReksanadaTypes:        request.IDMasterReksanadaTypes,
 		IDMasterTransactionPriorities: request.IDMasterTransactionPriorities,
 		IDMasterTransactionTypes:      request.IDMasterTransactionTypes,
@@ -83,9 +121,10 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		StockCode:         request.StockCode,
 		Lot:               request.Lot,
 		SellBuy:           request.SellBuy,
-		IDTravel:          request.IDTravel,
+		IDTravel:          IDTravelUUID,
 	}
 
+	// save transaction
 	err = s.repo.Add(&modelTransaction, &modelTransactionDetail)
 	if err != nil {
 		data := struct {
@@ -102,7 +141,12 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 	}{
 		IDTransaction: trxID,
 	}
-	return data, http.StatusOK, []errorsinfo.Errors{}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return data, http.StatusOK, errInfo
 }
 
 func (s *TransactionUseCase) ExpenseTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {

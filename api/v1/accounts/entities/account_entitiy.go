@@ -112,10 +112,11 @@ type (
 	}
 
 	AccountGroupSharingWithProfileInfo struct {
-		Email     string `gorm:"column:email" json:"email"`
-		Filename  string `gorm:"column:file_name" json:"file_name"`
-		ImagePath string `gorm:"column:image_path" json:"image_path"`
-		Status    string `gorm:"column:status" json:"status"`
+		Email     string `gorm:"column:email"`
+		Filename  string `gorm:"column:file_name"`
+		ImagePath string `gorm:"column:image_path"`
+		Status    string `gorm:"column:status"`
+		Type      string `gorm:"column:type"`
 	}
 
 	AccountForgotPassword struct {
@@ -128,6 +129,10 @@ type (
 	}
 
 	AccountGender struct {
+		Exists bool `gorm:"column:exists"`
+	}
+
+	AccountAlreadySharing struct {
 		Exists bool `gorm:"column:exists"`
 	}
 )

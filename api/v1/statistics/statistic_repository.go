@@ -21,6 +21,7 @@ type (
 		ExpenseDetail(IDPersonal uuid.UUID, month, year string) (data []entities.StatisticDetailExpense, err error)
 		SubExpenseDetail(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.StatisticExpenseWeekly, err error)
 		AnalyticsTrend(IDPersonal uuid.UUID, typeName, period string) (data []entities.StatisticAnalyticsTrends)
+		GetProfileByEmail(email string) (data entities.StatisticAccountProfile, err error)
 	}
 )
 
@@ -200,4 +201,17 @@ GROUP BY tt.date_time_transaction`
 		return []entities.StatisticAnalyticsTrends{}
 	}
 	return data
+}
+
+func (r *StatisticRepository) GetProfileByEmail(email string) (data entities.StatisticAccountProfile, err error) {
+	if err := r.db.Raw(`SELECT tmg.id as id_gender, pa.file_name ,pa.image_path, pa.id,pa.username, pa.name, pa.dob as date_of_birth, pa.refer_code, pa.email, tmat.account_type, tmg.gender_name as gender, tmr.roles as user_roles
+FROM tbl_personal_accounts pa
+INNER JOIN tbl_master_account_types tmat ON tmat.id = pa.id_master_account_types
+LEFT JOIN tbl_master_genders tmg ON tmg.id = pa.id_master_gender
+INNER JOIN tbl_authentications ta ON ta.id_personal_accounts = pa.id
+INNER JOIN tbl_master_roles tmr ON tmr.id = ta.id_master_roles
+WHERE pa.email=?`, email).Scan(&data).Error; err != nil {
+		return entities.StatisticAccountProfile{}, err
+	}
+	return data, nil
 }

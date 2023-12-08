@@ -19,6 +19,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 	payments := Payments(db)
 	tracks := Tracks(db)
 	notification := Notifications(db)
+	investment := Investments(db)
 
 	v1group := router.Group("/v1")
 	{
@@ -161,7 +162,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		{
 			transactionGroup.POST("", transaction.Add)
 			transactionGroup.GET("/income-spending", transaction.IncomeSpending)
-			transactionGroup.GET("/investment", transaction.Investment)
+			transactionGroup.GET("/investments", transaction.Investment)
 			transactionGroup.GET("/notes", transaction.ByNotes)
 
 			transactionHistory := transactionGroup.Group("/history")
@@ -179,10 +180,16 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 
+		investmentGroup := v1group.Group("/investments", tokenSignature())
+		{
+			investmentGroup.GET("/portfolio", investment.Portfolio)
+			investmentGroup.GET("/gain-loss", investment.GainLoss)
+		}
+
 		walletGroup := v1group.Group("/wallets", tokenSignature())
 		{
 			walletGroup.POST("/", wallet.Add)
-			walletGroup.GET("", wallet.List)
+			walletGroup.GET("/", wallet.List)
 			walletGroup.PATCH("/amount/:id-wallet", wallet.UpdateAmount)
 
 		}

@@ -348,9 +348,8 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
+		return struct{}{}, http.StatusUnauthorized, errInfo
 	}
 
 	if purpose == constants.Travel {
@@ -364,6 +363,34 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 			logrus.Error(err.Error())
 		}
 
+		IDMasterExchangeCurrencyUUID, err := uuid.Parse(dtoRequest.IDMasterExchangeCurrency)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		// category and subcategory injection
+		IDCategoryUUID, err := uuid.Parse("d5d3b801-2d10-4d4d-8e16-67599876cbc8")
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		IDSubCategoryUUID, err := uuid.Parse("ff34f563-5d60-45c6-90c3-af08cd100376")
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		// validate id master exchange currency
+		dataCurrency, err := s.repo.GetXchangeCurrency(IDMasterExchangeCurrencyUUID)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
+		}
+
+		if !dataCurrency.Exists {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master exchange currency unknown")
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
+
 		model.Departure = dtoRequest.Departure
 		model.Arrival = dtoRequest.Arrival
 		model.Filename = filename
@@ -371,12 +398,18 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 		model.TravelStartDate = dtoRequest.TravelStartDate
 		model.TravelEndDate = dtoRequest.TravelEndDate
 		model.IDMasterTransactionType = dtoRequest.IDMasterTransactionTypes
+		model.IDMasterExchangeCurrency = IDMasterExchangeCurrencyUUID
+		model.IDCategory = IDCategoryUUID
+		model.IDSubCategory = IDSubCategoryUUID
+	}
+
+	if purpose != constants.Travel {
+		model.IDCategory = dtoRequest.IDCategory
+		model.IDSubCategory = dtoRequest.IDSubCategory
 	}
 
 	model.Amount = dtoRequest.Amount
 	model.IDPersonalAccount = personalAccount.ID
-	model.IDCategory = dtoRequest.IDCategory
-	model.IDSubCategory = dtoRequest.IDSubCategory
 	model.ID = uuid.New()
 
 	err := s.repo.Limit(&model)
@@ -386,9 +419,14 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 		return response, http.StatusInternalServerError, errInfo
 	}
 
+	// if err empty
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
 	dtoResponse.ID = model.ID
 	dtoResponse.Status = true
-	return dtoResponse, httpCode, []errorsinfo.Errors{}
+	return dtoResponse, httpCode, errInfo
 }
 
 func (s *BudgetUseCase) Trends(ctx *gin.Context, IDCategory uuid.UUID, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {

@@ -1,7 +1,9 @@
 package datecustoms
 
 import (
+	"github.com/sirupsen/logrus"
 	"regexp"
+	"time"
 )
 
 func IntToMonthName(month int) string {
@@ -28,4 +30,32 @@ func ValidDateFormat(dateOrigin string) bool {
 	} else {
 		return false
 	}
+}
+
+func TimeRFC3339ToString(timeString time.Time) string {
+	return timeString.Format("2006-01-02 15:04:05")
+}
+
+func NowTransaction() string {
+	timeNow := time.Now()
+	return timeNow.Format("2006-01-02")
+}
+
+func TotalDaysBetweenDate(dateOrigin string) int {
+	// Parse the date string to a time object
+	layout := "2006-01-02"
+	date, err := time.Parse(layout, dateOrigin)
+	if err != nil {
+		logrus.Errorf(err.Error())
+	}
+
+	// Get the current date
+	now := time.Now().UTC()
+
+	truncatedNow := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	truncatedDate := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+
+	daysDiff := int(truncatedNow.Sub(truncatedDate).Hours() / 24)
+
+	return daysDiff
 }

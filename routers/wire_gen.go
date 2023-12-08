@@ -11,6 +11,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/images"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/internals"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/investments"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/notifications"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/payments"
@@ -114,4 +115,11 @@ func Notifications(db *gorm.DB) *notifications.NotificationController {
 	notificationUseCase := notifications.NewNotificationUseCase(notificationRepository)
 	notificationController := notifications.NewNotificationController(notificationUseCase)
 	return notificationController
+}
+
+func Investments(db *gorm.DB) *investments.InvestmentController {
+	investmentRepository := investments.NewInvestmentRepository(db)
+	investmentUseCase := investments.NewInvestmentUseCase(investmentRepository)
+	investmentController := investments.NewInvestmentController(investmentUseCase)
+	return investmentController
 }
