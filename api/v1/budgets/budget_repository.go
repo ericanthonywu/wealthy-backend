@@ -123,17 +123,10 @@ ORDER BY period DESC`, IDPersonal, IDPersonal, category).Scan(&data).Error; err 
 }
 
 func (r *BudgetRepository) Limit(model *entities.BudgetSetEntities) (err error) {
-	exist, id := r.isBudgetAlreadyExist(model)
-
-	if exist {
-		if err = r.db.Raw(`UPDATE tbl_budgets SET amount=? WHERE id=?`, model.Amount, id).Scan(&model).Error; err != nil {
-			return err
-		}
-	} else {
-		if err = r.db.Create(&model).Error; err != nil {
-			return err
-		}
+	if err = r.db.Create(&model).Error; err != nil {
+		return err
 	}
+
 	return nil
 }
 
