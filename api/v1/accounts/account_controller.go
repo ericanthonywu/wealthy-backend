@@ -32,6 +32,7 @@ type (
 		RemoveSharing(ctx *gin.Context)
 		ListGroupSharing(ctx *gin.Context)
 		VerifyOTP(ctx *gin.Context)
+		ChangePasswordForgot(ctx *gin.Context)
 	}
 )
 
@@ -478,6 +479,35 @@ func (c *AccountController) VerifyOTP(ctx *gin.Context) {
 	}
 
 	data, httpCode, errInfo := c.useCase.VerifyOTP(ctx, &dtoRequest)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *AccountController) ChangePasswordForgot(ctx *gin.Context) {
+	var (
+		dtoRequest dtos.AccountChangeForgotPassword
+		errInfo    []errorsinfo.Errors
+	)
+
+	// binding
+	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	// validate
+	if dtoRequest.NewPassword == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "new password required")
+	}
+
+	// if any error
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	data, httpCode, errInfo := c.useCase.ChangePasswordForgot(ctx, &dtoRequest)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }

@@ -156,4 +156,8 @@ type (
 		ImagePath string `json:"account_avatar"`
 		Type      string `json:"account_type"`
 	}
+
+	AccountChangeForgotPassword struct {
+		NewPassword string `json:"new_password"`
+	}
 )

@@ -48,6 +48,7 @@ type (
 		UpdateForgotPassword(ID uuid.UUID) (err error)
 		GenderData(ID uuid.UUID) bool
 		IsAlreadySharing(idSender, idRecipient uuid.UUID) bool
+		ChangePassword(IDPersonal uuid.UUID, hashPassword string) (err error)
 	}
 )
 
@@ -447,4 +448,13 @@ func (r *AccountRepository) IsAlreadySharing(idSender, idRecipient uuid.UUID) bo
 		return data.Exists
 	}
 	return data.Exists
+}
+
+func (r *AccountRepository) ChangePassword(IDPersonal uuid.UUID, hashPassword string) (err error) {
+	var data interface{}
+
+	if err := r.db.Raw(`UPDATE tbl_authentications SET password = ? WHERE id_personal_accounts= ?`, hashPassword, IDPersonal).Scan(&data).Error; err != nil {
+		return err
+	}
+	return nil
 }
