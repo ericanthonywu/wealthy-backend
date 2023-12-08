@@ -33,6 +33,7 @@ type (
 		ListGroupSharing(ctx *gin.Context)
 		VerifyOTP(ctx *gin.Context)
 		ChangePasswordForgot(ctx *gin.Context)
+		ListGroupSharingPending(ctx *gin.Context)
 	}
 )
 
@@ -508,6 +509,12 @@ func (c *AccountController) ChangePasswordForgot(ctx *gin.Context) {
 	}
 
 	data, httpCode, errInfo := c.useCase.ChangePasswordForgot(ctx, &dtoRequest)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *AccountController) ListGroupSharingPending(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.ListGroupSharingPending(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }

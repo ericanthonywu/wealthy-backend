@@ -49,6 +49,8 @@ type (
 		GenderData(ID uuid.UUID) bool
 		IsAlreadySharing(idSender, idRecipient uuid.UUID) bool
 		ChangePassword(IDPersonal uuid.UUID, hashPassword string) (err error)
+		GetNotificationPending(personalAccount uuid.UUID) (data []entities.AccountNotificationEntities, err error)
+		GroupSharingListPending(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error)
 	}
 )
 
@@ -400,13 +402,29 @@ func (r *AccountRepository) GroupSharingList(IDPersonalAccount uuid.UUID) (data 
        tpa.file_name     as file_name,
        tpa.image_path    as image_path,
        CASE
-           WHEN tgs.is_accepted = false THEN 'pending'
-           ELSE 'accepted'
+           WHEN tgs.is_accepted = true THEN 'accepted'
            END           AS status
 FROM tbl_group_sharing tgs
          INNER JOIN tbl_personal_accounts tpa ON tgs.id_personal_accounts_share_to = tpa.id
          INNER JOIN tbl_master_account_types tmat ON tmat.id = tpa.id_master_account_types
-WHERE tgs.id_personal_accounts_share_from = ?`, IDPersonalAccount).Scan(&data).Error; err != nil {
+WHERE tgs.id_personal_accounts_share_from = ? AND tgs.is_accepted=true`, IDPersonalAccount).Scan(&data).Error; err != nil {
+		return []entities.AccountGroupSharingWithProfileInfo{}, err
+	}
+	return data, nil
+}
+
+func (r *AccountRepository) GroupSharingListPending(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error) {
+	if err := r.db.Raw(`SELECT tpa.email, tpa.name,
+       tmat.account_type as type,
+       tpa.file_name     as file_name,
+       tpa.image_path    as image_path,
+       CASE
+           WHEN tgs.is_accepted = false THEN 'pending'
+           END           AS status
+FROM tbl_group_sharing tgs
+         INNER JOIN tbl_personal_accounts tpa ON tgs.id_personal_accounts_share_to = tpa.id
+         INNER JOIN tbl_master_account_types tmat ON tmat.id = tpa.id_master_account_types
+WHERE tgs.id_personal_accounts_share_from = ? AND tgs.is_accepted=false`, IDPersonalAccount).Scan(&data).Error; err != nil {
 		return []entities.AccountGroupSharingWithProfileInfo{}, err
 	}
 	return data, nil
@@ -457,4 +475,28 @@ func (r *AccountRepository) ChangePassword(IDPersonal uuid.UUID, hashPassword st
 		return err
 	}
 	return nil
+}
+
+// todo : ntar buang
+func (r *AccountRepository) GetNotificationPending(personalAccount uuid.UUID) (data []entities.AccountNotificationEntities, err error) {
+	if err := r.db.Raw(`SELECT tn.id,
+       tpa.name,
+       tn.notification_title,
+       tn.notification_description,
+       tn.id_personal_accounts,
+       tn.is_read,
+       tn.id_group_sender,
+       tn.id_group_recipient,
+       tpa.image_path,
+       tmat.account_type as type,
+       tn.created_at
+FROM tbl_notifications tn
+         INNER JOIN tbl_personal_accounts tpa ON tpa.id = tn.id_personal_accounts
+         INNER JOIN tbl_master_account_types tmat ON tmat.id = tpa.id_master_account_types
+WHERE tn.id_personal_accounts = ?
+  AND tn.is_read = false
+ORDER BY created_at DESC`, personalAccount).Scan(&data).Error; err != nil {
+		return []entities.AccountNotificationEntities{}, err
+	}
+	return data, nil
 }

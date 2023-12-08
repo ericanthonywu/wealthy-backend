@@ -47,6 +47,7 @@ type (
 		RejectSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingAccept) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		RemoveSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingRemove) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ListGroupSharing(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		ListGroupSharingPending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		VerifyOTP(ctx *gin.Context, request *dtos.AccountOTPVerify) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ChangePasswordForgot(ctx *gin.Context, request *dtos.AccountChangeForgotPassword) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
@@ -1150,6 +1151,63 @@ func (s *AccountUseCase) ListGroupSharing(ctx *gin.Context) (response interface{
 
 		dtoResponse = append(dtoResponse, dtos.AccountShare{
 			AccountShareDetail: dtos.AccountShareDetail{
+				Email:     v.Email,
+				ImagePath: ImagePath,
+				Type:      v.Type,
+			},
+			Status: strings.ToUpper(v.Status),
+		})
+	}
+
+	// clear error info
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
+}
+
+func (s *AccountUseCase) ListGroupSharingPending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var dtoResponse []dtos.AccountShare
+
+	// user id
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return struct{}{}, http.StatusUnauthorized, errInfo
+	}
+
+	// get profile by email target
+	dataGroupSharingWithProfile, err := s.repo.GroupSharingListPending(personalAccount.ID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// if not found
+	if len(dataGroupSharingWithProfile) == 0 {
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{
+			Message: "this token has not shared with other accounts",
+		}
+		return resp, http.StatusNotFound, errInfo
+	}
+
+	// append to dto response
+	for _, v := range dataGroupSharingWithProfile {
+
+		ImagePath := ""
+		if v.ImagePath != "" {
+			ImagePath = os.Getenv("APP_HOST") + "/v1/" + v.ImagePath
+		}
+
+		dtoResponse = append(dtoResponse, dtos.AccountShare{
+			AccountShareDetail: dtos.AccountShareDetail{
+				Name:      v.Name,
 				Email:     v.Email,
 				ImagePath: ImagePath,
 				Type:      v.Type,
