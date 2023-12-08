@@ -130,6 +130,10 @@ type (
 	AccountGender struct {
 		Exists bool `gorm:"column:exists"`
 	}
+
+	AccountAlreadySharing struct {
+		Exists bool `gorm:"column:exists"`
+	}
 )
 
 func (AccountAuthorization) TableName() string {

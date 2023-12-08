@@ -844,6 +844,16 @@ func (s *AccountUseCase) InviteSharing(ctx *gin.Context, dtoResponse *dtos.Accou
 		return struct{}{}, http.StatusBadRequest, errInfo
 	}
 
+	// if already in group sharing
+	if s.repo.IsAlreadySharing(personalAccount.ID, dataProfile.ID) {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "already invited before",
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
+
 	// for first row
 	IDSender := uuid.New()
 	modelInviteSharing.ID = IDSender
