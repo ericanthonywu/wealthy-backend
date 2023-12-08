@@ -71,7 +71,7 @@ type (
 		IDMasterExpenseCategories    uuid.UUID `gorm:"column:id_master_categories"`
 		IDMasterExpenseSubCategories uuid.UUID `gorm:"column:id_master_subcategories"`
 		IDMasterExchangeCurrency     uuid.UUID `gorm:"column:id_master_exchance_currency"`
-		Amount                       int       `gorm:"column:amount"`
+		Amount                       int64     `gorm:"column:amount"`
 		Departure                    string    `gorm:"column:departure"`
 		Arrival                      string    `gorm:"column:arrival"`
 		ImagePath                    string    `gorm:"column:image_path"`
