@@ -53,7 +53,7 @@ func (c *TransactionController) Add(ctx *gin.Context) {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet empty value")
 	}
 
-	// transaction for investment
+	// transaction for investments
 	if dtoRequest.IDMasterInvest != "" || dtoRequest.IDMasterBroker != "" {
 		if dtoRequest.StockCode == "" {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "stock code empty value")
@@ -68,6 +68,7 @@ func (c *TransactionController) Add(ctx *gin.Context) {
 		}
 	}
 
+	// send back with err information
 	if len(errInfo) > 0 {
 		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return

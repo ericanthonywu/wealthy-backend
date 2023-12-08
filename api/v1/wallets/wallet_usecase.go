@@ -180,7 +180,7 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 	for _, v := range dataList {
 		var totalAsset int64
 
-		// if wallet type is not investment
+		// if wallet type is not investments
 		if strings.ToUpper(v.WalletType) != constants.Investment {
 
 			// fetch data from transaction latest row to get balance information
@@ -192,7 +192,7 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 			totalAsset = int64(dataTrx.Balance)
 		}
 
-		// if wallet type is investment
+		// if wallet type is investments
 		if strings.ToUpper(v.WalletType) == constants.Investment {
 			totalAsset = v.TotalAssets
 		}
