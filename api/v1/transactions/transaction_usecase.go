@@ -569,8 +569,7 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 	}
 
 	if month != "" && year != "" {
-		dateFilter := year + "-" + month + "-" + "01"
-		dataNotes = s.repo.ByNote(personalAccount.ID, dateFilter)
+		dataNotes = s.repo.ByNote(personalAccount.ID, month, year)
 	}
 
 	lengthData := len(dataNotes)
@@ -590,15 +589,9 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 		for k, v := range dataNotes {
 
 			if catPrev == v.TransactionCategory {
-				if k == lengthData-1 {
-					detailNotes.TransactionNotesDeepDetail = append(detailNotes.TransactionNotesDeepDetail, deepDetailsNotes...)
-					detailNotes.TransactionCategory = catPrev
-
-					dtoResponse.TransactionNotesDetail = append(dtoResponse.TransactionNotesDetail, detailNotes)
-
-					// clear
-					deepDetailsNotes = []dtos.TransactionNotesDeepDetail{}
-					detailNotes = dtos.TransactionNotesDetail{}
+				if k == (lengthData - 1) {
+					//detailNotes.TransactionNotesDeepDetail = append(detailNotes.TransactionNotesDeepDetail, deepDetailsNotes...)
+					//detailNotes.TransactionCategory = catPrev
 
 					deepDetailsNotes = append(deepDetailsNotes, dtos.TransactionNotesDeepDetail{
 						TransactionNote: v.TransactionNote,
@@ -616,6 +609,10 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 					detailNotes.TransactionNotesDeepDetail = append(detailNotes.TransactionNotesDeepDetail, deepDetailsNotes...)
 
 					dtoResponse.TransactionNotesDetail = append(dtoResponse.TransactionNotesDetail, detailNotes)
+
+					// clear
+					deepDetailsNotes = []dtos.TransactionNotesDeepDetail{}
+					detailNotes = dtos.TransactionNotesDetail{}
 				} else {
 					deepDetailsNotes = append(deepDetailsNotes, dtos.TransactionNotesDeepDetail{
 						TransactionNote: v.TransactionNote,
