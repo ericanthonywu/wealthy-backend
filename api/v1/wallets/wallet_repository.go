@@ -17,7 +17,8 @@ type (
 		PersonalAccount(email string) (data entities.WalletPersonalInformationEntity)
 		Add(model *entities.WalletEntity) (err error)
 		List(IDPersonal uuid.UUID) (data []entities.WalletEntity, err error)
-		UpdateAmount(IDWallet string, amount int64) (data []entities.WalletEntity, httpCode int, err error)
+		UpdateAmount(IDWallet uuid.UUID, amount int64) (data []entities.WalletEntity, httpCode int, err error)
+		UpdateWalletName(IDWallet uuid.UUID, WalletName string) (err error)
 		InitTransaction(trx *entities.WalletInitTransaction, trxDetail *entities.WalletInitTransactionDetail) (err error)
 		LatestAmountWalletInTransaction(IDWallet uuid.UUID) (data entities.WalletInitTransaction, err error)
 	}
@@ -50,7 +51,7 @@ func (r *WalletRepository) List(IDPersonal uuid.UUID) (data []entities.WalletEnt
 	return data, nil
 }
 
-func (r *WalletRepository) UpdateAmount(IDWallet string, amount int64) (data []entities.WalletEntity, httpCode int, err error) {
+func (r *WalletRepository) UpdateAmount(IDWallet uuid.UUID, amount int64) (data []entities.WalletEntity, httpCode int, err error) {
 	result := r.db.Table("tbl_wallets").Where("id = ?", IDWallet).Update("amount", amount).Scan(&data)
 
 	if result.Error != nil || result.RowsAffected == 0 {
@@ -60,6 +61,15 @@ func (r *WalletRepository) UpdateAmount(IDWallet string, amount int64) (data []e
 	return data, http.StatusOK, nil
 }
 
+func (r *WalletRepository) UpdateWalletName(IDWallet uuid.UUID, WalletName string) (err error) {
+	var data interface{}
+
+	if err := r.db.Raw(`UPDATE tbl_wallets SET wallet_name=? WHERE id=?`, WalletName, IDWallet).Scan(&data).Error; err != nil {
+		return err
+	}
+	return nil
+
+}
 func (r *WalletRepository) InitTransaction(trx *entities.WalletInitTransaction, trxDetail *entities.WalletInitTransactionDetail) (err error) {
 	err = r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&trx).Error; err != nil {

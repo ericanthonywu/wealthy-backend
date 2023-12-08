@@ -47,7 +47,9 @@ type (
 		RejectSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingAccept) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		RemoveSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingRemove) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ListGroupSharing(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		ListGroupSharingPending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		VerifyOTP(ctx *gin.Context, request *dtos.AccountOTPVerify) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		ChangePasswordForgot(ctx *gin.Context, request *dtos.AccountChangeForgotPassword) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -366,6 +368,17 @@ func (s *AccountUseCase) UpdateProfile(ctx *gin.Context, request map[string]inte
 
 		if longitudeOrigin == "" {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "longitude empty value")
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
+	}
+
+	// fcmtoken
+	value, exists = request["fcmtoken"]
+	if exists {
+		fcmToken := fmt.Sprintf("%v", value)
+
+		if fcmToken == "" {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "fcm token empty value")
 			return struct{}{}, http.StatusBadRequest, errInfo
 		}
 	}
@@ -1154,6 +1167,63 @@ func (s *AccountUseCase) ListGroupSharing(ctx *gin.Context) (response interface{
 	return dtoResponse, http.StatusOK, errInfo
 }
 
+func (s *AccountUseCase) ListGroupSharingPending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var dtoResponse []dtos.AccountShare
+
+	// user id
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return struct{}{}, http.StatusUnauthorized, errInfo
+	}
+
+	// get profile by email target
+	dataGroupSharingWithProfile, err := s.repo.GroupSharingListPending(personalAccount.ID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// if not found
+	if len(dataGroupSharingWithProfile) == 0 {
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{
+			Message: "this token has not shared with other accounts",
+		}
+		return resp, http.StatusNotFound, errInfo
+	}
+
+	// append to dto response
+	for _, v := range dataGroupSharingWithProfile {
+
+		ImagePath := ""
+		if v.ImagePath != "" {
+			ImagePath = os.Getenv("APP_HOST") + "/v1/" + v.ImagePath
+		}
+
+		dtoResponse = append(dtoResponse, dtos.AccountShare{
+			AccountShareDetail: dtos.AccountShareDetail{
+				Name:      v.Name,
+				Email:     v.Email,
+				ImagePath: ImagePath,
+				Type:      v.Type,
+			},
+			Status: strings.ToUpper(v.Status),
+		})
+	}
+
+	// clear error info
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
+}
+
 func (s *AccountUseCase) VerifyOTP(ctx *gin.Context, request *dtos.AccountOTPVerify) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	// getting profile
 	dataProfile, err := s.repo.GetProfileByEmail(request.EmailAccount)
@@ -1197,21 +1267,61 @@ func (s *AccountUseCase) VerifyOTP(ctx *gin.Context, request *dtos.AccountOTPVer
 		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
 	}
 
-	// update
+	// update for verified
 	err = s.repo.UpdateForgotPassword(dataForgotPassword.ID)
 	if err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
+	// generate token jwt
+	token, _, err := token.JWTBuilder(dataProfile.Email, dataProfile.UserRoles)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// clear if empty
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
 
 	resp := struct {
 		Message string `json:"message"`
+		Token   string `json:"token"`
 	}{
 		Message: "otp has been verified",
+		Token:   token,
+	}
+	return resp, http.StatusOK, errInfo
+}
+
+func (s *AccountUseCase) ChangePasswordForgot(ctx *gin.Context, request *dtos.AccountChangeForgotPassword) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
+		return struct{}{}, http.StatusUnauthorized, errInfo
+	}
+
+	// save
+	hashPassword := password.Generate(request.NewPassword)
+
+	err := s.repo.ChangePassword(personalAccount.ID, hashPassword)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	resp := struct {
+		Message string `json:"message"`
+	}{
+		Message: "change password success",
+	}
+
+	// if empty
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
 	}
 
 	return resp, http.StatusOK, errInfo

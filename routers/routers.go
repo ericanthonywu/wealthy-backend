@@ -93,13 +93,13 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 			accountPasswordGroup := accountGroup.Group("/password")
 			{
+				forgotGroup := accountPasswordGroup.Group("/forgot")
+				{
+					forgotGroup.POST("", account.ForgotPassword)
+					forgotGroup.POST("/verify", account.VerifyOTP)
+					forgotGroup.POST("/change-password", tokenSignature(), account.ChangePasswordForgot)
+				}
 				accountPasswordGroup.POST("/change", tokenSignature(), account.ChangePassword)
-				accountPasswordGroup.POST("/forgot", account.ForgotPassword)
-			}
-
-			otpGroup := accountGroup.Group("/otp")
-			{
-				otpGroup.POST("/verify", account.VerifyOTP)
 			}
 
 			accountReferral := accountGroup.Group("/referrals")
@@ -115,6 +115,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				sharingGroup.POST("/reject", account.RejectSharing)
 				sharingGroup.POST("/remove", account.RemoveSharing)
 				sharingGroup.GET("/list", account.ListGroupSharing)
+				sharingGroup.GET("/list-pending", account.ListGroupSharingPending)
 			}
 		}
 

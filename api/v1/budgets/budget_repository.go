@@ -27,6 +27,7 @@ type (
 		CategoryInfo(IDCategory uuid.UUID) (data entities.CategoryInfo, err error)
 		Travels(IDPersonal uuid.UUID) (data []entities.BudgetTravel, err error)
 		GetXchangeCurrency(IDMasterExchange uuid.UUID) (data entities.BudgetExistsExchangeExist, err error)
+		GetXchangeCurrencyValue(IDMasterExchange uuid.UUID) (data entities.BudgetExistsExchangeValue, err error)
 	}
 )
 
@@ -201,7 +202,7 @@ func (r *BudgetRepository) CategoryInfo(IDCategory uuid.UUID) (data entities.Cat
 }
 
 func (r *BudgetRepository) Travels(IDPersonal uuid.UUID) (data []entities.BudgetTravel, err error) {
-	if err := r.db.Raw(`SELECT tb.id, tb.departure,tb.arrival,tb.image_path,tb.filename,tb.amount as budget,tb.travel_start_date,tb.travel_end_date
+	if err := r.db.Raw(`SELECT tb.id, tb.departure,tb.arrival,tb.image_path,tb.filename,tb.amount as budget,tb.travel_start_date,tb.travel_end_date, tb.id_master_exchance_currency as currency_origin
 FROM tbl_budgets tb WHERE tb.id_personal_accounts = ? AND id_master_transaction_types = 'd969fb78-1370-4238-adf0-f143d8a662ef'`, IDPersonal).
 		Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
@@ -215,6 +216,15 @@ func (r *BudgetRepository) GetXchangeCurrency(IDMasterExchange uuid.UUID) (data 
 		Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.BudgetExistsExchangeExist{}, err
+	}
+	return data, nil
+}
+
+func (r *BudgetRepository) GetXchangeCurrencyValue(IDMasterExchange uuid.UUID) (data entities.BudgetExistsExchangeValue, err error) {
+	if err := r.db.Raw(`SELECT tmec.currency_name as code FROM tbl_master_exchange_currency tmec WHERE tmec.id=?`, IDMasterExchange).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.BudgetExistsExchangeValue{}, err
 	}
 	return data, nil
 }

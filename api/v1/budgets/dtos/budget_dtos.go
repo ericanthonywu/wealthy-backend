@@ -25,7 +25,7 @@ type (
 		IDCategory               uuid.UUID `json:"category_id"`
 		IDSubCategory            uuid.UUID `json:"sub_category_id"`
 		IDMasterTransactionTypes uuid.UUID `json:"id_master_transaction_types,omitempty"`
-		Amount                   int       `json:"budget_amount"`
+		Amount                   int64     `json:"budget_amount"`
 		Departure                string    `json:"departure,omitempty"`
 		Arrival                  string    `json:"arrival,omitempty"`
 		TravelStartDate          string    `json:"travel_start_date,omitempty"`
@@ -109,6 +109,7 @@ type (
 		TravelEndDate   string    `json:"travel_end_date"`
 		ImagePath       string    `json:"image_path"`
 		Filename        string    `json:"filename"`
+		CurrencyOrigin  string    `json:"currency_origin"`
 	}
 
 	Amount struct {

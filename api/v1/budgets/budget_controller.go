@@ -33,11 +33,7 @@ func NewBudgetController(useCase IBudgetUseCase) *BudgetController {
 
 func (c *BudgetController) AllLimit(ctx *gin.Context) {
 	data, httpCode, errInfo := c.useCase.AllLimit(ctx)
-
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
-	}
-	response.SendBack(ctx, data, []errorsinfo.Errors{}, httpCode)
+	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
 

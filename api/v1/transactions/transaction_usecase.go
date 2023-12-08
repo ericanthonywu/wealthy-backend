@@ -260,15 +260,6 @@ func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context, IDTravel
 		responseTravelDetailHistory = s.repo.TravelDetailWithData(personalAccount.ID, IDTravel, startDate, endDate)
 	}
 
-	if len(responseTravelDetailHistory) == 0 {
-		response := struct {
-			Message string `json:"message"`
-		}{
-			Message: "there is not travel transaction between periods : " + startDate + " until " + endDate,
-		}
-		return response, http.StatusNotFound, []errorsinfo.Errors{}
-	}
-
 	if len(responseTravelDetailHistory) > 0 {
 		for _, v := range responseTravelDetailHistory {
 			details = append(details, dtos.TransactionHistoryForTravelDetail{
