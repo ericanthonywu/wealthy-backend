@@ -3,6 +3,7 @@ package transactions
 import (
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/entities"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -49,6 +50,7 @@ type (
 		Suggestion(IDPersoalAccount uuid.UUID) (data []entities.TransactionSuggestionNotes, err error)
 
 		WalletExist(IDWallet uuid.UUID) bool
+		BudgetWithCurrency(IDTravel uuid.UUID) (data entities.TransactionWithCurrency, rr error)
 	}
 )
 
@@ -581,4 +583,14 @@ func (r *TransactionRepository) WalletExist(IDWallet uuid.UUID) bool {
 		return model.Exists
 	}
 	return model.Exists
+}
+
+func (r *TransactionRepository) BudgetWithCurrency(IDTravel uuid.UUID) (data entities.TransactionWithCurrency, rr error) {
+	if err := r.db.Raw(`SELECT tmec.currency_value FROM tbl_budgets tb INNER JOIN tbl_master_exchange_currency tmec ON tmec.id = tb.id_master_exchance_currency
+WHERE tb.id=?`, IDTravel).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.TransactionWithCurrency{}, err
+	}
+	return data, nil
 }

@@ -140,6 +140,10 @@ type (
 	TransactionWalletExist struct {
 		Exists bool `gorm:"column:exists"`
 	}
+
+	TransactionWithCurrency struct {
+		CurrencyValue int64 `gorm:"column:currency_value"`
+	}
 )
 
 func (TransactionEntity) TableName() string {

@@ -26,7 +26,7 @@ type (
 		IDMasterReksanadaTypes        uuid.UUID `json:"id_master_reksadana_types,omitempty"`
 		IDMasterTransactionPriorities uuid.UUID `json:"id_master_transaction_priorities,omitempty"`
 		IDMasterTransactionTypes      uuid.UUID `json:"id_master_transaction_types,omitempty"`
-		IDTravel                      uuid.UUID `json:"id_travel,omitempty"`
+		IDTravel                      string    `json:"id_travel,omitempty"`
 	}
 
 	TransactionTotalIncomeSpending struct {

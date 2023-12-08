@@ -49,8 +49,10 @@ func (c *TransactionController) Add(ctx *gin.Context) {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "date transaction empty value")
 	}
 
-	if dtoRequest.IDWallet == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet empty value")
+	if dtoRequest.IDTravel == "" {
+		if dtoRequest.IDWallet == "" {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet empty value")
+		}
 	}
 
 	// transaction for investments
