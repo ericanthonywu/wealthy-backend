@@ -12,6 +12,7 @@ type (
 
 	IInvestmentController interface {
 		Portfolio(ctx *gin.Context)
+		GainLoss(ctx *gin.Context)
 	}
 )
 
@@ -21,6 +22,12 @@ func NewInvestmentController(useCase IInvestmentUseCase) *InvestmentController {
 
 func (c *InvestmentController) Portfolio(ctx *gin.Context) {
 	data, httpCode, errInfo := c.useCase.Portfolio(ctx)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *InvestmentController) GainLoss(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.GainLoss(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }

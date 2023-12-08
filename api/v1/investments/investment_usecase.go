@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/investments/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/constants"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/datecustoms"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/sirupsen/logrus"
@@ -20,6 +21,7 @@ type (
 
 	IInvestmentUseCase interface {
 		Portfolio(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		GainLoss(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -40,6 +42,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 		averageBuyCollection   []float64
 		potentialReturn        float64
 		unreliazeReturn        float64
+		initialInvestment      float64
 	)
 
 	usrEmail := ctx.MustGet("email").(string)
@@ -95,6 +98,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 					totalLot += v.Lot
 					averageBuy = float64(v.Lot * v.Price / v.Lot)
 					averageBuyCollection = append(averageBuyCollection, averageBuy)
+					initialInvestment += float64(v.Lot * v.Price)
 
 					// is latest
 					if k == (maxTrxData - 1) {
@@ -120,11 +124,12 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 
 						// append latest
 						investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
-							Name:            investmentNamePrevious,
-							StockCode:       stockCodePrevious,
-							Lot:             totalLot,
-							AverageBuy:      averageBuyFinal,
-							PotentialReturn: potentialReturn,
+							InitialInvestment: initialInvestment,
+							Name:              investmentNamePrevious,
+							StockCode:         stockCodePrevious,
+							Lot:               totalLot,
+							AverageBuy:        averageBuyFinal,
+							PotentialReturn:   potentialReturn,
 						})
 
 						// append to investment detail
@@ -135,6 +140,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 						})
 
 						unreliazeReturn = 0.0
+						initialInvestment = 0
 					}
 				}
 
@@ -160,26 +166,29 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 
 					// append previous data
 					investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
-						Name:            investmentNamePrevious,
-						StockCode:       stockCodePrevious,
-						Lot:             totalLot,
-						AverageBuy:      averageBuyFinal,
-						PotentialReturn: potentialReturn,
+						InitialInvestment: initialInvestment,
+						Name:              investmentNamePrevious,
+						StockCode:         stockCodePrevious,
+						Lot:               totalLot,
+						AverageBuy:        averageBuyFinal,
+						PotentialReturn:   potentialReturn,
 					})
 
 					// clear arrays
 					averageBuyCollection = nil
-
-					// override value and renew
 					totalAvg = 0.0
 					resultAverageBuy = 0
+					initialInvestment = 0
+
+					// override value and renew
 					totalLot = v.Lot
 					stockCodePrevious = v.StockCode
 					investmentNamePrevious = dataTrading.Name
 					averageBuy = float64(v.Lot * v.Price / v.Lot)
 					averageBuyCollection = append(averageBuyCollection, averageBuy)
+					initialInvestment += float64(v.Lot * v.Price)
 
-					// is latest
+					// if latest data
 					if k == (maxTrxData - 1) {
 						// calculate average
 						totalAvg = 0.0
@@ -203,11 +212,12 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 
 						// append latest
 						investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
-							Name:            investmentNamePrevious,
-							StockCode:       stockCodePrevious,
-							Lot:             totalLot,
-							AverageBuy:      averageBuyFinal,
-							PotentialReturn: potentialReturn,
+							Name:              investmentNamePrevious,
+							InitialInvestment: initialInvestment,
+							StockCode:         stockCodePrevious,
+							Lot:               totalLot,
+							AverageBuy:        averageBuyFinal,
+							PotentialReturn:   potentialReturn,
 						})
 
 						// append to investment detail
@@ -218,6 +228,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 						})
 
 						unreliazeReturn = 0.0
+						initialInvestment = 0
 					}
 				}
 			}
@@ -244,11 +255,12 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 
 				// append latest
 				investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
-					Name:            investmentNamePrevious,
-					StockCode:       stockCodePrevious,
-					Lot:             totalLot,
-					AverageBuy:      averageBuyFinal,
-					PotentialReturn: potentialReturn,
+					InitialInvestment: initialInvestment,
+					Name:              investmentNamePrevious,
+					StockCode:         stockCodePrevious,
+					Lot:               totalLot,
+					AverageBuy:        averageBuyFinal,
+					PotentialReturn:   potentialReturn,
 				})
 
 				// append to investment detail
@@ -261,6 +273,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 				// clear
 				investmentInfo = nil
 				unreliazeReturn = 0.0
+				initialInvestment = 0
 
 				// replace with new portfolio
 				investmentNamePrevious = dataTrading.Name
@@ -273,6 +286,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 				totalLot = v.Lot
 				averageBuy = float64(v.Lot * v.Price / v.Lot)
 				averageBuyCollection = append(averageBuyCollection, averageBuy)
+				initialInvestment += float64(v.Lot * v.Price)
 
 				// is latest
 				if k == (maxTrxData - 1) {
@@ -303,11 +317,12 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 
 					// append latest
 					investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
-						Name:            investmentNamePrevious,
-						StockCode:       stockCodePrevious,
-						Lot:             totalLot,
-						AverageBuy:      averageBuyFinal,
-						PotentialReturn: potentialReturn,
+						InitialInvestment: initialInvestment,
+						Name:              investmentNamePrevious,
+						StockCode:         stockCodePrevious,
+						Lot:               totalLot,
+						AverageBuy:        averageBuyFinal,
+						PotentialReturn:   potentialReturn,
 					})
 
 					// append to investment detail
@@ -318,6 +333,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 					})
 
 					unreliazeReturn = 0.0
+					initialInvestment = 0
 				}
 			}
 		}
@@ -325,6 +341,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 		// fist time broker name
 		if brokerNamePrevious == "" {
 			// set data for first time
+			initialInvestment += float64(v.Lot * v.Price)
 			brokerNamePrevious = v.BrokerName
 			stockCodePrevious = v.StockCode
 			investmentNamePrevious = dataTrading.Name
@@ -337,6 +354,62 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 	dtoResponse.Details = investmentDetail
 
 	// clear
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
+}
+
+func (s *InvestmentUseCase) GainLoss(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		dtoResponse []dtos.InvestmentGainLoss
+		err         error
+	)
+
+	usrEmail := ctx.MustGet("email").(string)
+	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+
+	if personalAccount.ID == uuid.Nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
+		return response, http.StatusUnauthorized, errInfo
+	}
+
+	dataTrx, err := s.repo.TrxInfoSell(personalAccount.ID)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	if len(dataTrx) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no data found for gain loss investment",
+		}
+		return resp, http.StatusInternalServerError, errInfo
+	}
+
+	for _, v := range dataTrx {
+		dataTrading, err := s.repo.GetTradingInfo(v.StockCode)
+		if err != nil {
+			logrus.Error(err.Error())
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return response, http.StatusInternalServerError, errInfo
+		}
+
+		dtoResponse = append(dtoResponse, dtos.InvestmentGainLoss{
+			DataTransaction:   v.DateTransaction,
+			StockCode:         v.StockCode,
+			Lot:               v.Lot,
+			Price:             0,
+			Name:              dataTrading.Name,
+			InitialInvestment: 0,
+			Percentage:        "",
+			TotalDays:         datecustoms.TotalDaysBetweenDate(v.DateTransaction),
+		})
+	}
+
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}

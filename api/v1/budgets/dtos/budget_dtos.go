@@ -31,6 +31,7 @@ type (
 		TravelStartDate          string    `json:"travel_start_date,omitempty"`
 		TravelEndDate            string    `json:"travel_end_date,omitempty"`
 		ImageBase64              string    `json:"image_base64,omitempty"`
+		IDMasterExchangeCurrency string    `json:"id_master_exchange_currency,omitempty"`
 	}
 
 	BudgetSetResponse struct {
