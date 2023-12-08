@@ -106,10 +106,15 @@ type (
 		Budget          string    `gorm:"column:budget"`
 		TravelStartDate string    `gorm:"column:travel_start_date"`
 		TravelEndDate   string    `gorm:"column:travel_end_date"`
+		CurrencyOrigin  string    `gorm:"column:currency_origin"`
 	}
 
 	BudgetExistsExchangeExist struct {
 		Exists bool `gorm:"column:exists"`
+	}
+
+	BudgetExistsExchangeValue struct {
+		Code string `gorm:"column:code"`
 	}
 )
 

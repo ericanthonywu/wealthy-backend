@@ -109,6 +109,7 @@ type (
 		TravelEndDate   string    `json:"travel_end_date"`
 		ImagePath       string    `json:"image_path"`
 		Filename        string    `json:"filename"`
+		CurrencyOrigin  string    `json:"currency_origin"`
 	}
 
 	Amount struct {
