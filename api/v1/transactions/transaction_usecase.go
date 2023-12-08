@@ -560,12 +560,12 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 
 	if personalAccount.ID == uuid.Nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, http.StatusBadRequest, errInfo
+		return struct{}{}, http.StatusBadRequest, errInfo
 	}
 
 	if month == "" && year == "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "both month, year need in query url")
-		return response, http.StatusBadRequest, errInfo
+		return struct{}{}, http.StatusBadRequest, errInfo
 	}
 
 	if month != "" && year != "" {
@@ -574,6 +574,15 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 	}
 
 	lengthData := len(dataNotes)
+
+	if len(dataNotes) == 0 {
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{
+			Message: "no data transaction by notes",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+	}
 
 	if len(dataNotes) > 0 {
 		var catPrev string
@@ -700,7 +709,11 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 
 	}
 
-	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
 }
 
 func (s *TransactionUseCase) Suggestion(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
