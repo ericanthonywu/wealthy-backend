@@ -178,23 +178,23 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 	}
 
 	for _, v := range dataList {
-		var totalAsset int64
+		//var totalAsset int64
 
 		// if wallet type is not investments
 		if strings.ToUpper(v.WalletType) != constants.Investment {
 
 			// fetch data from transaction latest row to get balance information
-			dataTrx, err := s.repo.LatestAmountWalletInTransaction(v.ID)
-			if err != nil {
-				logrus.Error(err.Error())
-			}
+			//dataTrx, err := s.repo.LatestAmountWalletInTransaction(v.ID)
+			//if err != nil {
+			//	logrus.Error(err.Error())
+			//}
 
-			totalAsset = int64(dataTrx.Balance)
+			//totalAsset = int64(dataTrx.Balance)
 		}
 
 		// if wallet type is investments
 		if strings.ToUpper(v.WalletType) == constants.Investment {
-			totalAsset = v.TotalAssets
+			//totalAsset = v.TotalAssets
 		}
 
 		dtoResponse = append(dtoResponse, dtos.WalletListResponse{
@@ -208,7 +208,7 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 			Active:        v.Active,
 			FeeInvestBuy:  v.FeeInvestBuy,
 			FeeInvestSell: v.FeeInvestSell,
-			TotalAssets:   totalAsset,
+			TotalAssets:   v.TotalAssets,
 		})
 	}
 
@@ -216,16 +216,46 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 }
 
 func (s *WalletUseCase) UpdateAmount(IDWallet string, request *dtos.WalletUpdateAmountRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	var err error
+	var (
+		err        error
+		UUIDWallet uuid.UUID
+	)
 
-	data, httpCode, err = s.repo.UpdateAmount(IDWallet, request.Amount)
+	UUIDWallet, err = uuid.Parse(IDWallet)
 	if err != nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return data, httpCode, errInfo
+		logrus.Error(err.Error())
 	}
 
-	errInfo = []errorsinfo.Errors{}
-	return data, httpCode, errInfo
+	// update amount
+	if request.Amount != 0 {
+		data, httpCode, err = s.repo.UpdateAmount(UUIDWallet, request.Amount)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return data, http.StatusInternalServerError, errInfo
+		}
+	}
+
+	// update wallet name
+	if request.WalletName != "" {
+		err = s.repo.UpdateWalletName(UUIDWallet, request.WalletName)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return data, http.StatusInternalServerError, errInfo
+		}
+	}
+
+	// if e
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	resp := struct {
+		Message string `json:"message"`
+	}{
+		Message: "update wallet success",
+	}
+
+	return resp, http.StatusOK, errInfo
 }
 
 func (s *WalletUseCase) writeInitialTransaction(request *dtos.WalletAddRequest, walletEntity *entities.WalletEntity, data *personalaccounts.PersonalAccountEntities) (err error) {

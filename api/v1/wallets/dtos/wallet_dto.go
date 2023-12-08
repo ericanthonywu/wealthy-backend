@@ -37,7 +37,8 @@ type (
 	}
 
 	WalletUpdateAmountRequest struct {
-		Amount int64 `json:"amount"`
+		Amount     int64  `json:"amount,omitempty"`
+		WalletName string `json:"wallet_name"`
 	}
 
 	WalletUpdateAmountResponse struct {
