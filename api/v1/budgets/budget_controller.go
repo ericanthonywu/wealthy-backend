@@ -107,7 +107,7 @@ func (c *BudgetController) Limit(ctx *gin.Context) {
 	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
-		response.SendBack(ctx, dtos.BudgetSetRequest{}, errInfo, http.StatusBadRequest)
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
@@ -131,7 +131,7 @@ func (c *BudgetController) Limit(ctx *gin.Context) {
 		}
 
 		if utilities.IsEmptyString(dtoRequest.IDMasterExchangeCurrency) {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id must greater than travel_start_date attribute in body payload")
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master exchange currency empty value")
 		}
 	}
 

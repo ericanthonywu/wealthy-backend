@@ -46,7 +46,7 @@ type (
 		InvestMonthlyDetail(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionInvestmentDetail)
 		InvestAnnuallyTotal(IDPersonal uuid.UUID, year string) (data entities.TransactionInvestmentTotals)
 		InvestAnnuallyDetail(IDPersonal uuid.UUID, year string) (data []entities.TransactionInvestmentDetail)
-		ByNote(IDPersonal uuid.UUID, dateFilter string) (data []entities.TransactionByNotes)
+		ByNote(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionByNotes)
 		Suggestion(IDPersoalAccount uuid.UUID) (data []entities.TransactionSuggestionNotes, err error)
 
 		WalletExist(IDWallet uuid.UUID) bool
@@ -546,21 +546,20 @@ ORDER BY t.date_time_transaction::DATE DESC`, year, IDPersonal).Scan(&data).Erro
 	return data
 }
 
-func (r *TransactionRepository) ByNote(IDPersonal uuid.UUID, dateFilter string) (data []entities.TransactionByNotes) {
+func (r *TransactionRepository) ByNote(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionByNotes) {
 	if err := r.db.Raw(`SELECT
-    CASE WHEN tb.amount IS NULL THEN '0' ELSE tb.amount END as budget,
     COALESCE(SUM(t.amount),0) as amount,
     td.note as transaction_note,
     tmec.expense_types
 FROM tbl_transactions t
 INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
 INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
-LEFT JOIN tbl_budgets tb ON tb.id_master_categories = t.id_master_expense_categories
 LEFT JOIN tbl_master_expense_categories tmec ON t.id_master_expense_categories = tmec.id
-WHERE DATE_TRUNC('month', t.date_time_transaction::timestamp) = ?::timestamp
+WHERE to_char(t.date_time_transaction::DATE, 'MM') = ?
+  AND to_char(t.date_time_transaction::DATE, 'YYYY') = ?
   AND t.id_personal_account = ?
-  AND (tmtt.type = 'EXPENSE' OR tmtt.type='TRAVEL')
-GROUP BY td.note,budget, tmec.expense_types`, dateFilter, IDPersonal).Scan(&data).Error; err != nil {
+  AND tmtt.type = 'EXPENSE'
+GROUP BY td.note, tmec.expense_types`, month, year, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionByNotes{}
 	}
 	return data

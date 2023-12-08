@@ -149,11 +149,6 @@ func (c *TransactionController) Investment(ctx *gin.Context) {
 
 func (c *TransactionController) ByNotes(ctx *gin.Context) {
 	data, httpCode, errInfo := c.useCase.ByNotes(ctx)
-
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
-	}
-
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }

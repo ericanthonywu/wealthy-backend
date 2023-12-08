@@ -28,9 +28,8 @@ func (s *InternalUseCase) TransactionNotes(ctx *gin.Context) (response interface
 	customerID := ctx.Query("customerid")
 
 	if month == "" || year == "" || customerID == "" {
-		httpCode = http.StatusBadRequest
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "need month, year and customer ID in url params")
-		return response, httpCode, errInfo
+		return response, http.StatusBadRequest, errInfo
 	}
 
 	customerIDUUID, err := uuid.Parse(customerID)
