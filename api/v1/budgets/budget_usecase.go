@@ -553,9 +553,8 @@ func (s *BudgetUseCase) Travels(ctx *gin.Context) (response interface{}, httpCod
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
+		return response, http.StatusUnauthorized, errInfo
 	}
 
 	dataTravel, err := s.repo.Travels(personalAccount.ID)
@@ -580,7 +579,10 @@ func (s *BudgetUseCase) Travels(ctx *gin.Context) (response interface{}, httpCod
 	if len(dataTravel) > 0 {
 		for _, v := range dataTravel {
 
-			budgetValue, _ := strconv.ParseInt(v.Budget, 10, 64)
+			budgetValue, err := strconv.ParseFloat(v.Budget, 64)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
 
 			travelDetails = append(travelDetails, dtos.TravelDetails{
 				ID:        v.ID,
@@ -590,7 +592,7 @@ func (s *BudgetUseCase) Travels(ctx *gin.Context) (response interface{}, httpCod
 				Filename:  v.Filename,
 				Budget: dtos.Amount{
 					CurrencyCode: "IDR",
-					Value:        budgetValue,
+					Value:        int64(budgetValue),
 				},
 				TravelStartDate: v.TravelStartDate,
 				TravelEndDate:   v.TravelEndDate,
