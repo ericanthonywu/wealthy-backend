@@ -215,9 +215,9 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			referralGroup.GET("/list", referrals.List)
 		}
 
-		paymentGroup := v1group.Group("/payments", tokenSignature())
+		paymentGroup := v1group.Group("/payments")
 		{
-			paymentGroup.POST("/subscriptions", payments.Subscriptions)
+			paymentGroup.POST("/subscriptions", tokenSignature(), payments.Subscriptions)
 			webhookGroup := paymentGroup.Group("/webhooks")
 			{
 				webhookGroup.POST("/midtrans", payments.MidtransWebhook)
