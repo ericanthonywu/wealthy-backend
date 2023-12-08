@@ -145,4 +145,15 @@ type (
 		OTPCode      string `json:"otp_code"`
 		EmailAccount string `json:"email_account"`
 	}
+
+	AccountShare struct {
+		AccountShareDetail AccountShareDetail `json:"account_detail"`
+		Status             string             `json:"status"`
+	}
+
+	AccountShareDetail struct {
+		Email     string `json:"account_email"`
+		ImagePath string `json:"account_avatar"`
+		Type      string `json:"account_type"`
+	}
 )

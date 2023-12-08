@@ -20,7 +20,7 @@ type (
 		AccountProfile(personalID uuid.UUID) (data entities.ReferralAccountProfile, err error)
 		AccountProfileByRefCode(refCode string) (data entities.ReferralAccountProfileRefCode, err error)
 		Statistic(ctx *gin.Context) (response dtos.ReferralResponse, httpCode int, errInfo []errorsinfo.Errors)
-		List(ctx *gin.Context) (response dtos.ReferralResponseWithCustomer, httpCode int, errInfo []errorsinfo.Errors)
+		List(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		NormalTier(dataMember []entities.ReferralUserReward) (tier []dtos.TierDetail, tierCustomer []dtos.TierDetailWithCustomer)
 		UnusualTier(dataMember []entities.ReferralUserReward, currentLevel int) (tier []dtos.TierDetail, tierCustomer []dtos.TierDetailWithCustomer)
 	}
@@ -92,7 +92,7 @@ func (s *ReferralUseCase) Statistic(ctx *gin.Context) (response dtos.ReferralRes
 	return dtoResponse, http.StatusOK, errInfo
 }
 
-func (s *ReferralUseCase) List(ctx *gin.Context) (response dtos.ReferralResponseWithCustomer, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *ReferralUseCase) List(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
 		dtoResponse   dtos.ReferralResponseWithCustomer
 		dataProfile   entities.ReferralAccountProfile
@@ -106,7 +106,7 @@ func (s *ReferralUseCase) List(ctx *gin.Context) (response dtos.ReferralResponse
 
 	if personalAccount.ID == uuid.Nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return dtoResponse, http.StatusUnauthorized, errInfo
+		return struct{}{}, http.StatusUnauthorized, errInfo
 	}
 
 	dataProfile, err = s.AccountProfile(personalAccount.ID)
@@ -119,15 +119,24 @@ func (s *ReferralUseCase) List(ctx *gin.Context) (response dtos.ReferralResponse
 	// GETTING ROOT NODE INFORMATION
 	dataFirstNode, err = s.repo.FirstNode(referralCode)
 	if err != nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found data from referral code : "+referralCode)
-		return dtos.ReferralResponseWithCustomer{}, http.StatusNotFound, errInfo
+		res := struct {
+			Message string `json:"message"`
+		}{
+			Message: " have not member list for referral code : " + referralCode,
+		}
+		return res, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
 	// GETTING MEMBER OF NODE
 	dataMember, err = s.repo.MemberNode(referralCode)
 	if err != nil || len(dataMember) == 0 {
+		res := struct {
+			Message string `json:"message"`
+		}{
+			Message: " have not member list for referral code : " + referralCode,
+		}
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found data from referral code : "+referralCode)
-		return dtos.ReferralResponseWithCustomer{}, http.StatusNotFound, errInfo
+		return res, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
 	// MAPPING FOR TIERS
@@ -137,6 +146,15 @@ func (s *ReferralUseCase) List(ctx *gin.Context) (response dtos.ReferralResponse
 
 	if dataFirstNode.Level > 0 {
 		_, dtoResponse.Tier = s.UnusualTier(dataMember, dataFirstNode.Level)
+	}
+
+	if len(dtoResponse.Tier) == 0 {
+		res := struct {
+			Message string `json:"message"`
+		}{
+			Message: " have not referral below referral code :" + referralCode,
+		}
+		return res, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
 	if len(errInfo) == 0 {

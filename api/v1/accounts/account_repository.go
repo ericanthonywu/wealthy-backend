@@ -394,13 +394,17 @@ func (r *AccountRepository) GroupSharingInfoByIDPersonalAccount(IDFirstAccount, 
 }
 
 func (r *AccountRepository) GroupSharingList(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error) {
-	if err := r.db.Raw(`SELECT tpa.email, tpa.file_name as file_name, tpa.image_path as image_path,
+	if err := r.db.Raw(`SELECT tpa.email,
+       tmat.account_type as type,
+       tpa.file_name     as file_name,
+       tpa.image_path    as image_path,
        CASE
            WHEN tgs.is_accepted = false THEN 'pending'
            ELSE 'accepted'
-           END AS status
+           END           AS status
 FROM tbl_group_sharing tgs
          INNER JOIN tbl_personal_accounts tpa ON tgs.id_personal_accounts_share_to = tpa.id
+         INNER JOIN tbl_master_account_types tmat ON tmat.id = tpa.id_master_account_types
 WHERE tgs.id_personal_accounts_share_from = ?`, IDPersonalAccount).Scan(&data).Error; err != nil {
 		return []entities.AccountGroupSharingWithProfileInfo{}, err
 	}

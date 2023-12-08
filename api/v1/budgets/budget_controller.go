@@ -116,31 +116,34 @@ func (c *BudgetController) Limit(ctx *gin.Context) {
 		purpose = constants.Travel
 		if utilities.IsEmptyString(dtoRequest.TravelEndDate) {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "travel_end_date attribute needed in body payload")
-			response.SendBack(ctx, dtos.BudgetSetRequest{}, errInfo, http.StatusBadRequest)
-			return
 		}
 
 		if utilities.IsEmptyString(dtoRequest.ImageBase64) {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "image_base54 attribute needed in body payload")
-			response.SendBack(ctx, dtos.BudgetSetRequest{}, errInfo, http.StatusBadRequest)
-			return
 		}
 
 		if utilities.IsEmptyString(dtoRequest.IDMasterTransactionTypes.String()) {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id_master_transaction_types attribute needed in body payload")
-			response.SendBack(ctx, dtos.BudgetSetRequest{}, errInfo, http.StatusBadRequest)
-			return
 		}
 
 		if !utilities.ValidateBetweenTwoDateRange(dtoRequest.TravelStartDate, dtoRequest.TravelEndDate) {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "travel_end_date attribute must greater than travel_start_date attribute in body payload")
-			response.SendBack(ctx, dtos.BudgetSetRequest{}, errInfo, http.StatusBadRequest)
-			return
 		}
+
+		if utilities.IsEmptyString(dtoRequest.IDMasterExchangeCurrency) {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id must greater than travel_start_date attribute in body payload")
+		}
+	}
+
+	// show err info
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
 	}
 
 	dtoResponse, httpCode, errInfo = c.useCase.Limit(ctx, &dtoRequest, purpose)
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
+	return
 }
 
 func (c *BudgetController) Trends(ctx *gin.Context) {
