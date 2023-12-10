@@ -114,8 +114,12 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				sharingGroup.POST("/accept", account.AcceptSharing)
 				sharingGroup.POST("/reject", account.RejectSharing)
 				sharingGroup.POST("/remove", account.RemoveSharing)
-				sharingGroup.GET("/list", account.ListGroupSharing)
-				sharingGroup.GET("/list-pending", account.ListGroupSharingPending)
+
+				listGroup := sharingGroup.Group("/list")
+				{
+					listGroup.GET("/accepted", account.GroupSharingAccepted)
+					listGroup.GET("/pending", account.GroupSharingPending)
+				}
 			}
 		}
 
@@ -247,5 +251,4 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 	}
-
 }

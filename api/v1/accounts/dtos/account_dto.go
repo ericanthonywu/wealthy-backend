@@ -125,8 +125,7 @@ type (
 	}
 
 	AccountGroupSharingAccept struct {
-		IDSender    string `json:"id_group_sender"`
-		IDRecipient string `json:"id_group_recipient"`
+		IDGroupSharing string `json:"id_group_sharing"`
 	}
 
 	AccountGroupSharingRemove struct {
@@ -149,6 +148,7 @@ type (
 	AccountShare struct {
 		AccountShareDetail AccountShareDetail `json:"account_detail"`
 		Status             string             `json:"status"`
+		ActionID           AccountActionID    `json:"action_id,omitempty"`
 	}
 
 	AccountShareDetail struct {
@@ -156,6 +156,10 @@ type (
 		Email     string `json:"account_email"`
 		ImagePath string `json:"account_avatar"`
 		Type      string `json:"account_type"`
+	}
+
+	AccountActionID struct {
+		IDGroupSharing string `json:"id_group_sharing,omitempty"`
 	}
 
 	AccountChangeForgotPassword struct {

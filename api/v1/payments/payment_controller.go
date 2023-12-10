@@ -33,9 +33,21 @@ func (c *PaymentController) Subscriptions(ctx *gin.Context) {
 		errInfo    []errorsinfo.Errors
 	)
 
+	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
 		response.SendBack(ctx, dtos.PaymentSubscription{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	// validate
+	if dtoRequest.PackageID == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "package id empty value")
+	}
+
+	// show error
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 

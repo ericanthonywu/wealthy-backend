@@ -1,10 +1,8 @@
 package dtos
 
-import "github.com/google/uuid"
-
 type (
 	PaymentSubscription struct {
-		PackageID uuid.UUID `json:"package_id"`
+		PackageID string `json:"package_id"`
 	}
 
 	PaymentSnapRequest struct {
