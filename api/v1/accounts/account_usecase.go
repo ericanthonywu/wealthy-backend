@@ -874,6 +874,7 @@ func (s *AccountUseCase) InviteSharing(ctx *gin.Context, dtoResponse *dtos.Accou
 	modelInviteSharing.ShareFrom = personalAccount.ID
 	modelInviteSharing.ShareTo = dataProfile.ID
 	modelInviteSharing.IsAccepted = false
+	modelInviteSharing.ActAs = constants.AsInvite
 
 	err = s.repo.InviteSharing(&modelInviteSharing)
 	if err != nil {
@@ -888,6 +889,7 @@ func (s *AccountUseCase) InviteSharing(ctx *gin.Context, dtoResponse *dtos.Accou
 	modelInviteSharing.ShareFrom = dataProfile.ID
 	modelInviteSharing.ShareTo = personalAccount.ID
 	modelInviteSharing.IsAccepted = false
+	modelInviteSharing.ActAs = constants.AsInvited
 
 	err = s.repo.InviteSharing(&modelInviteSharing)
 	if err != nil {
@@ -900,7 +902,7 @@ func (s *AccountUseCase) InviteSharing(ctx *gin.Context, dtoResponse *dtos.Accou
 	model.ID = uuid.New()
 	model.IDPersonalAccounts = dataProfile.ID
 	model.IsRead = false
-	model.NotificationTitle = "Group Sharing"
+	model.NotificationTitle = constants.NotificationTitle
 	model.NotificationDescription = dataProfileSender.Name + " has invite you to become group sharing member"
 	model.IDGroupSender = IDSender.String()
 	model.IDGroupReceipt = IDReceipt.String()

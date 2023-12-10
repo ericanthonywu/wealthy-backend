@@ -103,6 +103,7 @@ type (
 		ShareFrom  uuid.UUID `gorm:"column:id_personal_accounts_share_from"`
 		ShareTo    uuid.UUID `gorm:"column:id_personal_accounts_share_to"`
 		IsAccepted bool      `gorm:"column:is_accepted"`
+		ActAs      string    `gorm:"column:act_as"`
 	}
 
 	AccountPersonalIDGroupSharing struct {

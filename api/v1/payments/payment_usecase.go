@@ -141,6 +141,8 @@ func (s *PaymentUseCase) MidtransWebhook(ctx *gin.Context, request *dtos.MidTran
 		return response, http.StatusInternalServerError, errInfo
 	}
 
+	// change to basic to pro
+
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
