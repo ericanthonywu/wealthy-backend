@@ -30,10 +30,10 @@ type (
 		AcceptSharing(ctx *gin.Context)
 		RejectSharing(ctx *gin.Context)
 		RemoveSharing(ctx *gin.Context)
-		ListGroupSharing(ctx *gin.Context)
 		VerifyOTP(ctx *gin.Context)
 		ChangePasswordForgot(ctx *gin.Context)
-		ListGroupSharingPending(ctx *gin.Context)
+		GroupSharingAccepted(ctx *gin.Context)
+		GroupSharingPending(ctx *gin.Context)
 	}
 )
 
@@ -363,16 +363,8 @@ func (c *AccountController) AcceptSharing(ctx *gin.Context) {
 	}
 
 	// validate process
-	if dtoRequest.IDRecipient == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "ID Receipt can not be empty")
-	}
-
-	if dtoRequest.IDSender == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "ID Sender can not be empty")
-	}
-
-	if dtoRequest.IDSender == dtoRequest.IDRecipient {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "ID Sender and ID Receipt cannot be identically")
+	if dtoRequest.IDGroupSharing == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id group sharing empty value")
 	}
 
 	if len(errInfo) > 0 {
@@ -400,16 +392,8 @@ func (c *AccountController) RejectSharing(ctx *gin.Context) {
 	}
 
 	// validate process
-	if dtoRequest.IDRecipient == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "ID Receipt can not be empty")
-	}
-
-	if dtoRequest.IDSender == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "ID Sender can not be empty")
-	}
-
-	if dtoRequest.IDSender == dtoRequest.IDRecipient {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "ID Sender and ID Receipt cannot be identically")
+	if dtoRequest.IDGroupSharing == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id group sharing empty value")
 	}
 
 	if len(errInfo) > 0 {
@@ -442,12 +426,6 @@ func (c *AccountController) RemoveSharing(ctx *gin.Context) {
 	}
 
 	data, httpCode, errInfo := c.useCase.RemoveSharing(ctx, &dtoRequest)
-	response.SendBack(ctx, data, errInfo, httpCode)
-	return
-}
-
-func (c *AccountController) ListGroupSharing(ctx *gin.Context) {
-	data, httpCode, errInfo := c.useCase.ListGroupSharing(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
@@ -513,8 +491,14 @@ func (c *AccountController) ChangePasswordForgot(ctx *gin.Context) {
 	return
 }
 
-func (c *AccountController) ListGroupSharingPending(ctx *gin.Context) {
-	data, httpCode, errInfo := c.useCase.ListGroupSharingPending(ctx)
+func (c *AccountController) GroupSharingAccepted(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.GroupSharingAccepted(ctx)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *AccountController) GroupSharingPending(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.GroupSharingPending(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }

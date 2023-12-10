@@ -103,7 +103,6 @@ type (
 		ShareFrom  uuid.UUID `gorm:"column:id_personal_accounts_share_from"`
 		ShareTo    uuid.UUID `gorm:"column:id_personal_accounts_share_to"`
 		IsAccepted bool      `gorm:"column:is_accepted"`
-		ActAs      string    `gorm:"column:act_as"`
 	}
 
 	AccountPersonalIDGroupSharing struct {
@@ -113,12 +112,15 @@ type (
 	}
 
 	AccountGroupSharingWithProfileInfo struct {
-		Name      string `gorm:"column:name"`
-		Email     string `gorm:"column:email"`
-		Filename  string `gorm:"column:file_name"`
-		ImagePath string `gorm:"column:image_path"`
-		Status    string `gorm:"column:status"`
-		Type      string `gorm:"column:type"`
+		ID          uuid.UUID `gorm:"column:id"`
+		Name        string    `gorm:"column:name"`
+		Email       string    `gorm:"column:email"`
+		Filename    string    `gorm:"column:file_name"`
+		ImagePath   string    `gorm:"column:image_path"`
+		Status      string    `gorm:"column:status"`
+		Type        string    `gorm:"column:type"`
+		IDShareFrom uuid.UUID `gorm:"column:id_share_from"`
+		IDShareTo   uuid.UUID `gorm:"column:id_share_to"`
 	}
 
 	AccountForgotPassword struct {

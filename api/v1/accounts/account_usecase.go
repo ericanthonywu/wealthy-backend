@@ -46,8 +46,8 @@ type (
 		AcceptSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingAccept) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		RejectSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingAccept) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		RemoveSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingRemove) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		ListGroupSharing(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		ListGroupSharingPending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		GroupSharingAccepted(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		GroupSharingPending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		VerifyOTP(ctx *gin.Context, request *dtos.AccountOTPVerify) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ChangePasswordForgot(ctx *gin.Context, request *dtos.AccountChangeForgotPassword) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
@@ -834,32 +834,36 @@ func (s *AccountUseCase) InviteSharing(ctx *gin.Context, dtoResponse *dtos.Accou
 		return struct{}{}, http.StatusUnauthorized, errInfo
 	}
 
-	// get profile for email sender
+	// get profile for email target
 	dataProfileSender, err := s.repo.GetProfileByEmail(usrEmail)
 	if err != nil {
 		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
 	// get profile for email target
-	dataProfile, err := s.repo.GetProfileByEmail(dtoResponse.EmailAccount)
+	dataProfileReceipt, err := s.repo.GetProfileByEmail(dtoResponse.EmailAccount)
 	if err != nil {
 		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
 	// if target email same as email sender in token
-	if dataProfile.Email == usrEmail {
+	if dataProfileReceipt.Email == usrEmail {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not share with the same email")
 		return struct{}{}, http.StatusBadRequest, errInfo
 	}
 
 	// if email target empty from db
-	if dataProfile.Email == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not share with the unregistered email")
+	if dataProfileReceipt.Email == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not share with the unregistered account")
 		return struct{}{}, http.StatusBadRequest, errInfo
 	}
 
 	// if already in group sharing
-	if s.repo.IsAlreadySharing(personalAccount.ID, dataProfile.ID) {
+	if s.repo.IsAlreadySharing(personalAccount.ID, dataProfileReceipt.ID) {
 		resp := struct {
 			Message string `json:"message"`
 		}{
@@ -868,28 +872,14 @@ func (s *AccountUseCase) InviteSharing(ctx *gin.Context, dtoResponse *dtos.Accou
 		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
 	}
 
-	// for first row
-	IDSender := uuid.New()
-	modelInviteSharing.ID = IDSender
+	// set ID
+	IDGroupSharing := uuid.New()
+
+	// save invitation
+	modelInviteSharing.ID = IDGroupSharing
 	modelInviteSharing.ShareFrom = personalAccount.ID
-	modelInviteSharing.ShareTo = dataProfile.ID
+	modelInviteSharing.ShareTo = dataProfileReceipt.ID
 	modelInviteSharing.IsAccepted = false
-	modelInviteSharing.ActAs = constants.AsInvite
-
-	err = s.repo.InviteSharing(&modelInviteSharing)
-	if err != nil {
-		logrus.Error(err.Error())
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return struct{}{}, http.StatusInternalServerError, errInfo
-	}
-
-	// for second row
-	IDReceipt := uuid.New()
-	modelInviteSharing.ID = IDReceipt
-	modelInviteSharing.ShareFrom = dataProfile.ID
-	modelInviteSharing.ShareTo = personalAccount.ID
-	modelInviteSharing.IsAccepted = false
-	modelInviteSharing.ActAs = constants.AsInvited
 
 	err = s.repo.InviteSharing(&modelInviteSharing)
 	if err != nil {
@@ -900,12 +890,11 @@ func (s *AccountUseCase) InviteSharing(ctx *gin.Context, dtoResponse *dtos.Accou
 
 	// set notifications
 	model.ID = uuid.New()
-	model.IDPersonalAccounts = dataProfile.ID
+	model.IDPersonalAccounts = dataProfileReceipt.ID
 	model.IsRead = false
 	model.NotificationTitle = constants.NotificationTitle
 	model.NotificationDescription = dataProfileSender.Name + " has invite you to become group sharing member"
-	model.IDGroupSender = IDSender.String()
-	model.IDGroupReceipt = IDReceipt.String()
+	model.IDGroupSharing = IDGroupSharing.String()
 
 	err = utilities.SetNotifications(ctx, model)
 	if err != nil {
@@ -926,8 +915,6 @@ func (s *AccountUseCase) InviteSharing(ctx *gin.Context, dtoResponse *dtos.Accou
 }
 
 func (s *AccountUseCase) AcceptSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingAccept) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	var model utilities.NotificationEntities
-
 	usrEmail := ctx.MustGet("email").(string)
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
@@ -937,56 +924,45 @@ func (s *AccountUseCase) AcceptSharing(ctx *gin.Context, dtoRequest *dtos.Accoun
 	}
 
 	// translate string to uuid value
-	IDSenderUUID, err := uuid.Parse(dtoRequest.IDSender)
+	IDGroupSharingUUID, err := uuid.Parse(dtoRequest.IDGroupSharing)
 	if err != nil {
 		logrus.Error(err.Error())
 	}
 
-	IDReceiptUUID, err := uuid.Parse(dtoRequest.IDRecipient)
+	// get information group sharing by id
+	dataGroupSharing, err := s.repo.GroupSharingInfoByID(IDGroupSharingUUID)
 	if err != nil {
-		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
-	// validate id recipient
-	dataGroupSharingSender := s.repo.IDPersonalAccountFromGroupSharing(IDSenderUUID)
-	dataGroupSharingRecipient := s.repo.IDPersonalAccountFromGroupSharing(IDReceiptUUID)
+	// if not eligible
+	if dataGroupSharing.ShareFrom == personalAccount.ID {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "tokens are not entitled to receive invitations",
+		}
 
-	if personalAccount.ID != dataGroupSharingRecipient.ID {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "this token is not eligible to receive invitations")
-		return struct{}{}, http.StatusBadRequest, errInfo
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
 	}
 
-	// update process
-	err = s.repo.AcceptSharing(IDSenderUUID, IDReceiptUUID)
+	// accept sharing
+	err = s.repo.AcceptSharing(IDGroupSharingUUID)
 	if err != nil {
 		logrus.Error(err.Error())
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
-	// if err info empty
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
 
-	// set notifications
-	model.ID = uuid.New()
-	model.IDPersonalAccounts = dataGroupSharingSender.ID
-	model.IsRead = false
-	model.NotificationTitle = "Group Sharing"
-	model.NotificationDescription = dataGroupSharingRecipient.Name + " has accept your group sharing"
-	model.IDGroupSender = ""
-	model.IDGroupReceipt = ""
-
-	err = utilities.SetNotifications(ctx, model)
-	if err != nil {
-		logrus.Error(err.Error())
-	}
-
 	resp := struct {
-		Message string `json:"message,omitempty"`
+		Message string `json:"message"`
 	}{
-		Message: "success accept the invitation",
+		Message: "accept group sharing successfully",
 	}
 
 	return resp, http.StatusOK, errInfo
@@ -1002,46 +978,27 @@ func (s *AccountUseCase) RejectSharing(ctx *gin.Context, dtoRequest *dtos.Accoun
 	}
 
 	// translate string to uuid value
-	IDSenderUUID, err := uuid.Parse(dtoRequest.IDSender)
+	IDGroupSharingUUID, err := uuid.Parse(dtoRequest.IDGroupSharing)
 	if err != nil {
 		logrus.Error(err.Error())
 	}
 
-	IDReceiptUUID, err := uuid.Parse(dtoRequest.IDRecipient)
-	if err != nil {
-		logrus.Error(err.Error())
-	}
-
-	// validate id recipient
-	dataGroupSharing := s.repo.IDPersonalAccountFromGroupSharing(IDReceiptUUID)
-
-	if personalAccount.ID != dataGroupSharing.ID {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "this token is not eligible to receive invitations")
-		return struct{}{}, http.StatusBadRequest, errInfo
-	}
-
-	if dataGroupSharing.IsAccepted {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not reject group sharing that has been accepted")
-		return struct{}{}, http.StatusBadRequest, errInfo
-	}
-
-	// reject process
-	err = s.repo.RejectSharing(IDSenderUUID, IDReceiptUUID)
+	// accept sharing
+	err = s.repo.RejectSharing(IDGroupSharingUUID)
 	if err != nil {
 		logrus.Error(err.Error())
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
-	// if err info empty
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
 
 	resp := struct {
-		Message string `json:"message,omitempty"`
+		Message string `json:"message"`
 	}{
-		Message: "reject the invitation successfully",
+		Message: "reject group sharing successfully",
 	}
 
 	return resp, http.StatusOK, errInfo
@@ -1114,7 +1071,7 @@ func (s *AccountUseCase) RemoveSharing(ctx *gin.Context, dtoRequest *dtos.Accoun
 	return resp, http.StatusOK, errInfo
 }
 
-func (s *AccountUseCase) ListGroupSharing(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *AccountUseCase) GroupSharingAccepted(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var dtoResponse []dtos.AccountShare
 
 	usrEmail := ctx.MustGet("email").(string)
@@ -1125,7 +1082,7 @@ func (s *AccountUseCase) ListGroupSharing(ctx *gin.Context) (response interface{
 		return struct{}{}, http.StatusUnauthorized, errInfo
 	}
 
-	// get profile by email target
+	// get profile by email in token
 	dataGroupSharingWithProfile, err := s.repo.GroupSharingList(personalAccount.ID)
 	if err != nil {
 		logrus.Error(err.Error())
@@ -1133,32 +1090,22 @@ func (s *AccountUseCase) ListGroupSharing(ctx *gin.Context) (response interface{
 		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
+	// reserve
+	dataGroupSharingWithProfileReserve, err := s.repo.GroupSharingListReserve(personalAccount.ID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
 	// if not found
-	if len(dataGroupSharingWithProfile) == 0 {
+	if len(dataGroupSharingWithProfile) == 0 && len(dataGroupSharingWithProfileReserve) == 0 {
 		resp := struct {
 			Message string `json:"message,omitempty"`
 		}{
 			Message: "this token has not shared with other accounts",
 		}
-		return resp, http.StatusNotFound, errInfo
-	}
-
-	// append to dto response
-	for _, v := range dataGroupSharingWithProfile {
-
-		ImagePath := ""
-		if v.ImagePath != "" {
-			ImagePath = os.Getenv("APP_HOST") + "/v1/" + v.ImagePath
-		}
-
-		dtoResponse = append(dtoResponse, dtos.AccountShare{
-			AccountShareDetail: dtos.AccountShareDetail{
-				Email:     v.Email,
-				ImagePath: ImagePath,
-				Type:      v.Type,
-			},
-			Status: strings.ToUpper(v.Status),
-		})
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
 	// clear error info
@@ -1166,10 +1113,56 @@ func (s *AccountUseCase) ListGroupSharing(ctx *gin.Context) (response interface{
 		errInfo = []errorsinfo.Errors{}
 	}
 
-	return dtoResponse, http.StatusOK, errInfo
+	// response for invited
+	if len(dataGroupSharingWithProfileReserve) > 0 {
+		// append
+		for _, v := range dataGroupSharingWithProfileReserve {
+			ImagePath := ""
+			if v.ImagePath != "" {
+				ImagePath = os.Getenv("APP_HOST") + "/v1/" + v.ImagePath
+			}
+
+			dtoResponse = append(dtoResponse, dtos.AccountShare{
+				AccountShareDetail: dtos.AccountShareDetail{
+					Name:      v.Name,
+					Email:     v.Email,
+					ImagePath: ImagePath,
+					Type:      v.Type,
+				},
+				Status: strings.ToUpper(v.Status),
+			})
+		}
+
+		return dtoResponse, http.StatusOK, errInfo
+	}
+
+	// response for invites
+	if len(dataGroupSharingWithProfile) > 0 {
+		// append
+		for _, v := range dataGroupSharingWithProfile {
+			ImagePath := ""
+			if v.ImagePath != "" {
+				ImagePath = os.Getenv("APP_HOST") + "/v1/" + v.ImagePath
+			}
+
+			dtoResponse = append(dtoResponse, dtos.AccountShare{
+				AccountShareDetail: dtos.AccountShareDetail{
+					Name:      v.Name,
+					Email:     v.Email,
+					ImagePath: ImagePath,
+					Type:      v.Type,
+				},
+				Status: strings.ToUpper(v.Status),
+			})
+		}
+
+		return dtoResponse, http.StatusOK, errInfo
+	}
+
+	return
 }
 
-func (s *AccountUseCase) ListGroupSharingPending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *AccountUseCase) GroupSharingPending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var dtoResponse []dtos.AccountShare
 
 	// user id
@@ -1181,7 +1174,7 @@ func (s *AccountUseCase) ListGroupSharingPending(ctx *gin.Context) (response int
 		return struct{}{}, http.StatusUnauthorized, errInfo
 	}
 
-	// get profile by email target
+	// get profile by email in token
 	dataGroupSharingWithProfile, err := s.repo.GroupSharingListPending(personalAccount.ID)
 	if err != nil {
 		logrus.Error(err.Error())
@@ -1189,33 +1182,22 @@ func (s *AccountUseCase) ListGroupSharingPending(ctx *gin.Context) (response int
 		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
+	// reverse
+	dataGroupSharingWithProfileReverse, err := s.repo.GroupSharingListPendingReverse(personalAccount.ID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
 	// if not found
-	if len(dataGroupSharingWithProfile) == 0 {
+	if len(dataGroupSharingWithProfile) == 0 && len(dataGroupSharingWithProfileReverse) == 0 {
 		resp := struct {
 			Message string `json:"message,omitempty"`
 		}{
-			Message: "this token has not shared with other accounts",
+			Message: "no pending group sharing invitation",
 		}
-		return resp, http.StatusNotFound, errInfo
-	}
-
-	// append to dto response
-	for _, v := range dataGroupSharingWithProfile {
-
-		ImagePath := ""
-		if v.ImagePath != "" {
-			ImagePath = os.Getenv("APP_HOST") + "/v1/" + v.ImagePath
-		}
-
-		dtoResponse = append(dtoResponse, dtos.AccountShare{
-			AccountShareDetail: dtos.AccountShareDetail{
-				Name:      v.Name,
-				Email:     v.Email,
-				ImagePath: ImagePath,
-				Type:      v.Type,
-			},
-			Status: strings.ToUpper(v.Status),
-		})
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
 	// clear error info
@@ -1223,7 +1205,56 @@ func (s *AccountUseCase) ListGroupSharingPending(ctx *gin.Context) (response int
 		errInfo = []errorsinfo.Errors{}
 	}
 
-	return dtoResponse, http.StatusOK, errInfo
+	// response for sender
+	if len(dataGroupSharingWithProfile) > 0 {
+		for _, v := range dataGroupSharingWithProfile {
+			// setup image
+			ImagePath := ""
+			if v.ImagePath != "" {
+				ImagePath = os.Getenv("APP_HOST") + "/v1/" + v.ImagePath
+			}
+
+			dtoResponse = append(dtoResponse, dtos.AccountShare{
+				AccountShareDetail: dtos.AccountShareDetail{
+					Name:      v.Name,
+					Email:     v.Email,
+					ImagePath: ImagePath,
+					Type:      v.Type,
+				},
+				Status:   strings.ToUpper(v.Status),
+				ActionID: dtos.AccountActionID{},
+			})
+		}
+		return dtoResponse, http.StatusOK, errInfo
+	}
+
+	// response for receipt
+	if len(dataGroupSharingWithProfileReverse) > 0 {
+		for _, v := range dataGroupSharingWithProfileReverse {
+			// setup image
+			ImagePath := ""
+			if v.ImagePath != "" {
+				ImagePath = os.Getenv("APP_HOST") + "/v1/" + v.ImagePath
+			}
+
+			dtoResponse = append(dtoResponse, dtos.AccountShare{
+				AccountShareDetail: dtos.AccountShareDetail{
+					Name:      v.Name,
+					Email:     v.Email,
+					ImagePath: ImagePath,
+					Type:      v.Type,
+				},
+				Status: strings.ToUpper(v.Status),
+				ActionID: dtos.AccountActionID{
+					IDGroupSharing: v.ID.String(),
+				},
+			})
+
+		}
+		return dtoResponse, http.StatusOK, errInfo
+	}
+
+	return
 }
 
 func (s *AccountUseCase) VerifyOTP(ctx *gin.Context, request *dtos.AccountOTPVerify) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
