@@ -38,7 +38,7 @@ type (
 		UpdateProfile(ctx *gin.Context, request map[string]interface{}) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ChangePassword(ctx *gin.Context, request *dtos.AccountChangePassword) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ForgotPassword(ctx *gin.Context, request *dtos.AccountForgotPasswordRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		ValidateRefCode(request *dtos.AccountRefCodeValidationRequest) (response dtos.AccountRefCodeValidationResponse, httpCode int, errInfo []errorsinfo.Errors)
+		ValidateRefCode(request *dtos.AccountRefCodeValidationRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		SetAvatar(ctx *gin.Context, request *dtos.AccountAvatarRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		RemoveAvatar(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		SearchAccount(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharing) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
@@ -641,13 +641,16 @@ func (s *AccountUseCase) ForgotPassword(ctx *gin.Context, request *dtos.AccountF
 	return resp, http.StatusOK, errInfo
 }
 
-func (s *AccountUseCase) ValidateRefCode(request *dtos.AccountRefCodeValidationRequest) (response dtos.AccountRefCodeValidationResponse, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *AccountUseCase) ValidateRefCode(request *dtos.AccountRefCodeValidationRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var dtoResponse dtos.AccountRefCodeValidationResponse
+
+	// get list ref code
 	RefCodeList := s.repo.ListRefCode()
 
+	// check
 	if utilities.Contains(RefCodeList, request.RefCode) {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", errors.New("referrals code already exist on system. please use another code to be registered").Error())
-		return dtos.AccountRefCodeValidationResponse{}, http.StatusOK, errInfo
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "referrals code already exist on system. please use another code to be registered")
+		return struct{}{}, http.StatusOK, errInfo
 	}
 
 	if len(errInfo) == 0 {

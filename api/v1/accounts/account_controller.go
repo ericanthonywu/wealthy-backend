@@ -223,20 +223,29 @@ func (c *AccountController) ForgotPassword(ctx *gin.Context) {
 
 func (c *AccountController) ValidateRefCode(ctx *gin.Context) {
 	var (
-		dtoRequest  dtos.AccountRefCodeValidationRequest
-		dtoResponse dtos.AccountRefCodeValidationResponse
-		errInfo     []errorsinfo.Errors
-		httpCode    int
+		dtoRequest dtos.AccountRefCodeValidationRequest
+		errInfo    []errorsinfo.Errors
 	)
 
 	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
-		response.SendBack(ctx, dtos.AccountRefCodeValidationResponse{}, errInfo, http.StatusBadRequest)
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
-	dtoResponse, httpCode, errInfo = c.useCase.ValidateRefCode(&dtoRequest)
+	// validate
+	if dtoRequest.RefCode == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "referral code empty value")
+	}
+
+	// err empty
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	dtoResponse, httpCode, errInfo := c.useCase.ValidateRefCode(&dtoRequest)
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
 	return
 }
