@@ -1,11 +1,13 @@
 package payments
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/payments/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 )
@@ -31,9 +33,21 @@ func (c *PaymentController) Subscriptions(ctx *gin.Context) {
 		errInfo    []errorsinfo.Errors
 	)
 
+	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
 		response.SendBack(ctx, dtos.PaymentSubscription{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	// validate
+	if dtoRequest.PackageID == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "package id empty value")
+	}
+
+	// show error
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
@@ -49,14 +63,20 @@ func (c *PaymentController) MidtransWebhook(ctx *gin.Context) {
 		errInfo    []errorsinfo.Errors
 	)
 
+	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
 		response.SendBack(ctx, dtos.PaymentSubscription{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
+	fmt.Println("%+v", dtoRequest)
+
 	serverKey := os.Getenv("MIDTRANS_SERVER_KEY")
-	sha512, _ := utilities.CalculateSHA512(dtoRequest.OrderId + dtoRequest.StatusCode + dtoRequest.GrossAmount + serverKey)
+	sha512, err := utilities.CalculateSHA512(dtoRequest.OrderId + dtoRequest.StatusCode + dtoRequest.GrossAmount + serverKey)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
 
 	if sha512 != dtoRequest.SignatureKey {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "signature not match")

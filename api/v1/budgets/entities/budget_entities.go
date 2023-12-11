@@ -71,7 +71,7 @@ type (
 		IDMasterExpenseCategories    uuid.UUID `gorm:"column:id_master_categories"`
 		IDMasterExpenseSubCategories uuid.UUID `gorm:"column:id_master_subcategories"`
 		IDMasterExchangeCurrency     uuid.UUID `gorm:"column:id_master_exchance_currency"`
-		Amount                       int       `gorm:"column:amount"`
+		Amount                       int64     `gorm:"column:amount"`
 		Departure                    string    `gorm:"column:departure"`
 		Arrival                      string    `gorm:"column:arrival"`
 		ImagePath                    string    `gorm:"column:image_path"`
@@ -106,10 +106,15 @@ type (
 		Budget          string    `gorm:"column:budget"`
 		TravelStartDate string    `gorm:"column:travel_start_date"`
 		TravelEndDate   string    `gorm:"column:travel_end_date"`
+		CurrencyOrigin  string    `gorm:"column:currency_origin"`
 	}
 
 	BudgetExistsExchangeExist struct {
 		Exists bool `gorm:"column:exists"`
+	}
+
+	BudgetExistsExchangeValue struct {
+		Code string `gorm:"column:code"`
 	}
 )
 

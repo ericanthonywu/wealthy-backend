@@ -6,6 +6,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
+	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -149,11 +150,6 @@ func (c *TransactionController) Investment(ctx *gin.Context) {
 
 func (c *TransactionController) ByNotes(ctx *gin.Context) {
 	data, httpCode, errInfo := c.useCase.ByNotes(ctx)
-
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
-	}
-
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
@@ -165,17 +161,19 @@ func (c *TransactionController) TravelTransactionHistory(ctx *gin.Context) {
 
 	if idTravel == "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "idTravel query param needed in url address")
-		response.SendBack(ctx, interface{}(nil), errInfo, http.StatusBadRequest)
+	}
+
+	IDTravelUUID, err := uuid.Parse(idTravel)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
-	IDTravelUUID, _ := uuid.Parse(idTravel)
 	data, httpCode, errInfo := c.useCase.TravelTransactionHistory(ctx, IDTravelUUID)
-
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
-	}
-
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }

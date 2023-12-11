@@ -54,9 +54,8 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
+		return response, http.StatusUnauthorized, errInfo
 	}
 
 	dataSubCategoryBudget, err := s.repo.SubCategoryBudget(personalAccount.ID, month, year)
@@ -71,7 +70,6 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 
 	if len(dataSubCategoryBudget) > 0 {
 		for k, v := range dataSubCategoryBudget {
-
 			// CHECK IF FIRST TIME WITH VALUE NIL
 			if categoryIDPrevious == uuid.Nil {
 
@@ -553,9 +551,8 @@ func (s *BudgetUseCase) Travels(ctx *gin.Context) (response interface{}, httpCod
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
+		return response, http.StatusUnauthorized, errInfo
 	}
 
 	dataTravel, err := s.repo.Travels(personalAccount.ID)
@@ -580,7 +577,27 @@ func (s *BudgetUseCase) Travels(ctx *gin.Context) (response interface{}, httpCod
 	if len(dataTravel) > 0 {
 		for _, v := range dataTravel {
 
-			budgetValue, _ := strconv.ParseInt(v.Budget, 10, 64)
+			var (
+				dataXchangeCurrency entities.BudgetExistsExchangeValue
+				err                 error
+			)
+
+			if v.CurrencyOrigin != "" {
+				IDUUID, err := uuid.Parse(v.CurrencyOrigin)
+				if err != nil {
+					logrus.Error(err.Error())
+				}
+
+				dataXchangeCurrency, err = s.repo.GetXchangeCurrencyValue(IDUUID)
+				if err != nil {
+					logrus.Error(err.Error())
+				}
+			}
+
+			budgetValue, err := strconv.ParseFloat(v.Budget, 64)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
 
 			travelDetails = append(travelDetails, dtos.TravelDetails{
 				ID:        v.ID,
@@ -590,10 +607,11 @@ func (s *BudgetUseCase) Travels(ctx *gin.Context) (response interface{}, httpCod
 				Filename:  v.Filename,
 				Budget: dtos.Amount{
 					CurrencyCode: "IDR",
-					Value:        budgetValue,
+					Value:        int64(budgetValue),
 				},
 				TravelStartDate: v.TravelStartDate,
 				TravelEndDate:   v.TravelEndDate,
+				CurrencyOrigin:  dataXchangeCurrency.Code,
 			})
 		}
 

@@ -93,13 +93,13 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 			accountPasswordGroup := accountGroup.Group("/password")
 			{
+				forgotGroup := accountPasswordGroup.Group("/forgot")
+				{
+					forgotGroup.POST("", account.ForgotPassword)
+					forgotGroup.POST("/verify", account.VerifyOTP)
+					forgotGroup.POST("/change-password", tokenSignature(), account.ChangePasswordForgot)
+				}
 				accountPasswordGroup.POST("/change", tokenSignature(), account.ChangePassword)
-				accountPasswordGroup.POST("/forgot", account.ForgotPassword)
-			}
-
-			otpGroup := accountGroup.Group("/otp")
-			{
-				otpGroup.POST("/verify", account.VerifyOTP)
 			}
 
 			accountReferral := accountGroup.Group("/referrals")
@@ -114,7 +114,12 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				sharingGroup.POST("/accept", account.AcceptSharing)
 				sharingGroup.POST("/reject", account.RejectSharing)
 				sharingGroup.POST("/remove", account.RemoveSharing)
-				sharingGroup.GET("/list", account.ListGroupSharing)
+
+				listGroup := sharingGroup.Group("/list")
+				{
+					listGroup.GET("/accepted", account.GroupSharingAccepted)
+					listGroup.GET("/pending", account.GroupSharingPending)
+				}
 			}
 		}
 
@@ -214,9 +219,9 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			referralGroup.GET("/list", referrals.List)
 		}
 
-		paymentGroup := v1group.Group("/payments", tokenSignature())
+		paymentGroup := v1group.Group("/payments")
 		{
-			paymentGroup.POST("/subscriptions", payments.Subscriptions)
+			paymentGroup.POST("/subscriptions", tokenSignature(), payments.Subscriptions)
 			webhookGroup := paymentGroup.Group("/webhooks")
 			{
 				webhookGroup.POST("/midtrans", payments.MidtransWebhook)
@@ -246,5 +251,4 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 	}
-
 }

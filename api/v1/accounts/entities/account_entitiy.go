@@ -112,11 +112,15 @@ type (
 	}
 
 	AccountGroupSharingWithProfileInfo struct {
-		Email     string `gorm:"column:email"`
-		Filename  string `gorm:"column:file_name"`
-		ImagePath string `gorm:"column:image_path"`
-		Status    string `gorm:"column:status"`
-		Type      string `gorm:"column:type"`
+		ID          uuid.UUID `gorm:"column:id"`
+		Name        string    `gorm:"column:name"`
+		Email       string    `gorm:"column:email"`
+		Filename    string    `gorm:"column:file_name"`
+		ImagePath   string    `gorm:"column:image_path"`
+		Status      string    `gorm:"column:status"`
+		Type        string    `gorm:"column:type"`
+		IDShareFrom uuid.UUID `gorm:"column:id_share_from"`
+		IDShareTo   uuid.UUID `gorm:"column:id_share_to"`
 	}
 
 	AccountForgotPassword struct {
@@ -134,6 +138,20 @@ type (
 
 	AccountAlreadySharing struct {
 		Exists bool `gorm:"column:exists"`
+	}
+
+	AccountNotificationEntities struct {
+		ID                      uuid.UUID `gorm:"column:id"`
+		Name                    string    `gorm:"name"`
+		NotificationTitle       string    `gorm:"column:notification_title"`
+		NotificationDescription string    `gorm:"column:notification_description"`
+		IDPersonalAccounts      uuid.UUID `gorm:"column:id_personal_accounts"`
+		IsRead                  bool      `gorm:"column:is_read"`
+		IDGroupSender           uuid.UUID `gorm:"column:id_group_sender"`
+		IDGroupRecipient        uuid.UUID `gorm:"column:id_group_recipient"`
+		ImagePath               string    `gorm:"column:image_path"`
+		Type                    string    `gorm:"column:type"`
+		CreatedAt               time.Time `gorm:"column:created_at"`
 	}
 )
 

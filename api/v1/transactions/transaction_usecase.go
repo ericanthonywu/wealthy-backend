@@ -260,15 +260,6 @@ func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context, IDTravel
 		responseTravelDetailHistory = s.repo.TravelDetailWithData(personalAccount.ID, IDTravel, startDate, endDate)
 	}
 
-	if len(responseTravelDetailHistory) == 0 {
-		response := struct {
-			Message string `json:"message"`
-		}{
-			Message: "there is not travel transaction between periods : " + startDate + " until " + endDate,
-		}
-		return response, http.StatusNotFound, []errorsinfo.Errors{}
-	}
-
 	if len(responseTravelDetailHistory) > 0 {
 		for _, v := range responseTravelDetailHistory {
 			details = append(details, dtos.TransactionHistoryForTravelDetail{
@@ -560,20 +551,28 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 
 	if personalAccount.ID == uuid.Nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, http.StatusBadRequest, errInfo
+		return struct{}{}, http.StatusBadRequest, errInfo
 	}
 
 	if month == "" && year == "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "both month, year need in query url")
-		return response, http.StatusBadRequest, errInfo
+		return struct{}{}, http.StatusBadRequest, errInfo
 	}
 
 	if month != "" && year != "" {
-		dateFilter := year + "-" + month + "-" + "01"
-		dataNotes = s.repo.ByNote(personalAccount.ID, dateFilter)
+		dataNotes = s.repo.ByNote(personalAccount.ID, month, year)
 	}
 
 	lengthData := len(dataNotes)
+
+	if len(dataNotes) == 0 {
+		resp := struct {
+			Message string `json:"message,omitempty"`
+		}{
+			Message: "no data transaction by notes",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+	}
 
 	if len(dataNotes) > 0 {
 		var catPrev string
@@ -581,15 +580,9 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 		for k, v := range dataNotes {
 
 			if catPrev == v.TransactionCategory {
-				if k == lengthData-1 {
-					detailNotes.TransactionNotesDeepDetail = append(detailNotes.TransactionNotesDeepDetail, deepDetailsNotes...)
-					detailNotes.TransactionCategory = catPrev
-
-					dtoResponse.TransactionNotesDetail = append(dtoResponse.TransactionNotesDetail, detailNotes)
-
-					// clear
-					deepDetailsNotes = []dtos.TransactionNotesDeepDetail{}
-					detailNotes = dtos.TransactionNotesDetail{}
+				if k == (lengthData - 1) {
+					//detailNotes.TransactionNotesDeepDetail = append(detailNotes.TransactionNotesDeepDetail, deepDetailsNotes...)
+					//detailNotes.TransactionCategory = catPrev
 
 					deepDetailsNotes = append(deepDetailsNotes, dtos.TransactionNotesDeepDetail{
 						TransactionNote: v.TransactionNote,
@@ -607,6 +600,10 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 					detailNotes.TransactionNotesDeepDetail = append(detailNotes.TransactionNotesDeepDetail, deepDetailsNotes...)
 
 					dtoResponse.TransactionNotesDetail = append(dtoResponse.TransactionNotesDetail, detailNotes)
+
+					// clear
+					deepDetailsNotes = []dtos.TransactionNotesDeepDetail{}
+					detailNotes = dtos.TransactionNotesDetail{}
 				} else {
 					deepDetailsNotes = append(deepDetailsNotes, dtos.TransactionNotesDeepDetail{
 						TransactionNote: v.TransactionNote,
@@ -700,7 +697,11 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 
 	}
 
-	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
 }
 
 func (s *TransactionUseCase) Suggestion(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {

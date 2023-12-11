@@ -125,8 +125,7 @@ type (
 	}
 
 	AccountGroupSharingAccept struct {
-		IDSender    string `json:"id_group_sender"`
-		IDRecipient string `json:"id_group_recipient"`
+		IDGroupSharing string `json:"id_group_sharing"`
 	}
 
 	AccountGroupSharingRemove struct {
@@ -149,11 +148,39 @@ type (
 	AccountShare struct {
 		AccountShareDetail AccountShareDetail `json:"account_detail"`
 		Status             string             `json:"status"`
+		ActionID           AccountActionID    `json:"action_id,omitempty"`
 	}
 
 	AccountShareDetail struct {
+		Name      string `json:"account_name"`
 		Email     string `json:"account_email"`
 		ImagePath string `json:"account_avatar"`
 		Type      string `json:"account_type"`
+	}
+
+	AccountActionID struct {
+		IDGroupSharing string `json:"id_group_sharing,omitempty"`
+	}
+
+	AccountChangeForgotPassword struct {
+		NewPassword string `json:"new_password"`
+	}
+
+	NotificationPending struct {
+		ID                      uuid.UUID                 `json:"id"`
+		NotificationTitle       string                    `json:"notification_title"`
+		NotificationDescription string                    `json:"notification_description"`
+		IDPersonalAccounts      uuid.UUID                 `json:"id_personal_accounts"`
+		IsRead                  bool                      `json:"is_read"`
+		IDGroupSender           uuid.UUID                 `json:"id_group_sender"`
+		IDGroupRecipient        uuid.UUID                 `json:"id_group_recipient"`
+		AccountDetail           NotificationPendingDetail `json:"account_detail"`
+		CreatedAt               string                    `json:"created_at"`
+	}
+
+	NotificationPendingDetail struct {
+		AccountName  string `json:"account_name"`
+		AccountImage string `json:"account_image"`
+		AccountType  string `json:"account_type"`
 	}
 )

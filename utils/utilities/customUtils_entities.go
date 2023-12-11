@@ -9,8 +9,7 @@ type (
 		NotificationDescription string    `gorm:"column:notification_description"`
 		IDPersonalAccounts      uuid.UUID `gorm:"column:id_personal_accounts"`
 		IsRead                  bool      `gorm:"column:is_read"`
-		IDGroupSender           string    `gorm:"column:id_group_sender"`
-		IDGroupReceipt          string    `gorm:"column:id_group_recipient"`
+		IDGroupSharing          string    `gorm:"column:id_group_sharing"`
 	}
 )
 

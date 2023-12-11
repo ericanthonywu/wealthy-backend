@@ -37,17 +37,23 @@ type (
 		SearchAccount(email string) (data entities.AccountSearchEmail, err error)
 		InviteSharing(model *entities.AccountGroupSharing) (err error)
 		GetProfileByEmail(email string) (data entities.AccountProfile, err error)
-		AcceptSharing(IDSender, IDReceipt uuid.UUID) (err error)
-		RejectSharing(IDSender, IDReceipt uuid.UUID) (err error)
+		AcceptSharing(IDGroupSharing uuid.UUID) (err error)
+		RejectSharing(IDGroupSharing uuid.UUID) (err error)
 		RemoveSharing(IDPASender, IDPARecipient uuid.UUID) (err error)
 		RemoveGroupSharingByID(IDGroupSharing uuid.UUID) (err error)
 		IDPersonalAccountFromGroupSharing(IDReceiptUUID uuid.UUID) (data entities.AccountPersonalIDGroupSharing)
 		GroupSharingInfoByIDPersonalAccount(IDFirstAccount, IDSecondAccount uuid.UUID) (dataFirstAccount entities.AccountGroupSharing, dataSecondAccount entities.AccountGroupSharing)
+		GroupSharingInfoByID(IDGroupSharing uuid.UUID) (data entities.AccountGroupSharing, err error)
 		GroupSharingList(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error)
+		GroupSharingListReserve(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error)
 		ForgotPasswordData(IDPersonalAccount uuid.UUID) (data entities.AccountForgotPassword, err error)
 		UpdateForgotPassword(ID uuid.UUID) (err error)
 		GenderData(ID uuid.UUID) bool
 		IsAlreadySharing(idSender, idRecipient uuid.UUID) bool
+		ChangePassword(IDPersonal uuid.UUID, hashPassword string) (err error)
+		GetNotificationPending(personalAccount uuid.UUID) (data []entities.AccountNotificationEntities, err error)
+		GroupSharingListPending(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error)
+		GroupSharingListPendingReverse(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error)
 	}
 )
 
@@ -305,17 +311,11 @@ WHERE pa.email=?`, email).Scan(&data).Error; err != nil {
 	return data, nil
 }
 
-func (r *AccountRepository) AcceptSharing(IDSender, IDReceipt uuid.UUID) (err error) {
+func (r *AccountRepository) AcceptSharing(IDGroupSharing uuid.UUID) (err error) {
 	var model interface{}
 
-	// update sender
-	if err = r.db.Raw(`UPDATE tbl_group_sharing SET is_accepted=true WHERE id=?`, IDSender).Scan(&model).Error; err != nil {
-		logrus.Error(err.Error())
-		return err
-	}
-
-	// update receiver
-	if err = r.db.Raw(`UPDATE tbl_group_sharing SET is_accepted=true WHERE id=?`, IDReceipt).Scan(&model).Error; err != nil {
+	// accept group sharing
+	if err = r.db.Raw(`UPDATE tbl_group_sharing SET is_accepted=true WHERE id=?`, IDGroupSharing).Scan(&model).Error; err != nil {
 		logrus.Error(err.Error())
 		return err
 	}
@@ -323,20 +323,15 @@ func (r *AccountRepository) AcceptSharing(IDSender, IDReceipt uuid.UUID) (err er
 	return nil
 }
 
-func (r *AccountRepository) RejectSharing(IDSender, IDReceipt uuid.UUID) (err error) {
+func (r *AccountRepository) RejectSharing(IDGroupSharing uuid.UUID) (err error) {
 	var model interface{}
 
-	// delete sender
-	if err = r.db.Raw(`DELETE FROM tbl_group_sharing WHERE id=?`, IDSender).Scan(&model).Error; err != nil {
+	// delete group sharing
+	if err = r.db.Raw(`DELETE FROM tbl_group_sharing WHERE id=?`, IDGroupSharing).Scan(&model).Error; err != nil {
 		logrus.Error(err.Error())
 		return err
 	}
 
-	// delete receiver
-	if err = r.db.Raw(`DELETE FROM tbl_group_sharing WHERE id=?`, IDReceipt).Scan(&model).Error; err != nil {
-		logrus.Error(err.Error())
-		return err
-	}
 	return nil
 }
 
@@ -394,18 +389,72 @@ func (r *AccountRepository) GroupSharingInfoByIDPersonalAccount(IDFirstAccount, 
 }
 
 func (r *AccountRepository) GroupSharingList(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error) {
-	if err := r.db.Raw(`SELECT tpa.email,
+	if err := r.db.Raw(`SELECT tpa.name, tpa.email,
+       tmat.account_type as type,
+       tpa.file_name     as file_name,
+       tpa.image_path    as image_path,
+       CASE
+           WHEN tgs.is_accepted = true THEN 'accepted'
+           END           AS status
+FROM tbl_group_sharing tgs
+         INNER JOIN tbl_personal_accounts tpa ON tgs.id_personal_accounts_share_to = tpa.id
+         INNER JOIN tbl_master_account_types tmat ON tmat.id = tpa.id_master_account_types
+WHERE tgs.id_personal_accounts_share_from = ? AND tgs.is_accepted=true`, IDPersonalAccount).Scan(&data).Error; err != nil {
+		return []entities.AccountGroupSharingWithProfileInfo{}, err
+	}
+	return data, nil
+}
+
+func (r *AccountRepository) GroupSharingListReserve(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error) {
+	if err := r.db.Raw(`SELECT tpa.name, tpa.email,
+       tmat.account_type as type,
+       tpa.file_name     as file_name,
+       tpa.image_path    as image_path,
+       CASE
+           WHEN tgs.is_accepted = true THEN 'accepted'
+           END           AS status
+FROM tbl_group_sharing tgs
+         INNER JOIN tbl_personal_accounts tpa ON tgs.id_personal_accounts_share_from = tpa.id
+         INNER JOIN tbl_master_account_types tmat ON tmat.id = tpa.id_master_account_types
+WHERE tgs.id_personal_accounts_share_to = ? AND tgs.is_accepted=true`, IDPersonalAccount).Scan(&data).Error; err != nil {
+		return []entities.AccountGroupSharingWithProfileInfo{}, err
+	}
+	return data, nil
+}
+
+func (r *AccountRepository) GroupSharingListPending(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error) {
+	if err := r.db.Raw(`SELECT tgs.id, tpa.email, tpa.name,
+       tgs.id_personal_accounts_share_from as id_share_from,
+       tgs.id_personal_accounts_share_to as id_share_to,
        tmat.account_type as type,
        tpa.file_name     as file_name,
        tpa.image_path    as image_path,
        CASE
            WHEN tgs.is_accepted = false THEN 'pending'
-           ELSE 'accepted'
            END           AS status
 FROM tbl_group_sharing tgs
          INNER JOIN tbl_personal_accounts tpa ON tgs.id_personal_accounts_share_to = tpa.id
          INNER JOIN tbl_master_account_types tmat ON tmat.id = tpa.id_master_account_types
-WHERE tgs.id_personal_accounts_share_from = ?`, IDPersonalAccount).Scan(&data).Error; err != nil {
+WHERE tgs.id_personal_accounts_share_from = ? AND tgs.is_accepted=false`, IDPersonalAccount).Scan(&data).Error; err != nil {
+		return []entities.AccountGroupSharingWithProfileInfo{}, err
+	}
+	return data, nil
+}
+
+func (r *AccountRepository) GroupSharingListPendingReverse(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error) {
+	if err := r.db.Raw(`SELECT tgs.id, tpa.email, tpa.name,
+       tgs.id_personal_accounts_share_from as id_share_from,
+       tgs.id_personal_accounts_share_to as id_share_to,
+       tmat.account_type as type,
+       tpa.file_name     as file_name,
+       tpa.image_path    as image_path,
+       CASE
+           WHEN tgs.is_accepted = false THEN 'pending'
+           END           AS status
+FROM tbl_group_sharing tgs
+         INNER JOIN tbl_personal_accounts tpa ON tgs.id_personal_accounts_share_from = tpa.id
+         INNER JOIN tbl_master_account_types tmat ON tmat.id = tpa.id_master_account_types
+WHERE tgs.id_personal_accounts_share_to = ? AND tgs.is_accepted=false`, IDPersonalAccount).Scan(&data).Error; err != nil {
 		return []entities.AccountGroupSharingWithProfileInfo{}, err
 	}
 	return data, nil
@@ -447,4 +496,45 @@ func (r *AccountRepository) IsAlreadySharing(idSender, idRecipient uuid.UUID) bo
 		return data.Exists
 	}
 	return data.Exists
+}
+
+func (r *AccountRepository) ChangePassword(IDPersonal uuid.UUID, hashPassword string) (err error) {
+	var data interface{}
+
+	if err := r.db.Raw(`UPDATE tbl_authentications SET password = ? WHERE id_personal_accounts= ?`, hashPassword, IDPersonal).Scan(&data).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *AccountRepository) GroupSharingInfoByID(IDGroupSharing uuid.UUID) (data entities.AccountGroupSharing, err error) {
+	if err := r.db.Raw(`SELECT tgs.id, tgs.id_personal_accounts_share_from, tgs.id_personal_accounts_share_to, tgs.is_accepted
+	FROM tbl_group_sharing tgs WHERE tgs.id=?`, IDGroupSharing).Scan(&data).Error; err != nil {
+		return entities.AccountGroupSharing{}, err
+	}
+	return data, nil
+}
+
+// todo : ntar buang
+func (r *AccountRepository) GetNotificationPending(personalAccount uuid.UUID) (data []entities.AccountNotificationEntities, err error) {
+	if err := r.db.Raw(`SELECT tn.id,
+       tpa.name,
+       tn.notification_title,
+       tn.notification_description,
+       tn.id_personal_accounts,
+       tn.is_read,
+       tn.id_group_sender,
+       tn.id_group_recipient,
+       tpa.image_path,
+       tmat.account_type as type,
+       tn.created_at
+FROM tbl_notifications tn
+         INNER JOIN tbl_personal_accounts tpa ON tpa.id = tn.id_personal_accounts
+         INNER JOIN tbl_master_account_types tmat ON tmat.id = tpa.id_master_account_types
+WHERE tn.id_personal_accounts = ?
+  AND tn.is_read = false
+ORDER BY created_at DESC`, personalAccount).Scan(&data).Error; err != nil {
+		return []entities.AccountNotificationEntities{}, err
+	}
+	return data, nil
 }
