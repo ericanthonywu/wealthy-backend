@@ -2,10 +2,11 @@ package routers
 
 import (
 	"errors"
-	"github.com/SmartfrenDev/go-boilerplate/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -17,21 +18,22 @@ import (
 func tokenSignature() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var (
-			errInfo []errorsinfo.Errors
+			errInfo     []errorsinfo.Errors
+			claims      jwt.MapClaims
+			tokenAccess []string
+			splitToken  []string
 		)
 
-		claims := jwt.MapClaims{}
-		tokenAccess := c.Request.Header["Authorization"]
+		tokenAccess = c.Request.Header["Authorization"]
 
 		if len(tokenAccess) == 0 {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token required")
-			utils.ResponseWrapperWithErrorInfo(c, nil, nil, http.StatusUnauthorized)
-			response.SendBack(c, nil, errInfo, http.StatusUnauthorized)
+			response.SendBack(c, struct{}{}, errInfo, http.StatusUnauthorized)
 			c.Abort()
 			return
 		}
 
-		splitToken := strings.Split(tokenAccess[0], "Bearer ")
+		splitToken = strings.Split(tokenAccess[0], "Bearer ")
 		token, err := jwt.ParseWithClaims(splitToken[1], claims, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, errors.New("invalid token")
@@ -66,6 +68,26 @@ func tokenSignature() gin.HandlerFunc {
 
 		email := claims["email"].(string)
 		c.Set("email", email)
+		c.Next()
+	}
+}
+
+func accountType() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var errInfo []errorsinfo.Errors
+
+		usrEmail := c.MustGet("email").(string)
+		personalAccount := personalaccounts.Informations(c, usrEmail)
+
+		if personalAccount.ID == uuid.Nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+			response.SendBack(c, struct{}{}, errInfo, http.StatusUnauthorized)
+			c.Abort()
+			return
+		}
+
+		c.Set("accountType", personalAccount.AccountTypes)
+		c.Set("accountID", personalAccount.ID)
 		c.Next()
 	}
 }

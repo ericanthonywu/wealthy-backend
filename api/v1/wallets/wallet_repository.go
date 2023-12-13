@@ -21,6 +21,7 @@ type (
 		UpdateWalletName(IDWallet uuid.UUID, WalletName string) (err error)
 		InitTransaction(trx *entities.WalletInitTransaction, trxDetail *entities.WalletInitTransactionDetail) (err error)
 		LatestAmountWalletInTransaction(IDWallet uuid.UUID) (data entities.WalletInitTransaction, err error)
+		TotalWallet(IDPersonal uuid.UUID) (totalWallet int64, err error)
 	}
 )
 
@@ -90,4 +91,11 @@ func (r *WalletRepository) LatestAmountWalletInTransaction(IDWallet uuid.UUID) (
 		return entities.WalletInitTransaction{}, err
 	}
 	return data, nil
+}
+
+func (r *WalletRepository) TotalWallet(IDPersonal uuid.UUID) (totalWallet int64, err error) {
+	if err := r.db.Model(&entities.WalletEntity{}).Where("id_account=?", IDPersonal).Count(&totalWallet).Error; err != nil {
+		return totalWallet, err
+	}
+	return totalWallet, nil
 }

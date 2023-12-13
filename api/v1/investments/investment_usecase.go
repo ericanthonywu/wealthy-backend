@@ -348,6 +348,54 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 			totalLot = v.Lot
 			averageBuy = float64(v.Lot * v.Price / v.Lot)
 			averageBuyCollection = append(averageBuyCollection, averageBuy)
+
+			// is latest
+			if k == (maxTrxData - 1) {
+
+				investmentInfo = nil
+
+				// calculate average
+				totalAvg := 0.0
+				var resultAverageBuy float64
+
+				totalLot = v.Lot
+
+				for _, avg := range averageBuyCollection {
+					totalAvg += avg
+				}
+
+				// renew data
+				resultAverageBuy = totalAvg / float64(totalLot)
+				averageBuyFinal, err := strconv.ParseFloat(fmt.Sprintf("%.2f", resultAverageBuy), 64)
+				if err != nil {
+					logrus.Error(err.Error())
+				}
+				potentialReturn = float64(dataTrading.Close) - resultAverageBuy*float64(totalLot)*100
+				unreliazeReturn += potentialReturn
+
+				// replace with new portfolio
+				investmentNamePrevious = dataTrading.Name
+
+				// append latest
+				investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
+					InitialInvestment: initialInvestment,
+					Name:              investmentNamePrevious,
+					StockCode:         stockCodePrevious,
+					Lot:               totalLot,
+					AverageBuy:        averageBuyFinal,
+					PotentialReturn:   potentialReturn,
+				})
+
+				// append to investment detail
+				investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
+					BokerName:           v.BrokerName,
+					UnrealizedPotential: unreliazeReturn,
+					Info:                investmentInfo,
+				})
+
+				unreliazeReturn = 0.0
+				initialInvestment = 0
+			}
 		}
 	}
 

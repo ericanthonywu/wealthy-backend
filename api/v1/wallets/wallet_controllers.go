@@ -58,7 +58,21 @@ func (c *WalletController) Add(ctx *gin.Context) {
 		strings.ToUpper(dtoRequest.WalletType) == constants.Saving
 
 	if !isTypeMatch {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "wallet type must contain one of values. [ CASH, CREDIT_CARD, DEBIT_CARD, INVESTMENT, SAVING ]")
+		var builder strings.Builder
+		builder.WriteString("wallet type must contain one of values ")
+		builder.WriteString("[")
+		builder.WriteString(constants.Cash)
+		builder.WriteString(",")
+		builder.WriteString(constants.CreditCard)
+		builder.WriteString(",")
+		builder.WriteString(constants.DebitCard)
+		builder.WriteString(",")
+		builder.WriteString(constants.Investment)
+		builder.WriteString(",")
+		builder.WriteString(constants.Saving)
+		builder.WriteString("]")
+
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", builder.String())
 		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}

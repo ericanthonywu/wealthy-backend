@@ -191,7 +191,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			investmentGroup.GET("/gain-loss", investment.GainLoss)
 		}
 
-		walletGroup := v1group.Group("/wallets", tokenSignature())
+		walletGroup := v1group.Group("/wallets", tokenSignature(), accountType())
 		{
 			walletGroup.POST("/", wallet.Add)
 			walletGroup.GET("/", wallet.List)
