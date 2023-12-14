@@ -1,6 +1,6 @@
 version: "3"
 services:
-  go-oms:
+  wealthy-backend:
     build:
       context: .
       dockerfile: Dockerfile
@@ -8,4 +8,3 @@ services:
       - '8888:8080'
     volumes:
       - ./:/build
-    container_name: wealthy-backend
