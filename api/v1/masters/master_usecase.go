@@ -7,8 +7,10 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters/entities"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"strings"
 )
 
 type (
@@ -61,7 +63,29 @@ func (s *MasterUseCase) ReksadanaType() (data interface{}) {
 }
 
 func (s *MasterUseCase) WalletType() (data interface{}) {
-	return s.repo.WalletType()
+	var walletResponse []dtos.WalletResponse
+
+	dataWallet := s.repo.WalletType()
+
+	if len(dataWallet) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no master data for wallet",
+		}
+		return resp
+	}
+
+	if len(dataWallet) > 0 {
+		for _, v := range dataWallet {
+			walletResponse = append(walletResponse, dtos.WalletResponse{
+				ID:         v.ID,
+				WalletName: utilities.CapitalizeWords(strings.ReplaceAll(v.WalletType, "_", " ")),
+			})
+		}
+	}
+
+	return walletResponse
 }
 
 func (s *MasterUseCase) InvestType() (data interface{}) {
@@ -112,20 +136,22 @@ func (s *MasterUseCase) Exchange() (data interface{}, httpCode int, errInfo []er
 
 func (s *MasterUseCase) PersonalIncomeCategory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
-	}
-
-	data, err := s.repo.PersonalIncomeCategory(personalAccount.ID)
+	data, err := s.repo.PersonalIncomeCategory(accountUUID)
 	if err != nil {
 		logrus.Error(err.Error())
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return data, http.StatusInternalServerError, errInfo
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	if len(data) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no data for income category",
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
 	}
 
 	if len(errInfo) == 0 {
