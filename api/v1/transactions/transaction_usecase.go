@@ -371,7 +371,7 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 		responseIncomeSpendingTotal = s.repo.IncomeSpendingMonthlyTotal(accountUUID, month, year)
 		responseIncomeSpendingDetailMonthly = s.repo.IncomeSpendingMonthlyDetail(accountUUID, month, year)
 
-		isNotExist := responseIncomeSpendingDetailMonthly[0].TransactionAmount == 0
+		isNotExist := len(responseIncomeSpendingDetailMonthly) == 0
 		if isNotExist {
 			resp := struct {
 				Message string `json:"message"`
