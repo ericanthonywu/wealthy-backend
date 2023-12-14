@@ -34,10 +34,23 @@ func NewWalletUseCase(repo IWalletRepository) *WalletUseCase {
 
 func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
+		accountUUID        uuid.UUID
 		err                error
 		IDMasterWalletType string
 	)
 
+	// get information from context
+	accountType := fmt.Sprintf("%v", ctx.MustGet("accountType"))
+	accountID := fmt.Sprintf("%v", ctx.MustGet("accountID"))
+
+	if accountID != "" {
+		accountUUID, err = uuid.Parse(accountID)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+	}
+
+	// mapping wallet type with wallet id
 	switch strings.ToUpper(request.WalletType) {
 	case constants.Cash:
 		IDMasterWalletType = constants.IDCash
@@ -58,6 +71,7 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 
 	// setup wallet model
 	walletEntity := entities.WalletEntity{
+		ID:                 uuid.New(),
 		Active:             true,
 		WalletName:         request.WalletName,
 		WalletType:         strings.ToUpper(request.WalletType),
@@ -65,22 +79,29 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 		FeeInvestBuy:       request.FeeInvestBuy,
 		FeeInvestSell:      request.FeeInvestSell,
 		TotalAssets:        request.TotalAsset,
+		IDAccount:          accountUUID,
 	}
-
-	usrEmail := fmt.Sprintf("%v", ctx.MustGet("email"))
-	data := personalaccounts.Informations(ctx, usrEmail)
-
-	if data.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
-
-	walletEntity.ID = uuid.New()
-	walletEntity.IDAccount = data.ID
 
 	// account type BASIC
-	if data.TotalWallets < 2 && data.AccountTypes == "BASIC" {
-		// add new wallets
+	if accountType == constants.AccountBasic {
+		// get total wallet
+		totalWallet, err := s.repo.TotalWallet(accountUUID)
+		if err != nil {
+			logrus.Error(err)
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
+		}
+
+		// reach max
+		if totalWallet == constants.MaxWalletBasic {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: "can not add new wallet. please upgrade to PRO subscription",
+			}
+			return resp, http.StatusUnprocessableEntity, []errorsinfo.Errors{}
+		}
+
 		err = s.repo.Add(&walletEntity)
 		if err != nil {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -89,27 +110,18 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 
 		if strings.ToUpper(request.WalletType) != constants.Investment {
 			// save initial transaction
-			err = s.writeInitialTransaction(request, &walletEntity, &data)
+			err = s.writeInitialTransaction(request, &walletEntity, accountUUID)
 			if err != nil {
 				logrus.Error(err.Error())
 				errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 				return struct{}{}, http.StatusInternalServerError, errInfo
 			}
 		}
-	}
 
-	// account type BASIC reach limit
-	if data.TotalWallets == 2 && data.AccountTypes == "BASIC" {
-		resp := struct {
-			Message string `json:"message"`
-		}{
-			Message: "can not add new wallet. please upgrade to PRO subscription",
-		}
-		return resp, http.StatusUnprocessableEntity, []errorsinfo.Errors{}
 	}
 
 	// account type PRO
-	if data.AccountTypes == "PRO" {
+	if accountType == constants.AccountPro {
 		// add new wallets
 		err = s.repo.Add(&walletEntity)
 		if err != nil {
@@ -120,7 +132,7 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 
 		if strings.ToUpper(request.WalletType) != constants.Investment {
 			// save initial transaction
-			err = s.writeInitialTransaction(request, &walletEntity, &data)
+			err = s.writeInitialTransaction(request, &walletEntity, accountUUID)
 			if err != nil {
 				logrus.Error(err.Error())
 				errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -129,6 +141,7 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 		}
 	}
 
+	// if no error message
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
@@ -258,7 +271,7 @@ func (s *WalletUseCase) UpdateAmount(IDWallet string, request *dtos.WalletUpdate
 	return resp, http.StatusOK, errInfo
 }
 
-func (s *WalletUseCase) writeInitialTransaction(request *dtos.WalletAddRequest, walletEntity *entities.WalletEntity, data *personalaccounts.PersonalAccountEntities) (err error) {
+func (s *WalletUseCase) writeInitialTransaction(request *dtos.WalletAddRequest, walletEntity *entities.WalletEntity, IDPersonalAccount uuid.UUID) (err error) {
 	// setup id_master_income_category
 	incomeCategoryUUID, err := uuid.Parse("13c4a525-2200-497b-af4b-ef8fa2fe93cc")
 	if err != nil {
@@ -283,7 +296,7 @@ func (s *WalletUseCase) writeInitialTransaction(request *dtos.WalletAddRequest, 
 		Date:                          datecustoms.NowTransaction(),
 		Fees:                          0,
 		Amount:                        float64(request.TotalAsset),
-		IDPersonalAccount:             data.ID,
+		IDPersonalAccount:             IDPersonalAccount,
 		IDWallet:                      walletEntity.ID,
 		IDMasterIncomeCategories:      incomeCategoryUUID,
 		IDMasterTransactionPriorities: trxPriorityUUID,

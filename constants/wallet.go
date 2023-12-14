@@ -4,7 +4,7 @@ const (
 	CreditCard = "CREDIT_CARD"
 	Investment = "INVESTMENT"
 	DebitCard  = "DEBIT_CARD"
-	Cash       = "Cash"
+	Cash       = "CASH"
 	Saving     = "SAVING"
 )
 
@@ -14,4 +14,8 @@ const (
 	IDDebitCard  = "b3d84c53-de72-4094-bbd1-3bbd934128b1"
 	IDCash       = "538d3ec5-a41c-44b1-82f5-4b22f1df6388"
 	IDSaving     = "0ef3cace-c2fe-4d1a-ba6b-93e33e94f97a"
+)
+
+const (
+	MaxWalletBasic = 2
 )
