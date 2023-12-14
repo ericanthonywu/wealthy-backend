@@ -494,14 +494,16 @@ func (s *AccountUseCase) ForgotPassword(ctx *gin.Context, request *dtos.AccountF
 	otpCode := utilities.GenerateRandomSixDigitNumber()
 
 	// static path for email template
-	//currentDir, err := os.Getwd()
-	//if err != nil {
-	//	fmt.Println("Error getting current directory:", err)
-	//	return
-	//}
+	executablePath, err := os.Executable()
+	if err != nil {
+		fmt.Println("Error getting executable path:", err)
+		return
+	}
 
-	//templatePath := filepath.Join(currentDir, "/assets/files/reset-pass.html")
-	templatePath := filepath.Join("/root/wealthy-backend/assets/files/reset-pass.html")
+	// Get the directory of the executable
+	currentDir := filepath.Dir(executablePath)
+
+	templatePath := filepath.Join(currentDir, "assets/files/reset-pass.html")
 	logoPath := constants.LogoPrimary
 
 	// keys that will be used in HTML template
