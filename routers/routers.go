@@ -23,7 +23,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 	v1group := router.Group("/v1")
 	{
-		masterGroup := v1group.Group("/masters", tokenSignature())
+		masterGroup := v1group.Group("/masters", tokenSignature(), accountType())
 		{
 			typeGroup := masterGroup.Group("/types")
 			{

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 	"math/rand"
 	"os"
@@ -146,4 +148,13 @@ func HTMLContentReplacer(htmlContent string, variables map[string]string) string
 		htmlContent = strings.Replace(htmlContent, placeholder, value, -1)
 	}
 	return htmlContent
+}
+
+func CapitalizeWords(s string) string {
+	words := strings.Fields(s) // Split the string into words
+	var capitalizedWords []string
+	for _, word := range words {
+		capitalizedWords = append(capitalizedWords, cases.Title(language.Und).String(word))
+	}
+	return strings.Join(capitalizedWords, " ") // Join the words back with spaces
 }
