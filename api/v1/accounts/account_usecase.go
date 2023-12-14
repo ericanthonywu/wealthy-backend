@@ -501,7 +501,7 @@ func (s *AccountUseCase) ForgotPassword(ctx *gin.Context, request *dtos.AccountF
 	//}
 
 	//templatePath := filepath.Join(currentDir, "/assets/files/reset-pass.html")
-	templatePath := filepath.Join("~/wealthy-backend", "/assets/files/reset-pass.html")
+	templatePath := filepath.Join("/root/wealthy-backend/assets/files/reset-pass.html")
 	logoPath := constants.LogoPrimary
 
 	// keys that will be used in HTML template
