@@ -110,32 +110,52 @@ func (c *StatisticController) TransactionPriority(ctx *gin.Context) {
 }
 
 func (c *StatisticController) Trend(ctx *gin.Context) {
-	var (
-		errInfo []errorsinfo.Errors
-	)
+	var errInfo []errorsinfo.Errors
 
 	month := ctx.Query("month")
 	year := ctx.Query("year")
 
-	if month == "" || year == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month or year required in query url")
-		response.SendBack(ctx, nil, errInfo, http.StatusBadRequest)
+	if month == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month required in query url")
+	}
+
+	if year == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "year required in query url")
+	}
+
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
 	data, httpCode, errInfo := c.useCase.Trend(ctx, month, year)
-
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
-	}
-
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
 
 func (c *StatisticController) AnalyticsTrend(ctx *gin.Context) {
-	data, httpCode, errInfo := c.useCase.AnalyticsTrend(ctx)
+	var errInfo []errorsinfo.Errors
+	{
+	}
 
+	period := ctx.Query("period")
+	typeName := ctx.Query("type")
+
+	// validate
+	if period == "" || typeName == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "period required in url param")
+	}
+
+	if typeName == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "type name required in url param")
+	}
+
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	data, httpCode, errInfo := c.useCase.AnalyticsTrend(ctx, period, typeName)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
@@ -168,17 +188,27 @@ func (c *StatisticController) ExpenseDetail(ctx *gin.Context) {
 }
 
 func (c *StatisticController) SubExpenseDetail(ctx *gin.Context) {
-	var (
-		errInfo []errorsinfo.Errors
-	)
+	var errInfo []errorsinfo.Errors
 
 	month := ctx.Query("month")
 	year := ctx.Query("year")
 	IDCategory := ctx.Query("categoryid")
 
-	if month == "" || year == "" || IDCategory == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month, year and ID Category required in query url")
-		response.SendBack(ctx, nil, errInfo, http.StatusBadRequest)
+	if month == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month required in query url")
+	}
+
+	if year == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "year required in query url")
+	}
+
+	if IDCategory == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id category required in query url")
+	}
+
+	// if any error, then send response
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
@@ -188,11 +218,6 @@ func (c *StatisticController) SubExpenseDetail(ctx *gin.Context) {
 	}
 
 	data, httpCode, errInfo := c.useCase.SubExpenseDetail(ctx, month, year, IDCat)
-
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
-	}
-
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }

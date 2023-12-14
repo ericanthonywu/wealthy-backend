@@ -140,7 +140,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			budgetGroup.GET("/overview", budget.Overview)
 		}
 
-		statisticGroup := v1group.Group("/statistics", tokenSignature())
+		statisticGroup := v1group.Group("/statistics", tokenSignature(), accountType())
 		{
 			statisticGroup.GET("/trends", statistic.Trend)
 
@@ -163,7 +163,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 
-		transactionGroup := v1group.Group("/transactions", tokenSignature())
+		transactionGroup := v1group.Group("/transactions", tokenSignature(), accountType())
 		{
 			transactionGroup.POST("", transaction.Add)
 			transactionGroup.GET("/income-spending", transaction.IncomeSpending)

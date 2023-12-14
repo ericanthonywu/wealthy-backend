@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics/entities"
+	"github.com/semicolon-indonesia/wealthy-backend/constants"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/datecustoms"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
@@ -32,7 +33,7 @@ type (
 		ExpenseDetail(ctx *gin.Context, month, year, email string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		SubExpenseDetail(ctx *gin.Context, month, year string, IDCategory uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		isDataPriorityNotEmpty(data entities.StatisticPriority) bool
-		AnalyticsTrend(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		AnalyticsTrend(ctx *gin.Context, period string, typeName string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -460,9 +461,8 @@ func (s *StatisticUseCase) Trend(ctx *gin.Context, month, year string) (response
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
+		return struct{}{}, http.StatusUnauthorized, errInfo
 	}
 
 	monthINT, err := strconv.Atoi(month)
@@ -475,6 +475,16 @@ func (s *StatisticUseCase) Trend(ctx *gin.Context, month, year string) (response
 	stringBuilder.WriteString(year)
 
 	dataExpenseWeekly := s.expenseWeekly(personalAccount.ID, month, year)
+
+	isData := dataExpenseWeekly[0].Amount.Value
+	if isData == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no data for trends statistic",
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
 
 	looping = 1
 	for _, v := range dataExpenseWeekly {
@@ -503,7 +513,11 @@ func (s *StatisticUseCase) Trend(ctx *gin.Context, month, year string) (response
 	dtoResponse.AverageWeekly = totalWeekly / looping
 	dtoResponse.AverageDaily = totalDaily / 30
 
-	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
 }
 
 func (s *StatisticUseCase) ExpenseDetail(ctx *gin.Context, month, year, email string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
@@ -520,7 +534,7 @@ func (s *StatisticUseCase) ExpenseDetail(ctx *gin.Context, month, year, email st
 		personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 		if personalAccount.ID == uuid.Nil {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
 			return struct{}{}, http.StatusUnauthorized, errInfo
 		}
 		IDUser = personalAccount.ID
@@ -540,6 +554,15 @@ func (s *StatisticUseCase) ExpenseDetail(ctx *gin.Context, month, year, email st
 	if err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	if len(dataExpenseDetail) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no data for expense detail statistic",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
 	for _, v := range dataExpenseDetail {
@@ -585,16 +608,24 @@ func (s *StatisticUseCase) SubExpenseDetail(ctx *gin.Context, month, year string
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
+		return struct{}{}, http.StatusUnauthorized, errInfo
 	}
 
 	categoryName, dataExpenseWeekly, err := s.subExpenseWeekly(personalAccount.ID, IDCategory, month, year)
 	if err != nil {
-		httpCode = http.StatusNotFound
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return []dtos.WeeklySubExpenseDetail{}, httpCode, errInfo
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// if no data transaction
+	if categoryName == "" {
+		resp := struct {
+			Message string `json:""`
+		}{
+			Message: "no data for sub expense detail statistic",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
 	monthINT, err := strconv.Atoi(month)
@@ -611,7 +642,11 @@ func (s *StatisticUseCase) SubExpenseDetail(ctx *gin.Context, month, year string
 	dtoResponse.CategoryID = IDCategory.String()
 	dtoResponse.Expense = dataExpenseWeekly
 
-	return dtoResponse, http.StatusOK, nil
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
 }
 
 func (s *StatisticUseCase) subExpenseWeekly(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (categoryName string, data []dtos.WeeklySubExpenseDetail, err error) {
@@ -672,33 +707,22 @@ func (s *StatisticUseCase) isDataPriorityNotEmpty(data entities.StatisticPriorit
 	return data != entities.StatisticPriority{}
 }
 
-func (s *StatisticUseCase) AnalyticsTrend(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	period := ctx.Query("period")
-	typeName := ctx.Query("type")
-
-	if period == "" || typeName == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month, year, type ID is required in url param")
-		return response, http.StatusBadRequest, errInfo
-	}
-
+func (s *StatisticUseCase) AnalyticsTrend(ctx *gin.Context, period string, typeName string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	typeName = strings.ToUpper(typeName)
+	accountID := ctx.MustGet("accountID").(uuid.UUID)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, http.StatusBadRequest, errInfo
+	dataRepo := s.repo.AnalyticsTrend(accountID, typeName, period)
+	if len(dataRepo) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no data for trends analytics statistic",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
-	}
-
-	dataRepo := s.repo.AnalyticsTrend(personalAccount.ID, typeName, period)
-
-	if len(dataRepo) == 0 {
-		dataRepo = []entities.StatisticAnalyticsTrends{}
 	}
 
 	return dataRepo, http.StatusOK, errInfo
