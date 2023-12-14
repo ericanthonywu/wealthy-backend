@@ -24,7 +24,7 @@ type (
 		Add(ctx *gin.Context, request *dtos.WalletAddRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		List(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		UpdateAmount(IDWallet string, request *dtos.WalletUpdateAmountRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		writeInitialTransaction(request *dtos.WalletAddRequest, walletEntity *entities.WalletEntity, data *personalaccounts.PersonalAccountEntities) (err error)
+		writeInitialTransaction(request *dtos.WalletAddRequest, walletEntity *entities.WalletEntity, IDPersonal uuid.UUID) (err error)
 	}
 )
 

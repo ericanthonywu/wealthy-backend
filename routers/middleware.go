@@ -19,11 +19,12 @@ func tokenSignature() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var (
 			errInfo     []errorsinfo.Errors
-			claims      jwt.MapClaims
 			tokenAccess []string
 			splitToken  []string
+			ok          bool
 		)
 
+		claims := jwt.MapClaims{}
 		tokenAccess = c.Request.Header["Authorization"]
 
 		if len(tokenAccess) == 0 {
@@ -49,7 +50,7 @@ func tokenSignature() gin.HandlerFunc {
 			return
 		}
 
-		claims, ok := token.Claims.(jwt.MapClaims)
+		claims, ok = token.Claims.(jwt.MapClaims)
 		if !ok {
 			logrus.Error("couldn't parse claims")
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "couldn't parse claims")

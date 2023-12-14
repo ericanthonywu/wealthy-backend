@@ -24,7 +24,7 @@ type (
 		TravelTransactionHistory(ctx *gin.Context, IDTravel uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		TransferTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		InvestTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		IncomeSpending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		IncomeSpending(ctx *gin.Context, month string, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Investment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ByNotes(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Suggestion(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
@@ -352,7 +352,7 @@ func (s *TransactionUseCase) InvestTransactionHistory(ctx *gin.Context) (respons
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
 
-func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
 		dtoResponse                          dtos.TransactionIncomeSpendingInvestment
 		dtoResponseAnnually                  dtos.TransactionIncomeSpendingInvestmentAnnually
@@ -364,35 +364,38 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context) (response interfac
 		deepDetailsMonthly                   []dtos.TransactionDetails
 	)
 
-	month := ctx.Query("month")
-	year := ctx.Query("year")
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
-	}
-
-	if month == "" && year == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "need month information")
-		return response, http.StatusBadGateway, errInfo
-	}
-
+	// if month and year not empty
 	if month != "" && year != "" {
-		responseIncomeSpendingTotal = s.repo.IncomeSpendingMonthlyTotal(personalAccount.ID, month, year)
-		responseIncomeSpendingDetailMonthly = s.repo.IncomeSpendingMonthlyDetail(personalAccount.ID, month, year)
+		responseIncomeSpendingTotal = s.repo.IncomeSpendingMonthlyTotal(accountUUID, month, year)
+		responseIncomeSpendingDetailMonthly = s.repo.IncomeSpendingMonthlyDetail(accountUUID, month, year)
+
+		isNotExist := responseIncomeSpendingDetailMonthly[0].TransactionAmount == 0
+		if isNotExist {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: "no data for income-spending",
+			}
+			return resp, http.StatusNotFound, []errorsinfo.Errors{}
+		}
 	}
 
+	// if there is year only
 	if month == "" && year != "" {
-		responseIncomeSpendingTotal = s.repo.IncomeSpendingAnnuallyTotal(personalAccount.ID, year)
-		responseIncomeSpendingDetailAnnually = s.repo.IncomeSpendingAnnuallyDetail(personalAccount.ID, year)
-	}
+		responseIncomeSpendingTotal = s.repo.IncomeSpendingAnnuallyTotal(accountUUID, year)
+		responseIncomeSpendingDetailAnnually = s.repo.IncomeSpendingAnnuallyDetail(accountUUID, year)
 
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
+		isNotExist := responseIncomeSpendingDetailAnnually[0].NetIncome == 0 || responseIncomeSpendingDetailAnnually[0].TotalIncome == 0 || responseIncomeSpendingDetailAnnually[0].TotalSpending == 0
+		if isNotExist {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: "no data for income-spending",
+			}
+			return resp, http.StatusNotFound, []errorsinfo.Errors{}
+		}
 	}
 
 	// todo : figure out the another way
@@ -491,7 +494,11 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context) (response interfac
 		return dtoResponseAnnually, http.StatusOK, []errorsinfo.Errors{}
 	}
 
-	return response, http.StatusPreconditionFailed, []errorsinfo.Errors{}
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return response, http.StatusPreconditionFailed, errInfo
 }
 
 func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {

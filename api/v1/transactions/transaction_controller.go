@@ -127,12 +127,21 @@ func (c *TransactionController) InvestTransactionHistory(ctx *gin.Context) {
 }
 
 func (c *TransactionController) IncomeSpending(ctx *gin.Context) {
-	data, httpCode, errInfo := c.useCase.IncomeSpending(ctx)
+	var errInfo []errorsinfo.Errors
 
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
+	month := ctx.Query("month")
+	year := ctx.Query("year")
+
+	if year == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "year query param needed in url address")
 	}
 
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	data, httpCode, errInfo := c.useCase.IncomeSpending(ctx, month, year)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
