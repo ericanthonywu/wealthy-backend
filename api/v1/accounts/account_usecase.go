@@ -20,7 +20,6 @@ import (
 	"net/http"
 	"net/smtp"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -494,16 +493,7 @@ func (s *AccountUseCase) ForgotPassword(ctx *gin.Context, request *dtos.AccountF
 	otpCode := utilities.GenerateRandomSixDigitNumber()
 
 	// static path for email template
-	executablePath, err := os.Executable()
-	if err != nil {
-		fmt.Println("Error getting executable path:", err)
-		return
-	}
-
-	// Get the directory of the executable
-	currentDir := filepath.Dir(executablePath)
-
-	templatePath := filepath.Join(currentDir, "assets/files/reset-pass.html")
+	templatePath := "./assets/files/reset-pass.html"
 	logoPath := constants.LogoPrimary
 
 	// keys that will be used in HTML template
