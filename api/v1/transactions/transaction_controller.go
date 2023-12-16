@@ -181,11 +181,6 @@ func (c *TransactionController) IncomeSpending(ctx *gin.Context) {
 
 func (c *TransactionController) Investment(ctx *gin.Context) {
 	data, httpCode, errInfo := c.useCase.Investment(ctx)
-
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
-	}
-
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
