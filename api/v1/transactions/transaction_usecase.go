@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/entities"
+	"github.com/semicolon-indonesia/wealthy-backend/constants"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
@@ -560,20 +561,19 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
 	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
+		return response, http.StatusUnauthorized, errInfo
 	}
 
 	if month == "" && year == "" {
-		httpCode = http.StatusBadRequest
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "need month and or year information")
-		return response, httpCode, errInfo
+		return struct{}{}, http.StatusBadRequest, errInfo
 	}
 
 	if month != "" && year != "" {
 		responseInvestmentTotal = s.repo.InvestMonthlyTotal(personalAccount.ID, month, year)
 		//responseInvestmentDetail = s.repo.InvestMonthlyDetail(personalAccount.ID, month, year)
+
 	}
 
 	if month == "" && year != "" {
@@ -581,10 +581,27 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 		//responseInvestmentDetail = s.repo.InvestAnnuallyDetail(personalAccount.ID, year)
 	}
 
+	switch v := responseInvestmentTotal.(type) {
+	case entities.TransactionInvestmentTotals:
+		if v.TotalBuy == 0 && v.TotalCurrentPortfolio == 0 && v.TotalSell == 0 {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: "no data for investment transaction",
+			}
+
+			return resp, http.StatusNotFound, []errorsinfo.Errors{}
+		}
+	}
+
 	dtoResponse.Summary = responseInvestmentTotal
 	//dtoResponse.Detail = responseInvestmentDetail
 
-	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
 }
 
 func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
