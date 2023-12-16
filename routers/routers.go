@@ -123,7 +123,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 
-		budgetGroup := v1group.Group("/budgets", tokenSignature())
+		budgetGroup := v1group.Group("/budgets", tokenSignature(), accountType())
 		{
 			limitGroup := budgetGroup.Group("/limits")
 			{

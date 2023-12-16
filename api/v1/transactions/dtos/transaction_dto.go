@@ -6,27 +6,27 @@ import (
 
 type (
 	TransactionRequest struct {
-		Date                          string    `json:"date_time_transaction"`
-		Fees                          int64     `json:"fees,omitempty"`
-		Amount                        int64     `json:"amount"`
-		Repeat                        bool      `json:"repeat,omitempty"`
-		Note                          string    `json:"note"`
-		TransferFrom                  string    `json:"transfer_from,omitempty"`
-		TransferTo                    string    `json:"transfer_to,omitempty"`
-		MutualFundProduct             string    `json:"mutual_fund_product,omitempty"`
-		StockCode                     string    `json:"stock_code,omitempty"`
-		Lot                           int64     `json:"lot,omitempty"`
-		SellBuy                       int       `json:"sellbuy,omitempty"`
-		IDWallet                      string    `json:"id_wallets,omitempty"`
-		IDMasterIncomeCategories      uuid.UUID `json:"id_master_income_categories,omitempty"`
-		IDMasterExpenseCategories     uuid.UUID `json:"id_master_expense_categories,omitempty"`
-		IDMasterExpenseSubCategories  uuid.UUID `json:"id_master_expense_subcategories,omitempty"`
-		IDMasterInvest                string    `json:"id_master_invest,omitempty"`
-		IDMasterBroker                string    `json:"id_master_broker,omitempty"`
-		IDMasterReksanadaTypes        uuid.UUID `json:"id_master_reksadana_types,omitempty"`
-		IDMasterTransactionPriorities uuid.UUID `json:"id_master_transaction_priorities,omitempty"`
-		IDMasterTransactionTypes      uuid.UUID `json:"id_master_transaction_types,omitempty"`
-		IDTravel                      string    `json:"id_travel,omitempty"`
+		Date                          string `json:"date_time_transaction"`
+		Fees                          int64  `json:"fees,omitempty"`
+		Amount                        int64  `json:"amount"`
+		Repeat                        bool   `json:"repeat,omitempty"`
+		Note                          string `json:"note"`
+		TransferFrom                  string `json:"transfer_from,omitempty"`
+		TransferTo                    string `json:"transfer_to,omitempty"`
+		MutualFundProduct             string `json:"mutual_fund_product,omitempty"`
+		StockCode                     string `json:"stock_code,omitempty"`
+		Lot                           int64  `json:"lot,omitempty"`
+		SellBuy                       int    `json:"sellbuy,omitempty"`
+		IDWallet                      string `json:"id_wallets,omitempty"`
+		IDMasterIncomeCategories      string `json:"id_master_income_categories,omitempty"`
+		IDMasterExpenseCategories     string `json:"id_master_expense_categories,omitempty"`
+		IDMasterExpenseSubCategories  string `json:"id_master_expense_subcategories,omitempty"`
+		IDMasterInvest                string `json:"id_master_invest,omitempty"`
+		IDMasterBroker                string `json:"id_master_broker,omitempty"`
+		IDMasterReksanadaTypes        string `json:"id_master_reksadana_types,omitempty"`
+		IDMasterTransactionPriorities string `json:"id_master_transaction_priorities,omitempty"`
+		IDMasterTransactionTypes      string `json:"id_master_transaction_types,omitempty"`
+		IDTravel                      string `json:"id_travel,omitempty"`
 	}
 
 	TransactionTotalIncomeSpending struct {

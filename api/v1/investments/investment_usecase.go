@@ -66,7 +66,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 		resp := struct {
 			Message string `json:"message"`
 		}{
-			Message: "no data transaction for investment",
+			Message: "no data for portfolio investment",
 		}
 		return resp, http.StatusNotFound, []errorsinfo.Errors{}
 	}
@@ -433,9 +433,9 @@ func (s *InvestmentUseCase) GainLoss(ctx *gin.Context) (response interface{}, ht
 		resp := struct {
 			Message string `json:"message"`
 		}{
-			Message: "no data found for gain loss investment",
+			Message: "no data for gain loss investment",
 		}
-		return resp, http.StatusInternalServerError, errInfo
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
 	for _, v := range dataTrx {

@@ -37,22 +37,18 @@ func NewTransactionUseCase(repo ITransactionRepository) *TransactionUseCase {
 
 func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		trxID         uuid.UUID
-		err           error
-		convertAmount int64
-		IDTravelUUID  uuid.UUID
+		trxID                 uuid.UUID
+		err                   error
+		convertAmount         int64
+		IDTravelUUID          uuid.UUID
+		IDMasterIncCatUUID    uuid.UUID
+		IDMasterExpCatUUID    uuid.UUID
+		IDMasterSubExpCatUUID uuid.UUID
+		IDMasterTransPriUUID  uuid.UUID
+		IDMasterTransTypeUUID uuid.UUID
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return nil, httpCode, errInfo
-	}
-
-	trxID = uuid.New()
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// convert string to UUID
 	IDWalletUUID, err := uuid.Parse(request.IDWallet)
@@ -92,23 +88,61 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet unregistered before")
 			return struct{}{}, http.StatusBadRequest, errInfo
 		}
+
+		// check for wallet type
 	}
 
+	// translate string to uuid
+	if request.IDMasterIncomeCategories != "" {
+		IDMasterIncCatUUID, err = uuid.Parse(request.IDMasterIncomeCategories)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+	}
+
+	if request.IDMasterExpenseCategories != "" {
+		IDMasterExpCatUUID, err = uuid.Parse(request.IDMasterExpenseCategories)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+	}
+
+	if request.IDMasterExpenseSubCategories != "" {
+		IDMasterSubExpCatUUID, err = uuid.Parse(request.IDMasterExpenseSubCategories)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+	}
+
+	if request.IDMasterTransactionPriorities != "" {
+		IDMasterTransPriUUID, err = uuid.Parse(request.IDMasterTransactionPriorities)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+	}
+
+	if request.IDMasterTransactionTypes != "" {
+		IDMasterTransTypeUUID, err = uuid.Parse(request.IDMasterTransactionTypes)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+	}
+
+	trxID = uuid.New()
 	modelTransaction := entities.TransactionEntity{
 		ID:                            trxID,
 		Date:                          request.Date,
 		Fees:                          float64(request.Fees),
 		Amount:                        float64(convertAmount),
-		IDPersonalAccount:             personalAccount.ID,
+		IDPersonalAccount:             accountUUID,
 		IDWallet:                      IDWalletUUID,
-		IDMasterIncomeCategories:      request.IDMasterIncomeCategories,
-		IDMasterExpenseCategories:     request.IDMasterExpenseCategories,
-		IDMasterExpenseSubCategories:  request.IDMasterExpenseSubCategories,
+		IDMasterIncomeCategories:      IDMasterIncCatUUID,
+		IDMasterExpenseCategories:     IDMasterExpCatUUID,
+		IDMasterExpenseSubCategories:  IDMasterSubExpCatUUID,
 		IDMasterInvest:                IDMasterInvestUUID,
 		IDMasterBroker:                IDMasterBrokerUUID,
-		IDMasterReksanadaTypes:        request.IDMasterReksanadaTypes,
-		IDMasterTransactionPriorities: request.IDMasterTransactionPriorities,
-		IDMasterTransactionTypes:      request.IDMasterTransactionTypes,
+		IDMasterTransactionPriorities: IDMasterTransPriUUID,
+		IDMasterTransactionTypes:      IDMasterTransTypeUUID,
 	}
 
 	modelTransactionDetail := entities.TransactionDetailEntity{
@@ -387,7 +421,7 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 		responseIncomeSpendingTotal = s.repo.IncomeSpendingAnnuallyTotal(accountUUID, year)
 		responseIncomeSpendingDetailAnnually = s.repo.IncomeSpendingAnnuallyDetail(accountUUID, year)
 
-		isNotExist := responseIncomeSpendingDetailAnnually[0].NetIncome == 0 || responseIncomeSpendingDetailAnnually[0].TotalIncome == 0 || responseIncomeSpendingDetailAnnually[0].TotalSpending == 0
+		isNotExist := responseIncomeSpendingDetailAnnually[0].NetIncome == 0 && responseIncomeSpendingDetailAnnually[0].TotalIncome == 0 && responseIncomeSpendingDetailAnnually[0].TotalSpending == 0
 		if isNotExist {
 			resp := struct {
 				Message string `json:"message"`
