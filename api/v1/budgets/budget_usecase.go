@@ -547,18 +547,12 @@ func (s *BudgetUseCase) Travels(ctx *gin.Context) (response interface{}, httpCod
 		travelDetails []dtos.TravelDetails
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
-		return response, http.StatusUnauthorized, errInfo
-	}
-
-	dataTravel, err := s.repo.Travels(personalAccount.ID)
+	dataTravel, err := s.repo.Travels(accountUUID)
 	if err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return entities.TrendsWeekly{}, http.StatusInternalServerError, errInfo
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
 	if len(errInfo) == 0 {
@@ -569,7 +563,7 @@ func (s *BudgetUseCase) Travels(ctx *gin.Context) (response interface{}, httpCod
 		response := struct {
 			Message string `json:"message"`
 		}{
-			Message: "no travel data using the token",
+			Message: "no data for travel budget. please set first",
 		}
 		return response, http.StatusNotFound, errInfo
 	}
