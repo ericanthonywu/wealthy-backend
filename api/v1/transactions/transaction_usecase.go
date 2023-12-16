@@ -421,8 +421,19 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 		responseIncomeSpendingTotal = s.repo.IncomeSpendingAnnuallyTotal(accountUUID, year)
 		responseIncomeSpendingDetailAnnually = s.repo.IncomeSpendingAnnuallyDetail(accountUUID, year)
 
-		isNotExist := responseIncomeSpendingDetailAnnually[0].NetIncome == 0 && responseIncomeSpendingDetailAnnually[0].TotalIncome == 0 && responseIncomeSpendingDetailAnnually[0].TotalSpending == 0
-		if isNotExist {
+		//if len(responseIncomeSpendingDetailAnnually) > 0 {
+		//	isNotExist := responseIncomeSpendingDetailAnnually[0].NetIncome == 0 && responseIncomeSpendingDetailAnnually[0].TotalIncome == 0 && responseIncomeSpendingDetailAnnually[0].TotalSpending == 0
+		//	if isNotExist {
+		//		resp := struct {
+		//			Message string `json:"message"`
+		//		}{
+		//			Message: "no data for income-spending",
+		//		}
+		//		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+		//	}
+		//}
+
+		if len(responseIncomeSpendingDetailAnnually) == 0 {
 			resp := struct {
 				Message string `json:"message"`
 			}{
