@@ -337,6 +337,12 @@ func (s *AccountUseCase) UpdateProfile(ctx *gin.Context, request map[string]inte
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "date of birth empty value")
 			return struct{}{}, http.StatusBadRequest, errInfo
 		}
+
+		// validate format dob
+		if !datecustoms.ValidDateFormat(dateOrigin) {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "format date must following YYYY-MM-DD")
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
 	}
 
 	// check id master gender value
@@ -346,6 +352,17 @@ func (s *AccountUseCase) UpdateProfile(ctx *gin.Context, request map[string]inte
 
 		if idMasterGender == "" {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master gender empty value")
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
+
+		// check master gender
+		idUUID, err := uuid.Parse(idMasterGender)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		if !s.repo.GenderData(idUUID) {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master gender unregistered")
 			return struct{}{}, http.StatusBadRequest, errInfo
 		}
 	}
@@ -381,23 +398,6 @@ func (s *AccountUseCase) UpdateProfile(ctx *gin.Context, request map[string]inte
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "fcm token empty value")
 			return struct{}{}, http.StatusBadRequest, errInfo
 		}
-	}
-
-	// validate format dob
-	if !datecustoms.ValidDateFormat(dateOrigin) {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "format date must following YYYY-MM-DD")
-		return struct{}{}, http.StatusBadRequest, errInfo
-	}
-
-	// check master gender
-	idUUID, err := uuid.Parse(idMasterGender)
-	if err != nil {
-		logrus.Error(err.Error())
-	}
-
-	if !s.repo.GenderData(idUUID) {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master gender unregistered")
-		return struct{}{}, http.StatusBadRequest, errInfo
 	}
 
 	// update profile
