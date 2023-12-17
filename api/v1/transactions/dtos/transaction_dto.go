@@ -89,6 +89,24 @@ type (
 		TransactionDetails []TransactionDetails `json:"transaction_details"`
 	}
 
+	TransactionInvestment struct {
+		Summary interface{}                   `json:"summary"`
+		Detail  []TransactionInvestmentDetail `json:"details"`
+	}
+
+	TransactionInvestmentDetail struct {
+		TransactionDate    string                     `json:"transaction_date"`
+		TransactionDetails []TransactionInvestDetails `json:"transaction_details"`
+	}
+
+	TransactionInvestDetails struct {
+		LotWithPrice float64 `json:"lot_with_price"`
+		Name         string  `json:"invest_name"`
+		Lot          int     `json:"lot"`
+		StockCode    string  `json:"stock_code"`
+		Price        int64   `json:"price"`
+	}
+
 	TransactionDetails struct {
 		TransactionCategory string `json:"transaction_category"`
 		TransactionType     string `json:"transaction_type"`

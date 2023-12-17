@@ -5,7 +5,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/entities"
-	"github.com/semicolon-indonesia/wealthy-backend/constants"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
@@ -549,21 +548,17 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 
 func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		dtoResponse             dtos.TransactionIncomeSpendingInvestment
-		responseInvestmentTotal interface{}
-		//responseInvestmentDetail interface{}
+		dtoResponse              dtos.TransactionInvestment
+		detail                   []dtos.TransactionInvestmentDetail
+		trxDetails               []dtos.TransactionInvestDetails
+		responseInvestmentTotal  interface{}
+		responseInvestmentDetail []entities.TransactionInvestmentDetail
 	)
 
 	month := ctx.Query("month")
 	year := ctx.Query("year")
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
-		return response, http.StatusUnauthorized, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	if month == "" && year == "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "need month and or year information")
@@ -571,14 +566,14 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 	}
 
 	if month != "" && year != "" {
-		responseInvestmentTotal = s.repo.InvestMonthlyTotal(personalAccount.ID, month, year)
-		//responseInvestmentDetail = s.repo.InvestMonthlyDetail(personalAccount.ID, month, year)
+		responseInvestmentTotal = s.repo.InvestMonthlyTotal(accountUUID, month, year)
+		responseInvestmentDetail = s.repo.InvestMonthlyDetail(accountUUID, month, year)
 
 	}
 
 	if month == "" && year != "" {
-		responseInvestmentTotal = s.repo.InvestAnnuallyTotal(personalAccount.ID, year)
-		//responseInvestmentDetail = s.repo.InvestAnnuallyDetail(personalAccount.ID, year)
+		responseInvestmentTotal = s.repo.InvestAnnuallyTotal(accountUUID, year)
+		responseInvestmentDetail = s.repo.InvestAnnuallyDetail(accountUUID, year)
 	}
 
 	switch v := responseInvestmentTotal.(type) {
@@ -595,7 +590,106 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 	}
 
 	dtoResponse.Summary = responseInvestmentTotal
-	//dtoResponse.Detail = responseInvestmentDetail
+
+	dateTemp := ""
+	max := len(responseInvestmentDetail)
+
+	if len(responseInvestmentDetail) > 0 {
+		for k, v := range responseInvestmentDetail {
+
+			// get trading
+			dataTrading, err := s.repo.GetTradingInfo(v.StockCode)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
+
+			// mapping process
+
+			if dateTemp == v.Date {
+				// populate
+				trxDetails = append(trxDetails, dtos.TransactionInvestDetails{
+					LotWithPrice: float64(int64(v.Lot) * v.Price),
+					Name:         dataTrading.Name,
+					Lot:          v.Lot,
+					StockCode:    v.StockCode,
+					Price:        v.Price,
+				})
+
+				// reach end
+				if k == (max - 1) {
+					// append to details
+					detail = append(detail, dtos.TransactionInvestmentDetail{
+						TransactionDate:    dateTemp,
+						TransactionDetails: trxDetails,
+					})
+				}
+			}
+
+			// if first time
+			if dateTemp == "" {
+				dateTemp = v.Date
+
+				// populate
+				trxDetails = append(trxDetails, dtos.TransactionInvestDetails{
+					LotWithPrice: float64(int64(v.Lot) * v.Price),
+					Name:         dataTrading.Name,
+					Lot:          v.Lot,
+					StockCode:    v.StockCode,
+					Price:        v.Price,
+				})
+
+				// reach end
+				if k == (max - 1) {
+					// append to details
+					detail = append(detail, dtos.TransactionInvestmentDetail{
+						TransactionDate:    dateTemp,
+						TransactionDetails: trxDetails,
+					})
+
+					// clear previous
+					trxDetails = nil
+				}
+
+			}
+
+			if dateTemp != v.Date {
+				// append to details previous
+				detail = append(detail, dtos.TransactionInvestmentDetail{
+					TransactionDate:    dateTemp,
+					TransactionDetails: trxDetails,
+				})
+
+				// clear previous
+				trxDetails = nil
+
+				// renew
+				dateTemp = v.Date
+
+				// populate
+				trxDetails = append(trxDetails, dtos.TransactionInvestDetails{
+					LotWithPrice: float64(int64(v.Lot) * v.Price),
+					Name:         dataTrading.Name,
+					Lot:          v.Lot,
+					StockCode:    v.StockCode,
+					Price:        v.Price,
+				})
+
+				// reach end
+				if k == (max - 1) {
+					// append to details
+					detail = append(detail, dtos.TransactionInvestmentDetail{
+						TransactionDate:    dateTemp,
+						TransactionDetails: trxDetails,
+					})
+
+					// clear previous
+					trxDetails = nil
+				}
+			}
+		}
+	}
+
+	dtoResponse.Detail = detail
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}

@@ -50,7 +50,9 @@ type (
 		Suggestion(IDPersoalAccount uuid.UUID) (data []entities.TransactionSuggestionNotes, err error)
 
 		WalletExist(IDWallet uuid.UUID) bool
-		BudgetWithCurrency(IDTravel uuid.UUID) (data entities.TransactionWithCurrency, rr error)
+		BudgetWithCurrency(IDTravel uuid.UUID) (data entities.TransactionWithCurrency, err error)
+
+		GetTradingInfo(stockCode string) (data entities.InvestmentTreding, err error)
 	}
 )
 
@@ -472,10 +474,10 @@ ORDER BY month DESC`, year, IDPersonal).Scan(&data).Error; err != nil {
 }
 
 func (r *TransactionRepository) InvestMonthlyTotal(IDPersonal uuid.UUID, month, year string) (data entities.TransactionInvestmentTotals) {
-	if err := r.db.Raw(`SELECT COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 2 ), 0)::numeric as total_buy,
-       COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 1 ), 0)::numeric as total_sell,
-       COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 1 ), 0) -
-       COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 2 ), 0)::numeric as total_current_portfolio
+	if err := r.db.Raw(`SELECT COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 1 ), 0)::numeric as total_buy,
+       COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 0 ), 0)::numeric as total_sell,
+       COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 0 ), 0) -
+       COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 1 ), 0)::numeric as total_current_portfolio
 FROM tbl_transactions t
          INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
          INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
@@ -492,10 +494,9 @@ func (r *TransactionRepository) InvestMonthlyDetail(IDPersonal uuid.UUID, month,
 	if err := r.db.Raw(`SELECT concat(to_char(t.date_time_transaction::DATE, 'DD'), ' ',
               to_char(to_date(t.date_time_transaction, 'YYYY-MM-DD'), 'Mon'), ' ',
               to_char(t.date_time_transaction::DATE, 'YYYY'))::text         as date,
-       COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 2 ), 0) ::numeric as total_buy,
-       COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 1 ), 0)::numeric  as total_sell,
        td.lot::numeric                                                      as lot,
-       td.stock_code ::text                                                 as stock_code
+       td.stock_code ::text                                                 as stock_code,
+	   t.amount as price
 FROM tbl_transactions t
          INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
          INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
@@ -503,7 +504,7 @@ WHERE to_char(t.date_time_transaction::DATE, 'MM') = ?
   AND to_char(t.date_time_transaction::DATE, 'YYYY') = ?
   AND t.id_personal_account = ?
   AND tmtt.type = 'INVEST'
-GROUP BY date, lot, stock_code
+GROUP BY date, lot, stock_code,price
 ORDER BY date DESC`, month, year, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionInvestmentDetail{}
 	}
@@ -511,10 +512,10 @@ ORDER BY date DESC`, month, year, IDPersonal).Scan(&data).Error; err != nil {
 }
 
 func (r *TransactionRepository) InvestAnnuallyTotal(IDPersonal uuid.UUID, year string) (data entities.TransactionInvestmentTotals) {
-	if err := r.db.Raw(`SELECT COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 2), 0) as total_buy,
-       COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 1), 0) as total_sell,
-       COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 1), 0) -
-       COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 2), 0) as total_current_portfolio
+	if err := r.db.Raw(`SELECT COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 1), 0) as total_buy,
+       COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 0), 0) as total_sell,
+       COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 0), 0) -
+       COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 1), 0) as total_current_portfolio
 FROM tbl_transactions t
          INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
          INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
@@ -532,14 +533,15 @@ func (r *TransactionRepository) InvestAnnuallyDetail(IDPersonal uuid.UUID, year 
        COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 2 ), 0)::numeric  as total_buy,
        COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 1 ), 0) ::numeric as total_sell,
        td.lot :: numeric                                                    as lot,
-       td.stock_code :: text                                                as stock_code
+       td.stock_code :: text                                                as stock_code,
+		t.amount as price
 FROM tbl_transactions t
          INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
          INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
 WHERE to_char(t.date_time_transaction::DATE, 'YYYY') = ?
   AND t.id_personal_account = ?
   AND tmtt.type = 'INVEST'
-GROUP BY t.date_time_transaction, date, lot, stock_code
+GROUP BY t.date_time_transaction, date, lot, stock_code, price
 ORDER BY t.date_time_transaction::DATE DESC`, year, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionInvestmentDetail{}
 	}
@@ -590,6 +592,14 @@ WHERE tb.id=?`, IDTravel).
 		Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.TransactionWithCurrency{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) GetTradingInfo(stockCode string) (data entities.InvestmentTreding, err error) {
+	if err := r.db.Raw(`SELECT tmd.symbol, tmd.name, tmd.close::numeric FROM tbl_master_trading tmd WHERE tmd.symbol=?`, stockCode).
+		Scan(&data).Error; err != nil {
+		return entities.InvestmentTreding{}, err
 	}
 	return data, nil
 }
