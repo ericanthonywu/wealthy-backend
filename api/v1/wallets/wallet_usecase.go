@@ -34,9 +34,9 @@ func NewWalletUseCase(repo IWalletRepository) *WalletUseCase {
 
 func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		accountUUID        uuid.UUID
-		err                error
-		IDMasterWalletType string
+		accountUUID uuid.UUID
+		err         error
+		WalletType  string
 	)
 
 	// get information from context
@@ -51,20 +51,20 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 	}
 
 	// mapping wallet type with wallet id
-	switch strings.ToUpper(request.WalletType) {
-	case constants.Cash:
-		IDMasterWalletType = constants.IDCash
-	case constants.DebitCard:
-		IDMasterWalletType = constants.IDDebitCard
-	case constants.CreditCard:
-		IDMasterWalletType = constants.IDCreditCard
-	case constants.Investment:
-		IDMasterWalletType = constants.IDInvestment
-	case constants.Saving:
-		IDMasterWalletType = constants.IDSaving
+	switch request.WalletID {
+	case constants.IDCash:
+		WalletType = constants.Cash
+	case constants.IDDebitCard:
+		WalletType = constants.DebitCard
+	case constants.IDCreditCard:
+		WalletType = constants.CreditCard
+	case constants.IDInvestment:
+		WalletType = constants.Investment
+	case constants.IDSaving:
+		WalletType = constants.Saving
 	}
 
-	UUIDIDMasterWalletType, err := uuid.Parse(IDMasterWalletType)
+	UUIDIDMasterWalletType, err := uuid.Parse(request.WalletID)
 	if err != nil {
 		logrus.Error(err.Error())
 	}
@@ -74,7 +74,7 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 		ID:                 uuid.New(),
 		Active:             true,
 		WalletName:         request.WalletName,
-		WalletType:         strings.ToUpper(request.WalletType),
+		WalletType:         WalletType,
 		IDMasterWalletType: UUIDIDMasterWalletType,
 		FeeInvestBuy:       request.FeeInvestBuy,
 		FeeInvestSell:      request.FeeInvestSell,
@@ -108,7 +108,8 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 			return struct{}{}, http.StatusInternalServerError, errInfo
 		}
 
-		if strings.ToUpper(request.WalletType) != constants.Investment {
+		// if wallet type is not investment
+		if WalletType != constants.Investment {
 			// save initial transaction
 			err = s.writeInitialTransaction(request, &walletEntity, accountUUID)
 			if err != nil {
@@ -130,7 +131,8 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 			return struct{}{}, http.StatusInternalServerError, errInfo
 		}
 
-		if strings.ToUpper(request.WalletType) != constants.Investment {
+		// if wallet type is not investment
+		if WalletType != constants.Investment {
 			// save initial transaction
 			err = s.writeInitialTransaction(request, &walletEntity, accountUUID)
 			if err != nil {

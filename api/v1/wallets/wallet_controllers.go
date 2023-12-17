@@ -7,7 +7,6 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
 	"net/http"
-	"strings"
 )
 
 type (
@@ -44,38 +43,50 @@ func (c *WalletController) Add(ctx *gin.Context) {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "wallet name empty")
 	}
 
-	if dtoRequest.WalletType == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "wallet type empty")
+	if dtoRequest.WalletID == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "wallet id empty")
 	}
 
 	if dtoRequest.TotalAsset == 0 {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "total assets empty")
 	}
 
-	// check wallet types
-	isTypeMatch := strings.ToUpper(dtoRequest.WalletType) == constants.Cash || strings.ToUpper(dtoRequest.WalletType) == constants.CreditCard ||
-		strings.ToUpper(dtoRequest.WalletType) == constants.DebitCard || strings.ToUpper(dtoRequest.WalletType) == constants.Investment ||
-		strings.ToUpper(dtoRequest.WalletType) == constants.Saving
+	// check wallet id
+	isValid := dtoRequest.WalletID == constants.IDCash ||
+		dtoRequest.WalletID == constants.IDCreditCard ||
+		dtoRequest.WalletID == constants.IDDebitCard ||
+		dtoRequest.WalletID == constants.IDInvestment ||
+		dtoRequest.WalletID == constants.IDSaving
 
-	if !isTypeMatch {
-		var builder strings.Builder
-		builder.WriteString("wallet type must contain one of values ")
-		builder.WriteString("[")
-		builder.WriteString(constants.Cash)
-		builder.WriteString(",")
-		builder.WriteString(constants.CreditCard)
-		builder.WriteString(",")
-		builder.WriteString(constants.DebitCard)
-		builder.WriteString(",")
-		builder.WriteString(constants.Investment)
-		builder.WriteString(",")
-		builder.WriteString(constants.Saving)
-		builder.WriteString("]")
-
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", builder.String())
+	if !isValid {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master wallet unregistered")
 		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
+
+	//isTypeMatch := strings.ToUpper(dtoRequest.WalletType) == constants.Cash || strings.ToUpper(dtoRequest.WalletType) == constants.CreditCard ||
+	//	strings.ToUpper(dtoRequest.WalletType) == constants.DebitCard || strings.ToUpper(dtoRequest.WalletType) == constants.Investment ||
+	//	strings.ToUpper(dtoRequest.WalletType) == constants.Saving
+
+	//if !isTypeMatch {
+	//	var builder strings.Builder
+	//	builder.WriteString("wallet type must contain one of values ")
+	//	builder.WriteString("[")
+	//	builder.WriteString(constants.Cash)
+	//	builder.WriteString(",")
+	//	builder.WriteString(constants.CreditCard)
+	//	builder.WriteString(",")
+	//	builder.WriteString(constants.DebitCard)
+	//	builder.WriteString(",")
+	//	builder.WriteString(constants.Investment)
+	//	builder.WriteString(",")
+	//	builder.WriteString(constants.Saving)
+	//	builder.WriteString("]")
+	//
+	//	errInfo = errorsinfo.ErrorWrapper(errInfo, "", builder.String())
+	//	response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+	//	return
+	//}
 
 	if dtoRequest.FeeInvestBuy == 0 {
 		dtoRequest.FeeInvestSell = 0.15

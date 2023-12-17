@@ -4,7 +4,7 @@ import "github.com/google/uuid"
 
 type (
 	WalletAddRequest struct {
-		WalletType    string  `json:"wallet_type"`
+		WalletID      string  `json:"wallet_id"`
 		WalletName    string  `json:"wallet_name"`
 		TotalAsset    int64   `json:"total_assets"`
 		FeeInvestBuy  float64 `json:"fee_invest_buy"`
