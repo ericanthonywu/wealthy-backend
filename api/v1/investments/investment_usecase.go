@@ -38,23 +38,17 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 		brokerNamePrevious     string
 		investmentNamePrevious string
 		totalLot               int64
-		averageBuy             float64
-		averageBuyCollection   []float64
+		buy                    float64
+		buyCollections         []float64
 		potentialReturn        float64
 		unreliazeReturn        float64
 		initialInvestment      float64
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
-		return response, http.StatusUnauthorized, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// fetch transaction data first
-	trxData, err := s.repo.TrxInfo(personalAccount.ID)
+	trxData, err := s.repo.TrxInfo(accountUUID)
 	if err != nil {
 		logrus.Errorf(err.Error())
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -92,31 +86,44 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 				// if still same stock code
 				if stockCodePrevious == v.StockCode {
 					// calculate average
-					totalAvg := 0.0
-					var resultAverageBuy float64
+					totalBuy := 0.0
+					var averageBuy float64
 
 					totalLot += v.Lot
-					averageBuy = float64(v.Lot * v.Price / v.Lot)
-					averageBuyCollection = append(averageBuyCollection, averageBuy)
+
+					// buy value
+					buy = float64(v.Lot * v.Price * 100)
+
+					// append buy to collection
+					buyCollections = append(buyCollections, buy)
+
+					// initial investment
 					initialInvestment += float64(v.Lot * v.Price)
 
 					// is latest
 					if k == (maxTrxData - 1) {
 						// calculate average
-						totalAvg = 0.0
-						resultAverageBuy = 0
+						totalBuy = 0.0
+						averageBuy = 0
 
-						for _, avg := range averageBuyCollection {
-							totalAvg += avg
+						// add total buy
+						for _, buyColl := range buyCollections {
+							totalBuy += buyColl
 						}
 
 						// renew data
-						resultAverageBuy = totalAvg / float64(totalLot)
-						averageBuyFinal, err := strconv.ParseFloat(fmt.Sprintf("%.2f", resultAverageBuy), 64)
+						// average buy
+						averageBuy = totalBuy / float64(totalLot)
+
+						// rounding average buy
+						averageBuyRounding, err := strconv.ParseFloat(fmt.Sprintf("%.2f", averageBuy), 64)
 						if err != nil {
 							logrus.Error(err.Error())
 						}
-						potentialReturn = float64(dataTrading.Close) - resultAverageBuy*float64(totalLot)*100
+
+						// potential return
+						potentialReturn = float64(dataTrading.Close) - averageBuy*float64(totalLot)*100
+
 						unreliazeReturn += potentialReturn
 
 						// replace with new portfolio
@@ -128,7 +135,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 							Name:              investmentNamePrevious,
 							StockCode:         stockCodePrevious,
 							Lot:               totalLot,
-							AverageBuy:        averageBuyFinal,
+							AverageBuy:        averageBuyRounding,
 							PotentialReturn:   potentialReturn,
 						})
 
@@ -147,22 +154,27 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 				// if not same stock code with previous
 				if stockCodePrevious != v.StockCode {
 					// calculate average
-					totalAvg := 0.0
-					var resultAverageBuy float64
+					totalBuy := 0.0
+					var averageBuy float64
 
-					for _, avg := range averageBuyCollection {
-						totalAvg += avg
+					//
+					for _, buyColl := range buyCollections {
+						totalBuy += buyColl
 					}
 
 					// renew data
-					resultAverageBuy = totalAvg / float64(totalLot)
+					// average buy
+					averageBuy = totalBuy / float64(totalLot)
 
-					// return
-					averageBuyFinal, err := strconv.ParseFloat(fmt.Sprintf("%.2f", resultAverageBuy), 64)
+					// rounding average buy
+					averageBuyRounding, err := strconv.ParseFloat(fmt.Sprintf("%.2f", averageBuy), 64)
+
 					if err != nil {
 						logrus.Error(err.Error())
 					}
-					potentialReturn = float64(dataTrading.Close) - resultAverageBuy*float64(totalLot)*100
+
+					// potential return
+					potentialReturn = float64(dataTrading.Close) - averageBuy*float64(totalLot)*100
 
 					// append previous data
 					investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
@@ -170,41 +182,52 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 						Name:              investmentNamePrevious,
 						StockCode:         stockCodePrevious,
 						Lot:               totalLot,
-						AverageBuy:        averageBuyFinal,
+						AverageBuy:        averageBuyRounding,
 						PotentialReturn:   potentialReturn,
 					})
 
-					// clear arrays
-					averageBuyCollection = nil
-					totalAvg = 0.0
-					resultAverageBuy = 0
+					// clear previous data
+					buyCollections = nil
+					totalBuy = 0.0
+					averageBuy = 0
 					initialInvestment = 0
 
 					// override value and renew
 					totalLot = v.Lot
 					stockCodePrevious = v.StockCode
 					investmentNamePrevious = dataTrading.Name
-					averageBuy = float64(v.Lot * v.Price / v.Lot)
-					averageBuyCollection = append(averageBuyCollection, averageBuy)
+
+					// buy value
+					buy = float64(v.Lot * v.Price * 100)
+
+					// append new buy value
+					buyCollections = append(buyCollections, buy)
+
+					// initial investment
 					initialInvestment += float64(v.Lot * v.Price)
 
 					// if latest data
 					if k == (maxTrxData - 1) {
 						// calculate average
-						totalAvg = 0.0
-						resultAverageBuy = 0
+						totalBuy = 0.0
+						averageBuy = 0
 
-						for _, avg := range averageBuyCollection {
-							totalAvg += avg
+						for _, buyColl := range buyCollections {
+							totalBuy += buyColl
 						}
 
 						// renew data
-						resultAverageBuy = totalAvg / float64(totalLot)
-						averageBuyFinal, err = strconv.ParseFloat(fmt.Sprintf("%.2f", resultAverageBuy), 64)
+						// average buy
+						averageBuy = totalBuy / float64(totalLot)
+
+						// rounding average buy
+						averageBuyRounding, err = strconv.ParseFloat(fmt.Sprintf("%.2f", averageBuy), 64)
 						if err != nil {
 							logrus.Error(err.Error())
 						}
-						potentialReturn = float64(dataTrading.Close) - resultAverageBuy*float64(totalLot)*100
+
+						// potential return
+						potentialReturn = float64(dataTrading.Close) - averageBuy*float64(totalLot)*100
 						unreliazeReturn += potentialReturn
 
 						// replace with new portfolio
@@ -216,7 +239,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 							InitialInvestment: initialInvestment,
 							StockCode:         stockCodePrevious,
 							Lot:               totalLot,
-							AverageBuy:        averageBuyFinal,
+							AverageBuy:        averageBuyRounding,
 							PotentialReturn:   potentialReturn,
 						})
 
@@ -235,22 +258,24 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 
 			// if broker previous is not same new broker
 			if brokerNamePrevious != v.BrokerName {
-				totalAvg := 0.0
-				var resultAverageBuy float64
+				totalBuy := 0.0
+				var averageBuy float64
 
 				// calculate average
-				for _, avg := range averageBuyCollection {
-					totalAvg += avg
+				for _, buyColl := range buyCollections {
+					totalBuy += buyColl
 				}
 
 				// renew data
-				resultAverageBuy = totalAvg / float64(totalLot)
-				averageBuyFinal, err := strconv.ParseFloat(fmt.Sprintf("%.2f", resultAverageBuy), 64)
+
+				averageBuy = totalBuy / float64(totalLot)
+				averageBuyRounding, err := strconv.ParseFloat(fmt.Sprintf("%.2f", averageBuy), 64)
 				if err != nil {
 					logrus.Error(err.Error())
 				}
 
-				potentialReturn = float64(dataTrading.Close) - resultAverageBuy*float64(totalLot)*100
+				// potential return
+				potentialReturn = float64(dataTrading.Close) - averageBuy*float64(totalLot)*100
 				unreliazeReturn += potentialReturn
 
 				// append latest
@@ -259,7 +284,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 					Name:              investmentNamePrevious,
 					StockCode:         stockCodePrevious,
 					Lot:               totalLot,
-					AverageBuy:        averageBuyFinal,
+					AverageBuy:        averageBuyRounding,
 					PotentialReturn:   potentialReturn,
 				})
 
@@ -279,37 +304,48 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 				investmentNamePrevious = dataTrading.Name
 
 				// renew data
-				averageBuyCollection = nil
+				buyCollections = nil
 				brokerNamePrevious = v.BrokerName
 				stockCodePrevious = v.StockCode
 				investmentNamePrevious = dataTrading.Name
 				totalLot = v.Lot
-				averageBuy = float64(v.Lot * v.Price / v.Lot)
-				averageBuyCollection = append(averageBuyCollection, averageBuy)
+
+				// buy value
+				buy = float64(v.Lot * v.Price * 100)
+
+				// append buy collections
+				buyCollections = append(buyCollections, buy)
+
+				// initial investment
 				initialInvestment += float64(v.Lot * v.Price)
 
 				// is latest
 				if k == (maxTrxData - 1) {
 
+					// reset value
 					investmentInfo = nil
+					totalBuy = 0.0
+					averageBuy = 0
 
-					// calculate average
-					totalAvg = 0.0
-					resultAverageBuy = 0
+					// renew value
 
 					totalLot = v.Lot
 
-					for _, avg := range averageBuyCollection {
-						totalAvg += avg
+					for _, buyColl := range buyCollections {
+						totalBuy += buyColl
 					}
 
-					// renew data
-					resultAverageBuy = totalAvg / float64(totalLot)
-					averageBuyFinal, err := strconv.ParseFloat(fmt.Sprintf("%.2f", resultAverageBuy), 64)
+					// average buy
+					averageBuy = totalBuy / float64(totalLot)
+
+					// rounding average buy
+					averageBuyRounding, err := strconv.ParseFloat(fmt.Sprintf("%.2f", averageBuy), 64)
 					if err != nil {
 						logrus.Error(err.Error())
 					}
-					potentialReturn = float64(dataTrading.Close) - resultAverageBuy*float64(totalLot)*100
+
+					// potential return
+					potentialReturn = float64(dataTrading.Close) - averageBuy*float64(totalLot)*100
 					unreliazeReturn += potentialReturn
 
 					// replace with new portfolio
@@ -321,7 +357,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 						Name:              investmentNamePrevious,
 						StockCode:         stockCodePrevious,
 						Lot:               totalLot,
-						AverageBuy:        averageBuyFinal,
+						AverageBuy:        averageBuyRounding,
 						PotentialReturn:   potentialReturn,
 					})
 
@@ -341,36 +377,45 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 		// fist time broker name
 		if brokerNamePrevious == "" {
 			// set data for first time
-			initialInvestment += float64(v.Lot * v.Price)
+
 			brokerNamePrevious = v.BrokerName
 			stockCodePrevious = v.StockCode
 			investmentNamePrevious = dataTrading.Name
 			totalLot = v.Lot
-			averageBuy = float64(v.Lot * v.Price / v.Lot)
-			averageBuyCollection = append(averageBuyCollection, averageBuy)
+
+			// buy value
+			buy = float64(v.Lot * v.Price * 100)
+
+			// initial investment
+			initialInvestment += float64(v.Lot * v.Price)
+
+			// append buy
+			buyCollections = append(buyCollections, buy)
 
 			// is latest
 			if k == (maxTrxData - 1) {
 
+				// reset value
 				investmentInfo = nil
-
-				// calculate average
-				totalAvg := 0.0
-				var resultAverageBuy float64
+				totalBuy := 0.0
+				var averageBuy float64
 
 				totalLot = v.Lot
 
-				for _, avg := range averageBuyCollection {
-					totalAvg += avg
+				for _, buyColl := range buyCollections {
+					totalBuy += buyColl
 				}
 
 				// renew data
-				resultAverageBuy = totalAvg / float64(totalLot)
-				averageBuyFinal, err := strconv.ParseFloat(fmt.Sprintf("%.2f", resultAverageBuy), 64)
+				averageBuy = totalBuy / float64(totalLot)
+
+				averageBuyRounding, err := strconv.ParseFloat(fmt.Sprintf("%.2f", averageBuy), 64)
 				if err != nil {
 					logrus.Error(err.Error())
 				}
-				potentialReturn = float64(dataTrading.Close) - resultAverageBuy*float64(totalLot)*100
+
+				// potential return
+				potentialReturn = float64(dataTrading.Close) - averageBuy*float64(totalLot)*100
 				unreliazeReturn += potentialReturn
 
 				// replace with new portfolio
@@ -382,7 +427,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 					Name:              investmentNamePrevious,
 					StockCode:         stockCodePrevious,
 					Lot:               totalLot,
-					AverageBuy:        averageBuyFinal,
+					AverageBuy:        averageBuyRounding,
 					PotentialReturn:   potentialReturn,
 				})
 
