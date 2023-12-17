@@ -124,6 +124,7 @@ type (
 		TotalSell int    `gorm:"column:total_sell" json:"total_sell"`
 		Lot       int    `gorm:"column:lot" json:"lot"`
 		StockCode string `gorm:"column:stock_code" json:"stock_code"`
+		Price     int64  `gorm:"column:price"`
 	}
 
 	TransactionByNotes struct {
@@ -143,6 +144,12 @@ type (
 
 	TransactionWithCurrency struct {
 		CurrencyValue int64 `gorm:"column:currency_value"`
+	}
+
+	InvestmentTreding struct {
+		Name   string `gorm:"column:name"`
+		Symbol string `gorm:"column:symbol"`
+		Close  int64  `gorm:"column:close"`
 	}
 )
 
