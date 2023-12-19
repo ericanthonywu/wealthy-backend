@@ -999,6 +999,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 		brokerName        string
 		stockCode         string
 		maxData           int
+		IDMasterBroker    uuid.UUID
 	)
 
 	// get transaction detail table where id_personal_accounts
@@ -1100,7 +1101,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 						AverageBuy:        averageBuy,
 						InitialInvestment: initialInvestment,
 						IDPersonalAccount: accountID,
-						IDMasterBroker:    v.IDMasterBroker,
+						IDMasterBroker:    IDMasterBroker,
 						GainLoss:          gainloss,
 						PotentialReturn:   potentialReturn,
 						PercentageReturn:  percentageReturn,
@@ -1130,6 +1131,24 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
 				percentageReturn = potentialReturn / initialInvestment
 
+				if len(sellCollection) > 0 {
+					// buy calculation
+					buy = averageBuy * float64(lotSell) * 100
+					feeBuy = v.FeeBuy * buy
+					netBuy = buy - feeBuy
+
+					// sell calculation
+					totalSell := 0.0
+					for _, v := range sellCollection {
+						totalSell += v
+					}
+					feeSell = totalSell * v.FeeSell
+					netSell := totalSell - feeSell
+
+					gainloss = netSell - netBuy
+					percentageReturn = gainloss / buy
+				}
+
 				// mapping
 				trxInvestment := entities.TransactionInvestmentEntity{
 					StockCode:         stockCode,
@@ -1140,7 +1159,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					AverageBuy:        averageBuy,
 					InitialInvestment: initialInvestment,
 					IDPersonalAccount: accountID,
-					IDMasterBroker:    v.IDMasterBroker,
+					IDMasterBroker:    IDMasterBroker,
 					GainLoss:          0,
 					PotentialReturn:   potentialReturn,
 					PercentageReturn:  percentageReturn,
@@ -1157,6 +1176,9 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				lotBuy = 0
 				lotSell = 0
 				potentialReturn = 0
+
+				// set
+				stockCode = v.StockCode
 
 				// if buy transaction
 				if v.SellBuy == 1 {
@@ -1181,7 +1203,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					percentageReturn = potentialReturn / initialInvestment
 
 					// mapping
-					trxInvestment := entities.TransactionInvestmentEntity{
+					trxInvestment = entities.TransactionInvestmentEntity{
 						StockCode:         stockCode,
 						TotalLot:          lotBuy - lotSell,
 						ValueBuy:          buy,
@@ -1190,7 +1212,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 						NetBuy:            netBuy,
 						InitialInvestment: initialInvestment,
 						IDPersonalAccount: accountID,
-						IDMasterBroker:    v.IDMasterBroker,
+						IDMasterBroker:    IDMasterBroker,
 						GainLoss:          0,
 						PotentialReturn:   potentialReturn,
 						PercentageReturn:  percentageReturn,
@@ -1207,9 +1229,11 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 
 		// if first time, set broker name, set stock code
 		if brokerName == "" {
+			// set
 			brokerName = brokerInfo.Name
 			stockCode = v.StockCode
 			lotBuy += v.Lot
+			IDMasterBroker = v.IDMasterBroker
 
 			// if buy transaction
 			if v.SellBuy == 1 {
@@ -1242,7 +1266,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					NetBuy:            netBuy,
 					InitialInvestment: initialInvestment,
 					IDPersonalAccount: accountID,
-					IDMasterBroker:    v.IDMasterBroker,
+					IDMasterBroker:    IDMasterBroker,
 					GainLoss:          0,
 					PotentialReturn:   potentialReturn,
 					PercentageReturn:  percentageReturn,
@@ -1281,7 +1305,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				NetBuy:            netBuy,
 				InitialInvestment: initialInvestment,
 				IDPersonalAccount: accountID,
-				IDMasterBroker:    v.IDMasterBroker,
+				IDMasterBroker:    IDMasterBroker,
 				GainLoss:          0,
 				PotentialReturn:   potentialReturn,
 				PercentageReturn:  percentageReturn,
@@ -1302,6 +1326,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 			// renew value
 			brokerName = brokerInfo.Name
 			stockCode = v.StockCode
+			IDMasterBroker = v.IDMasterBroker
 
 			// if buy transaction
 			if v.SellBuy == 1 {
@@ -1335,7 +1360,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					NetBuy:            netBuy,
 					InitialInvestment: initialInvestment,
 					IDPersonalAccount: accountID,
-					IDMasterBroker:    v.IDMasterBroker,
+					IDMasterBroker:    IDMasterBroker,
 					GainLoss:          0,
 					PotentialReturn:   potentialReturn,
 					PercentageReturn:  percentageReturn,

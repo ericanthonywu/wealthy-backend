@@ -14,7 +14,7 @@ type (
 
 	IInvestmentRepository interface {
 		InvestmentTrx(IDPersonal uuid.UUID) (data []entities.InvestmentTransaction, err error)
-		TrxInfo(IDPersonal uuid.UUID) (data []entities.InvestmentTransaction, err error)
+		TrxInfo(IDPersonal uuid.UUID) (data []entities.InvestmentDataHelperPortfolio, err error)
 		GetTradingInfo(stockCode string) (data entities.InvestmentTreding, err error)
 		GetBrokerInfo(IDMasterBroker uuid.UUID) (data entities.BrokerInfo, err error)
 		GetInvestmentDataHelper(IDPersonal uuid.UUID, stockCode string) (data entities.InvestmentDataHelper, err error)
@@ -25,9 +25,14 @@ func NewInvestmentRepository(db *gorm.DB) *InvestmentRepository {
 	return &InvestmentRepository{db: db}
 }
 
-func (r *InvestmentRepository) TrxInfo(IDPersonal uuid.UUID) (data []entities.InvestmentTransaction, err error) {
-	if err := r.db.Raw(``, IDPersonal).Scan(&data).Error; err != nil {
-		return []entities.InvestmentTransaction{}, err
+func (r *InvestmentRepository) TrxInfo(IDPersonal uuid.UUID) (data []entities.InvestmentDataHelperPortfolio, err error) {
+	if err := r.db.Raw(`SELECT *
+FROM tbl_investment ti
+INNER JOIN tbl_master_broker tmb ON tmb.id = ti.id_master_broker
+WHERE ti.id_personal_accounts = ?
+ORDER BY ti.id_master_broker ASC, ti.stock_code ASC`, IDPersonal).
+		Scan(&data).Error; err != nil {
+		return []entities.InvestmentDataHelperPortfolio{}, err
 	}
 	return data, nil
 }

@@ -2,22 +2,26 @@ package dtos
 
 type (
 	InvestmentResponse struct {
-		Details []InvestmentDetails `json:"details"`
+		TotalInvestment           float64             `json:"total_investment"`
+		TotalPotentialReturn      float64             `json:"total_potential_return"`
+		PercentagePotentialReturn string              `json:"percentage_potential_return"`
+		Details                   []InvestmentDetails `json:"details"`
 	}
 
 	InvestmentDetails struct {
-		BokerName           string           `json:"boker_name"`
-		UnrealizedPotential float64          `json:"unrealized_potential"`
-		Info                []InvestmentInfo `json:"info"`
+		BrokerName string           `json:"broker_name"`
+		Info       []InvestmentInfo `json:"info"`
 	}
 
 	InvestmentInfo struct {
-		Name              string  `json:"name"`
-		InitialInvestment float64 `json:"initial_investment"`
-		StockCode         string  `json:"stock_code"`
-		Lot               int64   `json:"lot"`
-		AverageBuy        float64 `json:"average_buy"`
-		PotentialReturn   float64 `json:"potential_return"`
+		Name                string  `json:"name"`
+		InitialInvestment   float64 `json:"initial_investment"`
+		StockCode           string  `json:"stock_code"`
+		Lot                 int64   `json:"lot"`
+		AverageBuy          float64 `json:"average_buy"`
+		PotentialReturn     float64 `json:"potential_return"`
+		PercentageReturn    string  `json:"percentage_potential_return"`
+		UnrealizedPotential float64 `json:"unrealized_potential"`
 	}
 
 	InvestmentResponseGainLoss struct {

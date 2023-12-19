@@ -1,6 +1,7 @@
 package investments
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/investments/dtos"
@@ -30,7 +31,9 @@ func NewInvestmentUseCase(repo IInvestmentRepository) *InvestmentUseCase {
 
 func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		dtoResponse dtos.InvestmentResponse
+		dtoResponse      dtos.InvestmentResponse
+		investmentDetail []dtos.InvestmentDetails
+		investmentInfo   []dtos.InvestmentInfo
 	)
 
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
@@ -52,6 +55,127 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 		}
 		return resp, http.StatusNotFound, []errorsinfo.Errors{}
 	}
+
+	// mapping response
+	brokerName := ""
+	maxData := len(trxData) - 1
+	totalInvestment := 0.0
+	totalPotentialReturn := 0.0
+
+	for k, v := range trxData {
+
+		totalInvestment += v.InitialInvestment
+
+		dataTrading, err := s.repo.GetTradingInfo(v.StockCode)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		// if previous broker same with new data
+		if brokerName == v.BrokerName {
+
+			// calculation for
+			closePrice := float64(dataTrading.Close)
+			potentialReturn := (closePrice - v.AverageBuy) * float64(v.TotalLot) * 100
+			percentagePotentialReturn := (potentialReturn / v.InitialInvestment) / 100
+			totalPotentialReturn += potentialReturn
+
+			investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
+				Name:                dataTrading.Name,
+				InitialInvestment:   v.InitialInvestment,
+				StockCode:           v.StockCode,
+				Lot:                 v.TotalLot,
+				AverageBuy:          v.AverageBuy,
+				PotentialReturn:     potentialReturn,
+				PercentageReturn:    fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
+				UnrealizedPotential: potentialReturn,
+			})
+
+			// latest data
+			if k == maxData {
+				investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
+					BrokerName: brokerName,
+					Info:       investmentInfo,
+				})
+
+				// clear
+				investmentInfo = nil
+
+			}
+		}
+
+		// if previous broker empty
+		if brokerName == "" {
+			// set broker name
+			brokerName = v.BrokerName
+
+			// calculation for
+			closePrice := float64(dataTrading.Close)
+			potentialReturn := (closePrice - v.AverageBuy) * float64(v.TotalLot) * 100
+			percentagePotentialReturn := (potentialReturn / v.InitialInvestment) / 100
+			totalPotentialReturn += potentialReturn
+
+			investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
+				Name:                dataTrading.Name,
+				InitialInvestment:   v.InitialInvestment,
+				StockCode:           v.StockCode,
+				Lot:                 v.TotalLot,
+				AverageBuy:          v.AverageBuy,
+				PotentialReturn:     potentialReturn,
+				PercentageReturn:    fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
+				UnrealizedPotential: potentialReturn,
+			})
+		}
+
+		// if previous broker name different with new data
+		if brokerName != v.BrokerName {
+			investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
+				BrokerName: brokerName,
+				Info:       investmentInfo,
+			})
+
+			// clear
+			investmentInfo = nil
+
+			// renew
+			brokerName = v.BrokerName
+
+			// calculation for
+			closePrice := float64(dataTrading.Close)
+			potentialReturn := (closePrice - v.AverageBuy) * float64(v.TotalLot) * 100
+			percentagePotentialReturn := (potentialReturn / v.InitialInvestment) / 100
+			totalPotentialReturn += potentialReturn
+
+			investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
+				Name:                dataTrading.Name,
+				InitialInvestment:   v.InitialInvestment,
+				StockCode:           v.StockCode,
+				Lot:                 v.TotalLot,
+				AverageBuy:          v.AverageBuy,
+				PotentialReturn:     potentialReturn,
+				PercentageReturn:    fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
+				UnrealizedPotential: potentialReturn,
+			})
+
+			// latest data
+			if k == maxData {
+				investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
+					BrokerName: brokerName,
+					Info:       investmentInfo,
+				})
+
+				// clear
+				investmentInfo = nil
+
+			}
+		}
+	}
+
+	dtoResponse.TotalInvestment = totalInvestment
+	dtoResponse.TotalPotentialReturn = totalPotentialReturn
+	percentage := (totalPotentialReturn / totalInvestment) / 100
+	dtoResponse.PercentagePotentialReturn = fmt.Sprintf("%.2f", percentage) + "%"
+	dtoResponse.Details = investmentDetail
 
 	// clear
 	if len(errInfo) == 0 {
