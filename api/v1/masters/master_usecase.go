@@ -240,7 +240,7 @@ func (s *MasterUseCase) RenameIncomeCategory(ctx *gin.Context, id uuid.UUID, req
 	}{
 		Message: "rename income category success",
 	}
-	return response, http.StatusInternalServerError, errInfo
+	return response, http.StatusOK, errInfo
 }
 
 func (s *MasterUseCase) RenameExpenseCategory(ctx *gin.Context, id uuid.UUID, request *dtos.RenameCatRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
