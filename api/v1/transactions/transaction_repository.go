@@ -543,7 +543,8 @@ func (r *TransactionRepository) InvestMonthlyDetail(IDPersonal uuid.UUID, month,
               to_char(t.date_time_transaction::DATE, 'YYYY'))::text         as date,
        td.lot::numeric                                                      as lot,
        td.stock_code ::text                                                 as stock_code,
-	   t.amount as price
+	   t.amount as price,
+	   td.sellbuy as sell_buy
 FROM tbl_transactions t
          INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
          INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
@@ -551,7 +552,7 @@ WHERE to_char(t.date_time_transaction::DATE, 'MM') = ?
   AND to_char(t.date_time_transaction::DATE, 'YYYY') = ?
   AND t.id_personal_account = ?
   AND tmtt.type = 'INVEST'
-GROUP BY date, lot, stock_code,price
+GROUP BY date, lot, stock_code,price, sell_buy
 ORDER BY date DESC`, month, year, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionInvestmentDetail{}
 	}
@@ -581,14 +582,15 @@ func (r *TransactionRepository) InvestAnnuallyDetail(IDPersonal uuid.UUID, year 
        COALESCE(SUM(t.amount) FILTER ( WHERE td.sellbuy = 1 ), 0) ::numeric as total_sell,
        td.lot :: numeric                                                    as lot,
        td.stock_code :: text                                                as stock_code,
-		t.amount as price
+		t.amount as price,
+		td.sellbuy as sell_buy
 FROM tbl_transactions t
          INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
          INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
 WHERE to_char(t.date_time_transaction::DATE, 'YYYY') = ?
   AND t.id_personal_account = ?
   AND tmtt.type = 'INVEST'
-GROUP BY t.date_time_transaction, date, lot, stock_code, price
+GROUP BY t.date_time_transaction, date, lot, stock_code, price, sell_buy
 ORDER BY t.date_time_transaction::DATE DESC`, year, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionInvestmentDetail{}
 	}

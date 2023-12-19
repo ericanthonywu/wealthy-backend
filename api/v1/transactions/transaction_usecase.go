@@ -618,10 +618,17 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 	dtoResponse.Summary = responseInvestmentTotal
 
 	dateTemp := ""
-	max := len(responseInvestmentDetail)
+	maxData := len(responseInvestmentDetail) - 1
+	sellBuy := ""
 
 	if len(responseInvestmentDetail) > 0 {
 		for k, v := range responseInvestmentDetail {
+
+			if v.SellBuy == 0 {
+				sellBuy = "SELL"
+			} else {
+				sellBuy = "BUY"
+			}
 
 			// get trading
 			dataTrading, err := s.repo.GetTradingInfo(v.StockCode)
@@ -639,10 +646,11 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 					Lot:          v.Lot,
 					StockCode:    v.StockCode,
 					Price:        v.Price,
+					SellBuy:      sellBuy,
 				})
 
 				// reach end
-				if k == (max - 1) {
+				if k == maxData {
 					// append to details
 					detail = append(detail, dtos.TransactionInvestmentDetail{
 						TransactionDate:    dateTemp,
@@ -662,10 +670,11 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 					Lot:          v.Lot,
 					StockCode:    v.StockCode,
 					Price:        v.Price,
+					SellBuy:      sellBuy,
 				})
 
 				// reach end
-				if k == (max - 1) {
+				if k == maxData {
 					// append to details
 					detail = append(detail, dtos.TransactionInvestmentDetail{
 						TransactionDate:    dateTemp,
@@ -698,10 +707,11 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 					Lot:          v.Lot,
 					StockCode:    v.StockCode,
 					Price:        v.Price,
+					SellBuy:      sellBuy,
 				})
 
 				// reach end
-				if k == (max - 1) {
+				if k == maxData {
 					// append to details
 					detail = append(detail, dtos.TransactionInvestmentDetail{
 						TransactionDate:    dateTemp,

@@ -140,6 +140,7 @@ type (
 		Lot       int    `gorm:"column:lot" json:"lot"`
 		StockCode string `gorm:"column:stock_code" json:"stock_code"`
 		Price     int64  `gorm:"column:price"`
+		SellBuy   int    `gorm:"column:sell_buy"`
 	}
 
 	TransactionByNotes struct {

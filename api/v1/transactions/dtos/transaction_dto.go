@@ -111,6 +111,7 @@ type (
 		Lot          int     `json:"lot"`
 		StockCode    string  `json:"stock_code"`
 		Price        int64   `json:"price"`
+		SellBuy      string  `json:"sell_buy"`
 	}
 
 	TransactionDetails struct {
