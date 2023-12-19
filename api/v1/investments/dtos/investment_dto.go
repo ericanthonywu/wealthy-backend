@@ -22,6 +22,7 @@ type (
 		PotentialReturn     float64 `json:"potential_return"`
 		PercentageReturn    string  `json:"percentage_potential_return"`
 		UnrealizedPotential float64 `json:"unrealized_potential"`
+		TotalDays           int64   `json:"total_days"`
 	}
 
 	InvestmentResponseGainLoss struct {
@@ -37,7 +38,7 @@ type (
 		Lot               int64   `json:"lot"`
 		Price             float64 `json:"price"`
 		GainLoss          float64 `json:"gain_loss"`
-		Percentage        float64 `json:"percentage"`
+		Percentage        string  `json:"percentage"`
 		TotalDays         int     `json:"total_days"`
 	}
 )

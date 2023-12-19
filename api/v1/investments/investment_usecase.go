@@ -61,8 +61,14 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 	maxData := len(trxData) - 1
 	totalInvestment := 0.0
 	totalPotentialReturn := 0.0
+	dateTotal := 0
 
 	for k, v := range trxData {
+
+		dateTotal = datecustoms.TotalDaysBetweenDate(v.DateTransaction.Format("2006-01-02"))
+		if dateTotal < 0 {
+			dateTotal = 0
+		}
 
 		totalInvestment += v.InitialInvestment
 
@@ -89,6 +95,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 				PotentialReturn:     potentialReturn,
 				PercentageReturn:    fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
 				UnrealizedPotential: potentialReturn,
+				TotalDays:           int64(dateTotal),
 			})
 
 			// latest data
@@ -124,6 +131,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 				PotentialReturn:     potentialReturn,
 				PercentageReturn:    fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
 				UnrealizedPotential: potentialReturn,
+				TotalDays:           int64(dateTotal),
 			})
 		}
 
@@ -155,6 +163,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 				PotentialReturn:     potentialReturn,
 				PercentageReturn:    fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
 				UnrealizedPotential: potentialReturn,
+				TotalDays:           int64(dateTotal),
 			})
 
 			// latest data
@@ -247,7 +256,7 @@ func (s *InvestmentUseCase) GainLoss(ctx *gin.Context) (response interface{}, ht
 			Price:             float64(v.Price),
 			Name:              dataTrading.Name,
 			InitialInvestment: valueSell,
-			Percentage:        percentageReturn,
+			Percentage:        fmt.Sprintf("%.2f", percentageReturn),
 			TotalDays:         datecustoms.TotalDaysBetweenDate(v.DateTransaction),
 			GainLoss:          gainLoss,
 		})
