@@ -3,6 +3,7 @@ package transactions
 import (
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/entities"
+	"github.com/semicolon-indonesia/wealthy-backend/models"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -14,6 +15,9 @@ type (
 
 	ITransactionRepository interface {
 		Add(trx *entities.TransactionEntity, trxDetail *entities.TransactionDetailEntity) (err error)
+
+		RecordInvestTrx(trxInvestment *entities.TransactionInvestmentEntity) (err error)
+
 		ExpenseDetailHistoryWithoutDate(IDPersonal uuid.UUID) (data []entities.TransactionDetailHistory)
 		ExpenseDetailHistoryWithDate(IDPersonal uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailHistory)
 		ExpenseTotalHistoryWithoutDate(IDPersonal uuid.UUID) (data entities.TransactionExpenseTotalHistory)
@@ -52,7 +56,10 @@ type (
 		WalletExist(IDWallet uuid.UUID) bool
 		BudgetWithCurrency(IDTravel uuid.UUID) (data entities.TransactionWithCurrency, err error)
 
+		AllInvestmentsTrx(accountUUID uuid.UUID) (data models.TrxInvest, err error)
+		PreviousInvestment(accountUUID uuid.UUID, stockCode string, IDMasterBrokerUUID uuid.UUID) (data entities.TransactionInvestmentEntity, err error)
 		GetTradingInfo(stockCode string) (data entities.InvestmentTreding, err error)
+		GetBrokerInfo(IDMasterBroker uuid.UUID) (data entities.BrokerInfo, err error)
 	}
 )
 
@@ -71,6 +78,43 @@ func (r *TransactionRepository) Add(trx *entities.TransactionEntity, trxDetail *
 		}
 		return nil
 	})
+
+	return err
+}
+
+func (r *TransactionRepository) RecordInvestTrx(trxInvestment *entities.TransactionInvestmentEntity) (err error) {
+	var (
+		result bool
+	)
+
+	// get first
+	if err := r.db.Raw(`SELECT EXISTS(SELECT 1 FROM tbl_investment
+         WHERE id_personal_accounts=? AND stock_code=? AND id_master_broker=?)`, trxInvestment.IDPersonalAccount, trxInvestment.StockCode, trxInvestment.IDMasterBroker).
+		Scan(&result).Error; err != nil {
+		logrus.Error(err.Error())
+	}
+
+	if result {
+		// update
+		r.db.Model(&entities.TransactionInvestmentEntity{}).
+			Where("id_personal_accounts = ?", trxInvestment.IDPersonalAccount).
+			Where("id_master_broker=?", trxInvestment.IDMasterBroker).
+			Where("stock_code=?", trxInvestment.StockCode).
+			Updates(map[string]interface{}{"total_lot": trxInvestment.TotalLot,
+				"value_buy":          trxInvestment.ValueBuy,
+				"average_buy":        trxInvestment.AverageBuy,
+				"initial_investment": trxInvestment.InitialInvestment,
+				"gain_loss":          trxInvestment.GainLoss,
+				"potential_return":   trxInvestment.PotentialReturn,
+				"percentage_return":  trxInvestment.PercentageReturn})
+
+	} else {
+		// create
+		if err := r.db.Create(&trxInvestment).Error; err != nil {
+			logrus.Error(err.Error())
+		}
+
+	}
 
 	return err
 }
@@ -596,10 +640,50 @@ WHERE tb.id=?`, IDTravel).
 	return data, nil
 }
 
+func (r *TransactionRepository) AllInvestmentsTrx(accountUUID uuid.UUID) (data models.TrxInvest, err error) {
+	if err := r.db.Raw(`SELECT tbl_transactions.date_time_transaction,
+       tbl_transactions.id_master_broker,
+       tbl_transactions.amount,
+       tbl_transaction_details.id_transactions,
+       tbl_transaction_details.lot,
+       tbl_transaction_details.sellbuy,
+       tbl_transaction_details.stock_code,
+       tbl_wallets.fee_invest_buy as fee_buy,
+       tbl_wallets.fee_invest_sell as fee_sell
+FROM tbl_transaction_details
+         JOIN tbl_transactions ON tbl_transaction_details.id_transactions = tbl_transactions.id
+         JOIN tbl_wallets ON tbl_wallets.id = tbl_transactions.id_wallets
+WHERE tbl_transactions.id_personal_account = ?
+  AND tbl_transactions.id_master_invest <> '00000000-0000-0000-0000-000000000000'`, accountUUID).
+		Scan(&data).Error; err != nil {
+		return models.TrxInvest{}, err
+	}
+
+	return data, nil
+}
+
+func (r *TransactionRepository) PreviousInvestment(accountUUID uuid.UUID, stockCode string, IDMasterBrokerUUID uuid.UUID) (data entities.TransactionInvestmentEntity, err error) {
+	if err := r.db.Where("id_personal_accounts", accountUUID).
+		Where("stock_code", stockCode).
+		Where("id_master_broker", IDMasterBrokerUUID).
+		First(&data).Error; err != nil {
+		return entities.TransactionInvestmentEntity{}, err
+	}
+	return data, nil
+}
+
 func (r *TransactionRepository) GetTradingInfo(stockCode string) (data entities.InvestmentTreding, err error) {
 	if err := r.db.Raw(`SELECT tmd.symbol, tmd.name, tmd.close::numeric FROM tbl_master_trading tmd WHERE tmd.symbol=?`, stockCode).
 		Scan(&data).Error; err != nil {
 		return entities.InvestmentTreding{}, err
 	}
+	return data, nil
+}
+
+func (r *TransactionRepository) GetBrokerInfo(IDMasterBroker uuid.UUID) (data entities.BrokerInfo, err error) {
+	if err := r.db.Raw(`SELECT * FROM tbl_master_broker tmb WHERE tmb.id=?`, IDMasterBroker).Scan(&data).Error; err != nil {
+		return entities.BrokerInfo{}, err
+	}
+
 	return data, nil
 }

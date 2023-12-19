@@ -179,6 +179,11 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				transactionHistory.GET("/travel", transaction.TravelTransactionHistory)
 			}
 
+			investmentTransaction := transactionGroup.Group("/records")
+			{
+				investmentTransaction.POST("/investments", transaction.AddInvestmentTransaction)
+			}
+
 			suggestionGroup := transactionGroup.Group("/suggestions")
 			{
 				suggestionGroup.GET("/notes", transaction.Suggestion)

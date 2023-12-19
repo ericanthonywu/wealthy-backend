@@ -35,6 +35,20 @@ type (
 		IDTravel          uuid.UUID `gorm:"column:id_travel"`
 	}
 
+	TransactionInvestmentEntity struct {
+		StockCode         string    `gorm:"column:stock_code"`
+		TotalLot          int64     `gorm:"column:total_lot"`
+		ValueBuy          float64   `gorm:"column:value_buy"`
+		ValueSell         float64   `gorm:"column:value_sell"`
+		AverageBuy        float64   `gorm:"column:average_buy"`
+		InitialInvestment float64   `gorm:"column:initial_investment"`
+		IDPersonalAccount uuid.UUID `gorm:"column:id_personal_accounts"`
+		IDMasterBroker    uuid.UUID `gorm:"column:id_master_broker"`
+		GainLoss          float64   `gorm:"column:gain_loss"`
+		PotentialReturn   float64   `gorm:"column:potential_return"`
+		PercentageReturn  float64   `gorm:"column:percentage_return"`
+	}
+
 	TransactionExpenseTotalHistory struct {
 		TotalExpense float64 `gorm:"column:total_expense" json:"transaction_total"`
 	}
@@ -151,6 +165,11 @@ type (
 		Symbol string `gorm:"column:symbol"`
 		Close  int64  `gorm:"column:close"`
 	}
+
+	BrokerInfo struct {
+		ID   uuid.UUID `gorm:"column:id"`
+		Name string    `gorm:"column:broker_name"`
+	}
 )
 
 func (TransactionEntity) TableName() string {
@@ -159,4 +178,12 @@ func (TransactionEntity) TableName() string {
 
 func (TransactionDetailEntity) TableName() string {
 	return "tbl_transaction_details"
+}
+
+func (TransactionInvestmentEntity) TableName() string {
+	return "tbl_investment"
+}
+
+func (BrokerInfo) TableName() string {
+	return "tbl_master_broker"
 }

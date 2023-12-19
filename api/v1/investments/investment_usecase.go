@@ -5,12 +5,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/investments/dtos"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/investments/entities"
 	"github.com/semicolon-indonesia/wealthy-backend/constants"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/datecustoms"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"sort"
 	"strconv"
 )
 
@@ -22,6 +24,7 @@ type (
 	IInvestmentUseCase interface {
 		Portfolio(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		GainLoss(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		sortByAttribute(data []entities.InvestmentTransaction, attribute string)
 	}
 )
 
@@ -65,6 +68,22 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 		return resp, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
+	// todo:  new logic here
+
+	// sorting
+	//s.sortByAttribute(trxData, "StockCode")
+
+	// sorting
+	sort.Slice(trxData, func(i, j int) bool {
+		// First, compare by Age
+		if trxData[i].StockCode != trxData[j].StockCode {
+			return trxData[i].StockCode < trxData[j].StockCode
+		}
+		// If Age is the same, compare by Score
+		return trxData[i].BrokerName < trxData[j].BrokerName
+	})
+
+	// --------------------------------
 	maxTrxData := len(trxData)
 
 	// mapping for response
@@ -508,4 +527,13 @@ func (s *InvestmentUseCase) GainLoss(ctx *gin.Context) (response interface{}, ht
 	}
 
 	return dtoResponse, http.StatusOK, errInfo
+}
+
+func (s *InvestmentUseCase) sortByAttribute(data []entities.InvestmentTransaction, attribute string) {
+	switch attribute {
+	case "StockCode":
+		sort.Slice(data, func(i, j int) bool { return data[i].StockCode < data[j].StockCode })
+	default:
+		sort.Slice(data, func(i, j int) bool { return data[i].DateTransaction < data[j].DateTransaction })
+	}
 }

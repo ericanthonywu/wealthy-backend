@@ -1,6 +1,7 @@
 package transactions
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/dtos"
@@ -10,6 +11,7 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"sort"
 )
 
 type (
@@ -19,6 +21,7 @@ type (
 
 	ITransactionUseCase interface {
 		Add(ctx *gin.Context, request *dtos.TransactionRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		AddInvestmentTransaction(ctx *gin.Context, request *dtos.TransactionRequestInvestment) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ExpenseTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		IncomeTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		TravelTransactionHistory(ctx *gin.Context, IDTravel uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
@@ -28,6 +31,8 @@ type (
 		Investment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ByNotes(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Suggestion(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		saveInvestTransaction(accountID uuid.UUID, request *dtos.TransactionRequestInvestment) (id uuid.UUID, err error)
+		investmentCalculation(accountID uuid.UUID) (err error)
 	}
 )
 
@@ -52,16 +57,6 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 
 	// convert string to UUID
 	IDWalletUUID, err := uuid.Parse(request.IDWallet)
-	if err != nil {
-		logrus.Error(err.Error())
-	}
-
-	IDMasterInvestUUID, err := uuid.Parse(request.IDMasterInvest)
-	if err != nil {
-		logrus.Error(err.Error())
-	}
-
-	IDMasterBrokerUUID, err := uuid.Parse(request.IDMasterBroker)
 	if err != nil {
 		logrus.Error(err.Error())
 	}
@@ -139,23 +134,17 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		IDMasterIncomeCategories:      IDMasterIncCatUUID,
 		IDMasterExpenseCategories:     IDMasterExpCatUUID,
 		IDMasterExpenseSubCategories:  IDMasterSubExpCatUUID,
-		IDMasterInvest:                IDMasterInvestUUID,
-		IDMasterBroker:                IDMasterBrokerUUID,
 		IDMasterTransactionPriorities: IDMasterTransPriUUID,
 		IDMasterTransactionTypes:      IDMasterTransTypeUUID,
 	}
 
 	modelTransactionDetail := entities.TransactionDetailEntity{
-		IDTransaction:     trxID,
-		Repeat:            request.Repeat,
-		Note:              request.Note,
-		From:              request.TransferFrom,
-		To:                request.TransferTo,
-		MutualFundProduct: request.MutualFundProduct,
-		StockCode:         request.StockCode,
-		Lot:               request.Lot,
-		SellBuy:           request.SellBuy,
-		IDTravel:          IDTravelUUID,
+		IDTransaction: trxID,
+		Repeat:        request.Repeat,
+		Note:          request.Note,
+		From:          request.TransferFrom,
+		To:            request.TransferTo,
+		IDTravel:      IDTravelUUID,
 	}
 
 	// save transaction
@@ -181,6 +170,43 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 	}
 
 	return data, http.StatusOK, errInfo
+}
+
+func (s *TransactionUseCase) AddInvestmentTransaction(ctx *gin.Context, request *dtos.TransactionRequestInvestment) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		trxID uuid.UUID
+		err   error
+	)
+
+	// account uuid
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	// save investment transaction
+	trxID, err = s.saveInvestTransaction(accountUUID, request)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// do calculation. fetching data from transaction detail
+	err = s.investmentCalculation(accountUUID)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// prepare for response
+	resp := struct {
+		IDTransaction uuid.UUID `json:"id_transaction"`
+	}{
+		IDTransaction: trxID,
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return resp, http.StatusOK, errInfo
 }
 
 func (s *TransactionUseCase) ExpenseTransactionHistory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
@@ -906,4 +932,374 @@ func (s *TransactionUseCase) Suggestion(ctx *gin.Context) (response interface{},
 	}
 
 	return suggestionCollection, http.StatusOK, errInfo
+}
+
+func (s *TransactionUseCase) saveInvestTransaction(accountID uuid.UUID, request *dtos.TransactionRequestInvestment) (ID uuid.UUID, err error) {
+
+	// convert process from string type to uuid type
+	IDWalletUUID, err := uuid.Parse(request.IDWallet)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	IDMasterBrokerUUID, err := uuid.Parse(request.IDMasterBroker)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	IDMasterInvestUUID, err := uuid.Parse(request.IDMasterInvest)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	IDMasterTrxTypesUUID, err := uuid.Parse(request.IDMasterTransactionTypes)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	// mapping to entities process
+	trxID := uuid.New()
+	modelTransaction := entities.TransactionEntity{
+		ID:                       trxID,
+		Date:                     request.Date,
+		Amount:                   float64(request.Price),
+		IDPersonalAccount:        accountID,
+		IDWallet:                 IDWalletUUID,
+		IDMasterBroker:           IDMasterBrokerUUID,
+		IDMasterInvest:           IDMasterInvestUUID,
+		IDMasterTransactionTypes: IDMasterTrxTypesUUID,
+	}
+
+	modelTransactionDetail := entities.TransactionDetailEntity{
+		IDTransaction: trxID,
+		StockCode:     request.StockCode,
+		Lot:           request.Lot,
+		SellBuy:       request.SellBuy,
+	}
+
+	// save transaction into transaction table, and transaction detail table, return err if any and id
+	return trxID, s.repo.Add(&modelTransaction, &modelTransactionDetail)
+}
+
+func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err error) {
+	var (
+		lotBuy            int64
+		lotSell           int64
+		initialInvestment float64
+		buy               float64
+		sell              float64
+		percentageReturn  float64
+		sellCollection    []float64
+		feeSell           float64
+		feeBuy            float64
+		averageBuy        float64
+		gainloss          float64
+		potentialReturn   float64
+		brokerName        string
+		stockCode         string
+		maxData           int
+	)
+
+	// get transaction detail table where id_personal_accounts
+	dataTrxDetail, err := s.repo.AllInvestmentsTrx(accountID)
+	if err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+
+	if dataTrxDetail == nil {
+		logrus.Error(err.Error())
+		return errors.New("system can not calculate investment process")
+	}
+
+	// sorting
+	sort.Sort(dataTrxDetail)
+
+	// length of data
+	maxData = len(dataTrxDetail) - 1
+
+	// do complex calculation
+	for k, v := range dataTrxDetail {
+
+		// get broker info
+		brokerInfo, err := s.repo.GetBrokerInfo(v.IDMasterBroker)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		tradingInfo, err := s.repo.GetTradingInfo(v.StockCode)
+		{
+			if err != nil {
+				logrus.Error(err.Error())
+			}
+		}
+
+		// if broker name is same as previous
+		if brokerName == brokerInfo.Name {
+
+			// if stock code same as previous
+			if stockCode == v.StockCode {
+
+				// if buy transaction
+				if v.SellBuy == 1 {
+					buy = float64(v.Lot) * v.Amount * 100
+					initialInvestment += buy
+					lotBuy += v.Lot
+				}
+
+				// if sell transaction
+				if v.SellBuy == 0 {
+					// sell calculation
+					sell = float64(v.Lot) * v.Amount * 100
+					sellCollection = append(sellCollection, sell)
+					lotSell += v.Lot
+
+				}
+
+				// if latest data
+				if k == maxData {
+					// average buy
+					averageBuy = (initialInvestment / float64(lotBuy)) * 100
+
+					// potential return and percentage
+					potentialReturn += (float64(tradingInfo.Close) - float64(averageBuy)) * float64(lotBuy) * 100
+					percentageReturn = potentialReturn / initialInvestment
+
+					if len(sellCollection) > 0 {
+						// buy calculation
+						buy = averageBuy * float64(lotSell) * 100
+						feeBuy = v.FeeBuy * buy
+						netBuy := buy - feeBuy
+						totalSell := 0.0
+
+						// sell calculation
+						for _, v := range sellCollection {
+							totalSell += v
+						}
+						feeSell = totalSell * v.FeeSell
+						netSell := totalSell - feeSell
+
+						gainloss = netSell - netBuy
+						percentageReturn = gainloss / buy
+					}
+
+					// mapping
+					trxInvestment := entities.TransactionInvestmentEntity{
+						StockCode:         stockCode,
+						TotalLot:          lotBuy - lotSell,
+						ValueBuy:          buy,
+						AverageBuy:        averageBuy,
+						InitialInvestment: initialInvestment,
+						IDPersonalAccount: accountID,
+						IDMasterBroker:    v.IDMasterBroker,
+						GainLoss:          gainloss,
+						PotentialReturn:   potentialReturn,
+						PercentageReturn:  percentageReturn,
+					}
+
+					// save data into investment table
+					err = s.repo.RecordInvestTrx(&trxInvestment)
+					if err != nil {
+						logrus.Error(err.Error())
+					}
+				}
+			}
+
+			// if stock code different than previous
+			if stockCode != v.StockCode {
+
+				// average buy
+				averageBuy = (initialInvestment / float64(lotBuy)) * 100
+
+				// potential return and percentage
+				potentialReturn += (float64(tradingInfo.Close) - float64(averageBuy)) * float64(lotBuy) * 100
+				percentageReturn = potentialReturn / initialInvestment
+
+				// mapping
+				trxInvestment := entities.TransactionInvestmentEntity{
+					StockCode:         stockCode,
+					TotalLot:          lotBuy - lotSell,
+					ValueBuy:          buy,
+					AverageBuy:        averageBuy,
+					InitialInvestment: initialInvestment,
+					IDPersonalAccount: accountID,
+					IDMasterBroker:    v.IDMasterBroker,
+					GainLoss:          0,
+					PotentialReturn:   potentialReturn,
+					PercentageReturn:  percentageReturn,
+				}
+
+				// save previous data into investment table
+				err = s.repo.RecordInvestTrx(&trxInvestment)
+				if err != nil {
+					logrus.Error(err.Error())
+				}
+
+				// clear
+				initialInvestment = 0
+				lotBuy = 0
+				lotSell = 0
+				potentialReturn = 0
+
+				// if buy transaction
+				if v.SellBuy == 1 {
+					buy = float64(v.Lot) * v.Amount * 100
+					initialInvestment += buy
+					lotBuy += v.Lot
+				}
+
+				// if latest data
+				if k == maxData {
+					// average buy
+					averageBuy = (initialInvestment / float64(lotBuy)) * 100
+
+					// potential return and percentage
+					potentialReturn += (float64(tradingInfo.Close) - float64(averageBuy)) * float64(lotBuy) * 100
+					percentageReturn = potentialReturn / initialInvestment
+
+					// mapping
+					trxInvestment := entities.TransactionInvestmentEntity{
+						StockCode:         stockCode,
+						TotalLot:          lotBuy - lotSell,
+						ValueBuy:          buy,
+						AverageBuy:        averageBuy,
+						InitialInvestment: initialInvestment,
+						IDPersonalAccount: accountID,
+						IDMasterBroker:    v.IDMasterBroker,
+						GainLoss:          0,
+						PotentialReturn:   potentialReturn,
+						PercentageReturn:  percentageReturn,
+					}
+
+					// save data into investment table
+					err = s.repo.RecordInvestTrx(&trxInvestment)
+					if err != nil {
+						logrus.Error(err.Error())
+					}
+				}
+			}
+		}
+
+		// if first time, set broker name, set stock code
+		if brokerName == "" {
+			brokerName = brokerInfo.Name
+			stockCode = v.StockCode
+			lotBuy += v.Lot
+
+			// if buy transaction
+			if v.SellBuy == 1 {
+				buy = float64(v.Lot) * v.Amount * 100
+				initialInvestment += buy
+			}
+
+			// if latest data
+			if k == maxData {
+				// average buy
+				averageBuy = (initialInvestment / float64(lotBuy)) * 100
+
+				// potential return and percentage
+				potentialReturn += (float64(tradingInfo.Close) - float64(averageBuy)) * float64(lotBuy) * 100
+				percentageReturn = potentialReturn / initialInvestment
+
+				// mapping
+				trxInvestment := entities.TransactionInvestmentEntity{
+					StockCode:         stockCode,
+					TotalLot:          lotBuy - lotSell,
+					ValueBuy:          buy,
+					AverageBuy:        averageBuy,
+					InitialInvestment: initialInvestment,
+					IDPersonalAccount: accountID,
+					IDMasterBroker:    v.IDMasterBroker,
+					GainLoss:          0,
+					PotentialReturn:   potentialReturn,
+					PercentageReturn:  percentageReturn,
+				}
+
+				// save data into investment table
+				err = s.repo.RecordInvestTrx(&trxInvestment)
+				if err != nil {
+					logrus.Error(err.Error())
+				}
+			}
+		}
+
+		// if broker name different than previous
+		if brokerName != brokerInfo.Name {
+			// average buy
+			averageBuy = (initialInvestment / float64(lotBuy)) * 100
+
+			// potential return and percentage
+			potentialReturn += (float64(tradingInfo.Close) - float64(averageBuy)) * float64(lotBuy) * 100
+			percentageReturn = potentialReturn / initialInvestment
+
+			// mapping
+			trxInvestment := entities.TransactionInvestmentEntity{
+				StockCode:         stockCode,
+				TotalLot:          lotBuy - lotSell,
+				ValueBuy:          buy,
+				AverageBuy:        averageBuy,
+				InitialInvestment: initialInvestment,
+				IDPersonalAccount: accountID,
+				IDMasterBroker:    v.IDMasterBroker,
+				GainLoss:          0,
+				PotentialReturn:   potentialReturn,
+				PercentageReturn:  percentageReturn,
+			}
+
+			// save previous data into investment table
+			err = s.repo.RecordInvestTrx(&trxInvestment)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
+
+			// clear
+			initialInvestment = 0
+			lotBuy = 0
+			lotSell = 0
+			potentialReturn = 0
+
+			// renew value
+			brokerName = brokerInfo.Name
+			stockCode = v.StockCode
+
+			// if buy transaction
+			if v.SellBuy == 1 {
+				buy = float64(v.Lot) * v.Amount * 100
+				initialInvestment += buy
+				lotBuy += v.Lot
+			}
+
+			// if latest data
+			if k == maxData {
+				// average buy
+				averageBuy = (initialInvestment / float64(lotBuy)) * 100
+
+				// potential return and percentage
+				potentialReturn += (float64(tradingInfo.Close) - float64(averageBuy)) * float64(lotBuy) * 100
+				percentageReturn = potentialReturn / initialInvestment
+
+				// mapping
+				trxInvestment := entities.TransactionInvestmentEntity{
+					StockCode:         stockCode,
+					TotalLot:          lotBuy - lotSell,
+					ValueBuy:          buy,
+					AverageBuy:        averageBuy,
+					InitialInvestment: initialInvestment,
+					IDPersonalAccount: accountID,
+					IDMasterBroker:    v.IDMasterBroker,
+					GainLoss:          0,
+					PotentialReturn:   potentialReturn,
+					PercentageReturn:  percentageReturn,
+				}
+
+				// save data into investment table
+				err = s.repo.RecordInvestTrx(&trxInvestment)
+				if err != nil {
+					logrus.Error(err.Error())
+				}
+			}
+		}
+	}
+
+	return nil
 }
