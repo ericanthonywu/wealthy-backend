@@ -51,7 +51,7 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 	}
 
 	// mapping wallet type with wallet id
-	switch request.WalletID {
+	switch request.IDMasterWallet {
 	case constants.IDCash:
 		WalletType = constants.Cash
 	case constants.IDDebitCard:
@@ -64,7 +64,7 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 		WalletType = constants.Saving
 	}
 
-	UUIDIDMasterWalletType, err := uuid.Parse(request.WalletID)
+	UUIDIDMasterWalletType, err := uuid.Parse(request.IDMasterWallet)
 	if err != nil {
 		logrus.Error(err.Error())
 	}

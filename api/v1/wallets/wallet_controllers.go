@@ -43,8 +43,8 @@ func (c *WalletController) Add(ctx *gin.Context) {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "wallet name empty")
 	}
 
-	if dtoRequest.WalletID == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "wallet id empty")
+	if dtoRequest.IDMasterWallet == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master wallet  empty")
 	}
 
 	if dtoRequest.TotalAsset == 0 {
@@ -52,11 +52,11 @@ func (c *WalletController) Add(ctx *gin.Context) {
 	}
 
 	// check wallet id
-	isValid := dtoRequest.WalletID == constants.IDCash ||
-		dtoRequest.WalletID == constants.IDCreditCard ||
-		dtoRequest.WalletID == constants.IDDebitCard ||
-		dtoRequest.WalletID == constants.IDInvestment ||
-		dtoRequest.WalletID == constants.IDSaving
+	isValid := dtoRequest.IDMasterWallet == constants.IDCash ||
+		dtoRequest.IDMasterWallet == constants.IDCreditCard ||
+		dtoRequest.IDMasterWallet == constants.IDDebitCard ||
+		dtoRequest.IDMasterWallet == constants.IDInvestment ||
+		dtoRequest.IDMasterWallet == constants.IDSaving
 
 	if !isValid {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master wallet unregistered")
