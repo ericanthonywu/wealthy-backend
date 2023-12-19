@@ -17,11 +17,10 @@ type (
 		DateTransaction string  `gorm:"column:date_transaction"`
 	}
 
-	InvestmentGainLossEntity struct {
+	InvestmentDataHelper struct {
 		StockCode         string    `gorm:"column:stock_code"`
 		TotalLot          int64     `gorm:"column:total_lot"`
 		ValueBuy          float64   `gorm:"column:value_buy"`
-		ValueSell         float64   `gorm:"column:value_sell"`
 		AverageBuy        float64   `gorm:"column:average_buy"`
 		InitialInvestment float64   `gorm:"column:initial_investment"`
 		IDMasterBroker    uuid.UUID `gorm:"column:id_master_broker"`
@@ -29,6 +28,8 @@ type (
 		PotentialReturn   float64   `gorm:"column:potential_return"`
 		PercentageReturn  float64   `gorm:"column:percentage_return"`
 		DateTransaction   time.Time `gorm:"column:created_at"`
+		FeeBuy            float64   `gorm:"column:fee_buy"`
+		NetBuy            float64   `gorm:"column:net_buy"`
 	}
 
 	BrokerInfo struct {

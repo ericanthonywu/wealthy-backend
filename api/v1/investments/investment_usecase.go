@@ -86,10 +86,10 @@ func (s *InvestmentUseCase) GainLoss(ctx *gin.Context) (response interface{}, ht
 
 	for _, v := range dataTrx {
 
-		// get broker info
-		dataBroker, err := s.repo.GetBrokerInfo(v.IDMasterBroker)
+		dataInvestment, err := s.repo.GetInvestmentDataHelper(accountUUID, v.StockCode)
 		if err != nil {
-			logrus.Error(err.Error())
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
 		}
 
 		// get trading info
@@ -100,17 +100,32 @@ func (s *InvestmentUseCase) GainLoss(ctx *gin.Context) (response interface{}, ht
 			return response, http.StatusInternalServerError, errInfo
 		}
 
+		// sell calculation
+		valueSell := float64(v.Lot * v.Price * 100)
+		feeSell := v.FeeSell * valueSell
+		netSell := valueSell - feeSell
+
+		// buy information
+		valueBuy := dataInvestment.ValueBuy
+		netBuy := dataInvestment.NetBuy
+
+		// gain loss
+		gainLoss := netSell - netBuy
+
+		// percentage return
+		percentageReturn := gainLoss / valueBuy
+
 		dtoResponse = append(dtoResponse, dtos.InvestmentGainLoss{
-			BrokerName:        dataBroker.Name,
-			DataTransaction:   v.DateTransaction.Format("2006-01-02"),
+			DataTransaction:   v.DateTransaction,
+			BrokerName:        v.BrokerName,
 			StockCode:         v.StockCode,
-			Lot:               v.TotalLot,
-			Price:             float64(dataTrading.Close),
+			Lot:               v.Lot,
+			Price:             float64(v.Price),
 			Name:              dataTrading.Name,
-			InitialInvestment: v.InitialInvestment,
-			Percentage:        v.PercentageReturn,
-			TotalDays:         datecustoms.TotalDaysBetweenDate(v.DateTransaction.Format("2006-01-02")),
-			GainLoss:          v.GainLoss,
+			InitialInvestment: valueSell,
+			Percentage:        percentageReturn,
+			TotalDays:         datecustoms.TotalDaysBetweenDate(v.DateTransaction),
+			GainLoss:          gainLoss,
 		})
 	}
 

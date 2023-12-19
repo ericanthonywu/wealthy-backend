@@ -25,15 +25,15 @@ type (
 	}
 
 	InvestmentGainLoss struct {
-		BrokerName        string  `json:"broker_name"`
 		DataTransaction   string  `json:"data_transaction"`
-		StockCode         string  `json:"stock_code"`
-		Lot               int64   `json:"lot"`
-		Name              string  `json:"investment_name"`
-		Price             float64 `json:"price"`
+		BrokerName        string  `json:"broker_name"`
 		InitialInvestment float64 `json:"initial_investment"`
+		StockCode         string  `json:"investment_stock_code"`
+		Name              string  `json:"investment_name"`
+		Lot               int64   `json:"lot"`
+		Price             float64 `json:"price"`
+		GainLoss          float64 `json:"gain_loss"`
 		Percentage        float64 `json:"percentage"`
 		TotalDays         int     `json:"total_days"`
-		GainLoss          float64 `json:"gain_loss"`
 	}
 )
