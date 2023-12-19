@@ -100,13 +100,16 @@ func (r *TransactionRepository) RecordInvestTrx(trxInvestment *entities.Transact
 			Where("id_personal_accounts = ?", trxInvestment.IDPersonalAccount).
 			Where("id_master_broker=?", trxInvestment.IDMasterBroker).
 			Where("stock_code=?", trxInvestment.StockCode).
-			Updates(map[string]interface{}{"total_lot": trxInvestment.TotalLot,
+			Updates(map[string]interface{}{
+				"total_lot":          trxInvestment.TotalLot,
 				"value_buy":          trxInvestment.ValueBuy,
 				"average_buy":        trxInvestment.AverageBuy,
 				"initial_investment": trxInvestment.InitialInvestment,
 				"gain_loss":          trxInvestment.GainLoss,
 				"potential_return":   trxInvestment.PotentialReturn,
-				"percentage_return":  trxInvestment.PercentageReturn})
+				"percentage_return":  trxInvestment.PercentageReturn,
+				"fee_buy":            trxInvestment.FeeBuy,
+				"net_buy":            trxInvestment.NetBuy})
 
 	} else {
 		// create

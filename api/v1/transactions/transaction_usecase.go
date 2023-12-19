@@ -992,6 +992,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 		sellCollection    []float64
 		feeSell           float64
 		feeBuy            float64
+		netBuy            float64
 		averageBuy        float64
 		gainloss          float64
 		potentialReturn   float64
@@ -1061,6 +1062,12 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					// average buy
 					averageBuy = (initialInvestment / float64(lotBuy)) * 100
 
+					// fee buy calculation
+					feeBuy = v.FeeBuy * buy
+
+					// net buy
+					netBuy = buy - feeBuy
+
 					// potential return and percentage
 					potentialReturn += (float64(tradingInfo.Close) - float64(averageBuy)) * float64(lotBuy) * 100
 					percentageReturn = potentialReturn / initialInvestment
@@ -1069,10 +1076,10 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 						// buy calculation
 						buy = averageBuy * float64(lotSell) * 100
 						feeBuy = v.FeeBuy * buy
-						netBuy := buy - feeBuy
-						totalSell := 0.0
+						netBuy = buy - feeBuy
 
 						// sell calculation
+						totalSell := 0.0
 						for _, v := range sellCollection {
 							totalSell += v
 						}
@@ -1088,6 +1095,8 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 						StockCode:         stockCode,
 						TotalLot:          lotBuy - lotSell,
 						ValueBuy:          buy,
+						FeeBuy:            feeBuy,
+						NetBuy:            netBuy,
 						AverageBuy:        averageBuy,
 						InitialInvestment: initialInvestment,
 						IDPersonalAccount: accountID,
@@ -1111,8 +1120,14 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				// average buy
 				averageBuy = (initialInvestment / float64(lotBuy)) * 100
 
+				// fee buy calculation
+				feeBuy = v.FeeBuy * buy
+
+				// net buy
+				netBuy = buy - feeBuy
+
 				// potential return and percentage
-				potentialReturn += (float64(tradingInfo.Close) - float64(averageBuy)) * float64(lotBuy) * 100
+				potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
 				percentageReturn = potentialReturn / initialInvestment
 
 				// mapping
@@ -1120,6 +1135,8 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					StockCode:         stockCode,
 					TotalLot:          lotBuy - lotSell,
 					ValueBuy:          buy,
+					FeeBuy:            feeBuy,
+					NetBuy:            netBuy,
 					AverageBuy:        averageBuy,
 					InitialInvestment: initialInvestment,
 					IDPersonalAccount: accountID,
@@ -1153,8 +1170,14 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					// average buy
 					averageBuy = (initialInvestment / float64(lotBuy)) * 100
 
+					// fee buy calculation
+					feeBuy = v.FeeBuy * buy
+
+					// net buy
+					netBuy = buy - feeBuy
+
 					// potential return and percentage
-					potentialReturn += (float64(tradingInfo.Close) - float64(averageBuy)) * float64(lotBuy) * 100
+					potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
 					percentageReturn = potentialReturn / initialInvestment
 
 					// mapping
@@ -1163,6 +1186,8 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 						TotalLot:          lotBuy - lotSell,
 						ValueBuy:          buy,
 						AverageBuy:        averageBuy,
+						FeeBuy:            feeBuy,
+						NetBuy:            netBuy,
 						InitialInvestment: initialInvestment,
 						IDPersonalAccount: accountID,
 						IDMasterBroker:    v.IDMasterBroker,
@@ -1197,8 +1222,14 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				// average buy
 				averageBuy = (initialInvestment / float64(lotBuy)) * 100
 
+				// fee buy calculation
+				feeBuy = v.FeeBuy * buy
+
+				// net buy
+				netBuy = buy - feeBuy
+
 				// potential return and percentage
-				potentialReturn += (float64(tradingInfo.Close) - float64(averageBuy)) * float64(lotBuy) * 100
+				potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
 				percentageReturn = potentialReturn / initialInvestment
 
 				// mapping
@@ -1207,6 +1238,8 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					TotalLot:          lotBuy - lotSell,
 					ValueBuy:          buy,
 					AverageBuy:        averageBuy,
+					FeeBuy:            feeBuy,
+					NetBuy:            netBuy,
 					InitialInvestment: initialInvestment,
 					IDPersonalAccount: accountID,
 					IDMasterBroker:    v.IDMasterBroker,
@@ -1228,8 +1261,14 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 			// average buy
 			averageBuy = (initialInvestment / float64(lotBuy)) * 100
 
+			// fee buy calculation
+			feeBuy = v.FeeBuy * buy
+
+			// net buy
+			netBuy = buy - feeBuy
+
 			// potential return and percentage
-			potentialReturn += (float64(tradingInfo.Close) - float64(averageBuy)) * float64(lotBuy) * 100
+			potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
 			percentageReturn = potentialReturn / initialInvestment
 
 			// mapping
@@ -1238,6 +1277,8 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				TotalLot:          lotBuy - lotSell,
 				ValueBuy:          buy,
 				AverageBuy:        averageBuy,
+				FeeBuy:            feeBuy,
+				NetBuy:            netBuy,
 				InitialInvestment: initialInvestment,
 				IDPersonalAccount: accountID,
 				IDMasterBroker:    v.IDMasterBroker,
@@ -1274,8 +1315,14 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				// average buy
 				averageBuy = (initialInvestment / float64(lotBuy)) * 100
 
+				// fee buy calculation
+				feeBuy = v.FeeBuy * buy
+
+				// net buy
+				netBuy = buy - feeBuy
+
 				// potential return and percentage
-				potentialReturn += (float64(tradingInfo.Close) - float64(averageBuy)) * float64(lotBuy) * 100
+				potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
 				percentageReturn = potentialReturn / initialInvestment
 
 				// mapping
@@ -1284,6 +1331,8 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					TotalLot:          lotBuy - lotSell,
 					ValueBuy:          buy,
 					AverageBuy:        averageBuy,
+					FeeBuy:            feeBuy,
+					NetBuy:            netBuy,
 					InitialInvestment: initialInvestment,
 					IDPersonalAccount: accountID,
 					IDMasterBroker:    v.IDMasterBroker,

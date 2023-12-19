@@ -26,5 +26,5 @@ func (a TrxInvest) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a TrxInvest) Less(i, j int) bool {
 	return a[i].IDMasterBroker.String() < a[j].IDMasterBroker.String() ||
 		(a[i].IDMasterBroker.String() == a[j].IDMasterBroker.String() && a[i].StockCode < a[j].StockCode) ||
-		(a[i].IDMasterBroker.String() == a[j].IDMasterBroker.String() && a[i].StockCode == a[j].StockCode && a[i].SellBuy < a[j].SellBuy)
+		(a[i].IDMasterBroker.String() == a[j].IDMasterBroker.String() && a[i].StockCode == a[j].StockCode && a[i].SellBuy > a[j].SellBuy)
 }

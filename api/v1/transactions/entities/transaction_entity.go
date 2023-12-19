@@ -39,7 +39,8 @@ type (
 		StockCode         string    `gorm:"column:stock_code"`
 		TotalLot          int64     `gorm:"column:total_lot"`
 		ValueBuy          float64   `gorm:"column:value_buy"`
-		ValueSell         float64   `gorm:"column:value_sell"`
+		FeeBuy            float64   `gorm:"column:fee_buy"`
+		NetBuy            float64   `gorm:"column:net_buy"`
 		AverageBuy        float64   `gorm:"column:average_buy"`
 		InitialInvestment float64   `gorm:"column:initial_investment"`
 		IDPersonalAccount uuid.UUID `gorm:"column:id_personal_accounts"`
