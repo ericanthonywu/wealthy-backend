@@ -60,6 +60,11 @@ type (
 		PreviousInvestment(accountUUID uuid.UUID, stockCode string, IDMasterBrokerUUID uuid.UUID) (data entities.TransactionInvestmentEntity, err error)
 		GetTradingInfo(stockCode string) (data entities.InvestmentTreding, err error)
 		GetBrokerInfo(IDMasterBroker uuid.UUID) (data entities.BrokerInfo, err error)
+
+		AverageIncomeEachDay(accountUUID uuid.UUID) (data entities.IncomeEachDay, err error)
+		AverageExpenseEachDay(accountUUID uuid.UUID) (data entities.ExpenseEachDay, err error)
+		AverageIncomeMonthly(accountUUID uuid.UUID) (data entities.IncomeMonthly, err error)
+		AverageExpenseMonthly(accountUUID uuid.UUID) (data entities.ExpenseMonthly, err error)
 	}
 )
 
@@ -690,5 +695,59 @@ func (r *TransactionRepository) GetBrokerInfo(IDMasterBroker uuid.UUID) (data en
 		return entities.BrokerInfo{}, err
 	}
 
+	return data, nil
+}
+
+func (r *TransactionRepository) AverageIncomeEachDay(accountUUID uuid.UUID) (data entities.IncomeEachDay, err error) {
+	if err := r.db.Raw(`SELECT sum(amount) / (SELECT COUNT(id)
+                      FROM tbl_transactions tt
+                      WHERE tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000'
+                        AND tt.id_personal_account = ?) as income_average
+FROM tbl_transactions tt
+WHERE to_char(tt.date_time_transaction::DATE, 'MM')::numeric = EXTRACT(MONTH FROM CURRENT_DATE)
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY')::numeric = EXTRACT(YEAR FROM CURRENT_DATE)
+  AND tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000'
+  AND tt.id_personal_account = ?`, accountUUID, accountUUID).Scan(&data).Error; err != nil {
+		return entities.IncomeEachDay{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) AverageExpenseEachDay(accountUUID uuid.UUID) (data entities.ExpenseEachDay, err error) {
+	if err := r.db.Raw(`SELECT sum(amount) / (SELECT COUNT(id)
+                      FROM tbl_transactions tt
+                      WHERE tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'
+                        AND tt.id_personal_account = ?) as expense_average
+FROM tbl_transactions tt
+WHERE to_char(tt.date_time_transaction::DATE, 'MM')::numeric = EXTRACT(MONTH FROM CURRENT_DATE)
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY')::numeric = EXTRACT(YEAR FROM CURRENT_DATE)
+  AND tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'
+  AND tt.id_personal_account = ?`, accountUUID, accountUUID).Scan(&data).Error; err != nil {
+		return entities.ExpenseEachDay{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) AverageIncomeMonthly(accountUUID uuid.UUID) (data entities.IncomeMonthly, err error) {
+	if err := r.db.Raw(`SELECT sum(amount) / EXTRACT(DAY FROM (DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '1 MONTH - 1 day')) as income_average
+FROM tbl_transactions tt
+WHERE to_char(tt.date_time_transaction::DATE, 'MM')::numeric = EXTRACT(MONTH FROM CURRENT_DATE)
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY')::numeric = EXTRACT(YEAR FROM CURRENT_DATE)
+  AND tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000'
+  AND tt.id_personal_account = ?`, accountUUID).Scan(&data).Error; err != nil {
+		return entities.IncomeMonthly{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) AverageExpenseMonthly(accountUUID uuid.UUID) (data entities.ExpenseMonthly, err error) {
+	if err := r.db.Raw(`SELECT sum(amount) / EXTRACT(DAY FROM (DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '1 MONTH - 1 day')) as expense_average
+FROM tbl_transactions tt
+WHERE to_char(tt.date_time_transaction::DATE, 'MM')::numeric = EXTRACT(MONTH FROM CURRENT_DATE)
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY')::numeric = EXTRACT(YEAR FROM CURRENT_DATE)
+  AND tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'
+  AND tt.id_personal_account = ?`, accountUUID).Scan(&data).Error; err != nil {
+		return entities.ExpenseMonthly{}, err
+	}
 	return data, nil
 }

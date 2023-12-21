@@ -27,10 +27,11 @@ type (
 		ByNotes(ctx *gin.Context)
 		TravelTransactionHistory(ctx *gin.Context)
 		Suggestion(ctx *gin.Context)
+		CashFlow(ctx *gin.Context)
 		validateTravelTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
 		validateIncomeTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
 		validateExpenseTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
-		validateInvestTransactionPayload(requst *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
+		validateInvestTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -235,6 +236,12 @@ func (c *TransactionController) TravelTransactionHistory(ctx *gin.Context) {
 func (c *TransactionController) Suggestion(ctx *gin.Context) {
 	data, httpCode, errInfo := c.useCase.Suggestion(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *TransactionController) CashFlow(ctx *gin.Context) {
+	data, httCode, errInfo := c.useCase.CashFlow(ctx)
+	response.SendBack(ctx, data, errInfo, httCode)
 	return
 }
 

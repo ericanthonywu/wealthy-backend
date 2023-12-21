@@ -136,4 +136,18 @@ type (
 		TransactionAmount Amount `json:"transaction_amount"`
 		TransactionLimit  Amount `json:"transaction_limit"`
 	}
+
+	CashFlowResponse struct {
+		CashFlow            float64 `json:"cashflow"`
+		TotalAverageIncome  float64 `json:"total_average_income"`
+		TotalAverageExpense float64 `json:"total_average_expense"`
+		AverageDay          struct {
+			Income  float64 `json:"income"`
+			Expense float64 `json:"expense"`
+		} `json:"average_day"`
+		AverageMonth struct {
+			Income  float64 `json:"income"`
+			Expense float64 `json:"expense"`
+		} `json:"average_month"`
+	}
 )
