@@ -22,6 +22,7 @@ type (
 		AnalyticsTrend(ctx *gin.Context)
 		ExpenseDetail(ctx *gin.Context)
 		SubExpenseDetail(ctx *gin.Context)
+		TopThreeInvestment(ctx *gin.Context)
 	}
 )
 
@@ -218,6 +219,12 @@ func (c *StatisticController) SubExpenseDetail(ctx *gin.Context) {
 	}
 
 	data, httpCode, errInfo := c.useCase.SubExpenseDetail(ctx, month, year, IDCat)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *StatisticController) TopThreeInvestment(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.TopThreeInvestment(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }

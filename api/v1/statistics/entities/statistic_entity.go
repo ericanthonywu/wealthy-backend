@@ -100,4 +100,9 @@ type (
 		Latitude    string    `gorm:"column:lat" json:"latitude"`
 		Longitude   string    `gorm:"column:long" json:"longitude"`
 	}
+
+	TopThreeInvestment struct {
+		StockCode         string  `gorm:"column:stock_code" json:"stock_code"`
+		InitialInvestment float64 `gorm:"column:initial_investment" json:"initial_investment"`
+	}
 )
