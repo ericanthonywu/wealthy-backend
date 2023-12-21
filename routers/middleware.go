@@ -6,6 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/constants"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/beta"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/datecustoms"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
@@ -90,6 +92,21 @@ func accountType() gin.HandlerFunc {
 
 		c.Set("accountType", personalAccount.AccountTypes)
 		c.Set("accountID", personalAccount.ID)
+		c.Next()
+	}
+}
+
+func betaVersion() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		dataPromotion := beta.ExpiredPromotion(c)
+		diff := datecustoms.TotalDaysBetweenDate(dataPromotion.Expired)
+
+		if diff <= 0 {
+			// override
+			c.Set("accountType", constants.AccountPro)
+		}
+
 		c.Next()
 	}
 }
