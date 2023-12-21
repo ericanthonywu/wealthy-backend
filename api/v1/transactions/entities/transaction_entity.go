@@ -172,6 +172,22 @@ type (
 		ID   uuid.UUID `gorm:"column:id"`
 		Name string    `gorm:"column:broker_name"`
 	}
+
+	IncomeEachDay struct {
+		IncomeAverage float64 `gorm:"column:income_average"`
+	}
+
+	ExpenseEachDay struct {
+		ExpenseAverage float64 `gorm:"column:expense_average"`
+	}
+
+	IncomeMonthly struct {
+		IncomeAverage float64 `gorm:"column:income_average"`
+	}
+
+	ExpenseMonthly struct {
+		ExpenseAverage float64 `gorm:"column:expense_average"`
+	}
 )
 
 func (TransactionEntity) TableName() string {

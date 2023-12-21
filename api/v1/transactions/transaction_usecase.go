@@ -31,6 +31,7 @@ type (
 		Investment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ByNotes(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Suggestion(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		CashFlow(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		saveInvestTransaction(accountID uuid.UUID, request *dtos.TransactionRequestInvestment) (id uuid.UUID, err error)
 		investmentCalculation(accountID uuid.UUID) (err error)
 	}
@@ -942,6 +943,56 @@ func (s *TransactionUseCase) Suggestion(ctx *gin.Context) (response interface{},
 	}
 
 	return suggestionCollection, http.StatusOK, errInfo
+}
+
+func (s *TransactionUseCase) CashFlow(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+
+	var dtoResponse dtos.CashFlowResponse
+
+	// get account uuid
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	dataIncomeEachDay, err := s.repo.AverageIncomeEachDay(accountUUID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	dataExpenseEachDay, err := s.repo.AverageExpenseEachDay(accountUUID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	dataIncomeMonthly, err := s.repo.AverageIncomeMonthly(accountUUID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	dataExpenseMonthly, err := s.repo.AverageExpenseMonthly(accountUUID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	dtoResponse.AverageDay.Income = dataIncomeEachDay.IncomeAverage
+	dtoResponse.AverageDay.Expense = dataExpenseEachDay.ExpenseAverage
+	dtoResponse.AverageMonth.Income = dataIncomeMonthly.IncomeAverage
+	dtoResponse.AverageMonth.Expense = dataExpenseMonthly.ExpenseAverage
+	dtoResponse.TotalAverageIncome = dataIncomeEachDay.IncomeAverage + dataIncomeMonthly.IncomeAverage
+	dtoResponse.TotalAverageExpense = dataExpenseEachDay.ExpenseAverage + dataExpenseMonthly.ExpenseAverage
+	dtoResponse.CashFlow = dtoResponse.TotalAverageIncome - dtoResponse.TotalAverageExpense
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
 }
 
 func (s *TransactionUseCase) saveInvestTransaction(accountID uuid.UUID, request *dtos.TransactionRequestInvestment) (ID uuid.UUID, err error) {
