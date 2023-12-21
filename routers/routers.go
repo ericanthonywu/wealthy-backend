@@ -220,9 +220,14 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 		referralGroup := v1group.Group("/referrals", tokenSignature(), accountType())
 		{
-			referralGroup.GET("/earns", referrals.Earn)
 			referralGroup.GET("/statistics", referrals.Statistic)
 			referralGroup.GET("/list", referrals.List)
+
+			earnGroup := referralGroup.Group("/earns")
+			{
+				earnGroup.GET("", referrals.Earn)
+				earnGroup.POST("/withdraw", referrals.Withdraw)
+			}
 		}
 
 		paymentGroup := v1group.Group("/payments")

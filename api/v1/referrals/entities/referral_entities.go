@@ -38,4 +38,18 @@ type (
 	PreviousCommission struct {
 		Commission float64 `gorm:"column:total_comission"`
 	}
+
+	WithdrawEntities struct {
+		ID                 uuid.UUID `gorm:"column:id"`
+		IDPersonalAccounts uuid.UUID `gorm:"column:id_personal_accounts"`
+		AccountNumber      int       `gorm:"column:account_number"`
+		AccountName        string    `gorm:"column:account_name"`
+		BankIssue          string    `gorm:"column:bank_issue"`
+		Amount             float64   `gorm:"column:amount"`
+		Status             int       `gorm:"column:status"`
+	}
 )
+
+func (WithdrawEntities) TableName() string {
+	return "tbl_withdraw_request_transaction"
+}

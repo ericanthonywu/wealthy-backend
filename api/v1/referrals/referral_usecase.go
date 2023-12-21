@@ -24,6 +24,7 @@ type (
 		NormalTier(dataMember []entities.ReferralUserReward) (tier []dtos.TierDetail, tierCustomer []dtos.TierDetailWithCustomer)
 		UnusualTier(dataMember []entities.ReferralUserReward, currentLevel int) (tier []dtos.TierDetail, tierCustomer []dtos.TierDetailWithCustomer)
 		Earn(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		Withdraw(ctx *gin.Context, request dtos.WithdrawRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -508,4 +509,45 @@ func (s *ReferralUseCase) Earn(ctx *gin.Context) (response interface{}, httpCode
 	}
 
 	return resp, http.StatusOK, errInfo
+}
+
+func (s *ReferralUseCase) Withdraw(ctx *gin.Context, request dtos.WithdrawRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	// get id personal account from token
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	// determine trx id
+	trxID := uuid.New()
+
+	// mapping to model
+	model := entities.WithdrawEntities{
+		ID:                 trxID,
+		IDPersonalAccounts: accountUUID,
+		AccountNumber:      request.AccountNumber,
+		AccountName:        request.AccountName,
+		BankIssue:          request.BankIssue,
+		Amount:             float64(request.WithdrawAmount),
+		Status:             0,
+	}
+
+	// save withdraw request
+	_, err := s.repo.SaveWithdraws(&model)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// no error
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	resp := struct {
+		WithdrawID uuid.UUID `json:"withdraw_id"`
+		Message    string    `json:"message"`
+	}{
+		WithdrawID: trxID,
+		Message:    "withdraw request is processing, now",
+	}
+	return resp, http.StatusOK, errInfo
+
 }
