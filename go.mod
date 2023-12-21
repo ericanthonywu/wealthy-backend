@@ -3,7 +3,6 @@ module github.com/semicolon-indonesia/wealthy-backend
 go 1.20
 
 require (
-	github.com/SmartfrenDev/go-boilerplate v0.0.0-20230622043206-7e6cfae1b714
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.1
@@ -18,6 +17,7 @@ require (
 	go.opentelemetry.io/otel/exporters/jaeger v1.17.0
 	go.opentelemetry.io/otel/sdk v1.18.0
 	golang.org/x/crypto v0.13.0
+	golang.org/x/text v0.13.0
 	gorm.io/driver/postgres v1.5.2
 	gorm.io/gorm v1.25.5
 )
@@ -62,7 +62,6 @@ require (
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
