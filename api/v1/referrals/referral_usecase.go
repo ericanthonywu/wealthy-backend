@@ -23,6 +23,7 @@ type (
 		List(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		NormalTier(dataMember []entities.ReferralUserReward) (tier []dtos.TierDetail, tierCustomer []dtos.TierDetailWithCustomer)
 		UnusualTier(dataMember []entities.ReferralUserReward, currentLevel int) (tier []dtos.TierDetail, tierCustomer []dtos.TierDetailWithCustomer)
+		Earn(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -477,4 +478,34 @@ func (s *ReferralUseCase) UnusualTier(dataMember []entities.ReferralUserReward, 
 	}
 
 	return tier, tierCustomer
+}
+
+func (s *ReferralUseCase) Earn(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	dataAccount, err := s.repo.AccountProfile(accountUUID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	dataCommission, err := s.repo.GetPreviousCommission(dataAccount.ReferType)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	resp := struct {
+		Commission float64 `json:"commission_amount"`
+	}{
+		Commission: dataCommission.Commission,
+	}
+
+	return resp, http.StatusOK, errInfo
 }

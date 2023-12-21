@@ -13,6 +13,7 @@ type (
 	IReferralController interface {
 		Statistic(ctx *gin.Context)
 		List(ctx *gin.Context)
+		Earn(ctx *gin.Context)
 	}
 )
 
@@ -28,6 +29,12 @@ func (c *ReferralController) Statistic(ctx *gin.Context) {
 
 func (c *ReferralController) List(ctx *gin.Context) {
 	data, httpCode, err := c.useCase.List(ctx)
+	response.SendBack(ctx, data, err, httpCode)
+	return
+}
+
+func (c *ReferralController) Earn(ctx *gin.Context) {
+	data, httpCode, err := c.useCase.Earn(ctx)
 	response.SendBack(ctx, data, err, httpCode)
 	return
 }

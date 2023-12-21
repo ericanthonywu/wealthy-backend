@@ -22,6 +22,11 @@ type (
 		GetPeriodName(ID uuid.UUID) (data entities.GetPeriodName, err error)
 		WriteUserSubscription(model entities.SubsInfo) (err error)
 		ChangeAccountUser(IDPersonalAccount, IDProAccountUUID uuid.UUID) (err error)
+		GetReward() (data []entities.RewardInfo, err error)
+		GetReferralInfo(referenceCode string) (data []entities.GetReferralInfo, err error)
+		GetReferralCodeByIDPA(IDPersonamAccount uuid.UUID) (data entities.PersonalInfo, err error)
+		SetCommissionByRefCode(refCode string, commission float64) (err error)
+		GetPreviousCommission(refCodeRefference string) (data entities.PreviousCommission, err error)
 	}
 )
 
@@ -99,4 +104,57 @@ func (r *PaymentRepository) ChangeAccountUser(IDPersonalAccount, IDProAccountUUI
 		return err
 	}
 	return nil
+}
+
+func (r *PaymentRepository) GetReward() (data []entities.RewardInfo, err error) {
+	if err := r.db.Raw(`SELECT ROW_NUMBER() OVER () as Level, tmr.percentace as percentage FROM tbl_master_rewards tmr ORDER BY percentace DESC`).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return []entities.RewardInfo{}, err
+	}
+	return data, nil
+}
+
+func (r *PaymentRepository) GetReferralInfo(referenceCode string) (data []entities.GetReferralInfo, err error) {
+	if err := r.db.Raw(`WITH RECURSIVE recursiveTable AS (
+      SELECT ref_code, ref_code_reference, level
+      FROM tbl_user_rewards
+      WHERE ref_code = ?
+   UNION ALL
+      SELECT tbl_user_rewards.ref_code, tbl_user_rewards.ref_code_reference, tbl_user_rewards.level
+      FROM tbl_user_rewards
+         JOIN recursiveTable ON tbl_user_rewards.ref_code = recursiveTable.ref_code_reference
+)
+SELECT * FROM recursiveTable;`, referenceCode).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return []entities.GetReferralInfo{}, err
+	}
+	return data, nil
+}
+
+func (r *PaymentRepository) GetReferralCodeByIDPA(IDPersonamAccount uuid.UUID) (data entities.PersonalInfo, err error) {
+	if err := r.db.Raw(`SELECT refer_code FROM tbl_personal_accounts WHERE id=?`, IDPersonamAccount).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.PersonalInfo{}, err
+	}
+	return data, nil
+}
+
+func (r *PaymentRepository) SetCommissionByRefCode(refCode string, commission float64) (err error) {
+	if err := r.db.Table("tbl_user_rewards").Where("ref_code = ?", refCode).Update("total_comission", commission).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (r *PaymentRepository) GetPreviousCommission(refCodeRefference string) (data entities.PreviousCommission, err error) {
+
+	if err := r.db.Raw(`SELECT total_comission FROM tbl_user_rewards WHERE tbl_user_rewards.ref_code=?`, refCodeRefference).Scan(&data).Error; err != nil {
+		logrus.Error((err))
+		return entities.PreviousCommission{}, err
+	}
+
+	return data, nil
 }

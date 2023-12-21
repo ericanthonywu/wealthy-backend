@@ -179,6 +179,11 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				transactionHistory.GET("/travel", transaction.TravelTransactionHistory)
 			}
 
+			investmentTransaction := transactionGroup.Group("/records")
+			{
+				investmentTransaction.POST("/investments", transaction.AddInvestmentTransaction)
+			}
+
 			suggestionGroup := transactionGroup.Group("/suggestions")
 			{
 				suggestionGroup.GET("/notes", transaction.Suggestion)
@@ -213,8 +218,9 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 
-		referralGroup := v1group.Group("/referrals", tokenSignature())
+		referralGroup := v1group.Group("/referrals", tokenSignature(), accountType())
 		{
+			referralGroup.GET("/earns", referrals.Earn)
 			referralGroup.GET("/statistics", referrals.Statistic)
 			referralGroup.GET("/list", referrals.List)
 		}

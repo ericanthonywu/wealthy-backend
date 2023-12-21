@@ -41,6 +41,25 @@ type (
 		ID         uuid.UUID `gorm:"column:id"`
 		PeriodName string    `gorm:"column:period_name"`
 	}
+
+	GetReferralInfo struct {
+		RefCode          string `gorm:"column:ref_code"`
+		RefCodeReference string `gorm:"column:ref_code_reference"`
+		Level            int    `gorm:"column:level"`
+	}
+
+	RewardInfo struct {
+		Level      int     `gorm:"column:level"`
+		Percentage float64 `gorm:"column:percentage"`
+	}
+
+	PersonalInfo struct {
+		RefCode string `gorm:"column:refer_code"`
+	}
+
+	PreviousCommission struct {
+		Commission float64 `gorm:"column:total_comission"`
+	}
 )
 
 func (SubsTransaction) TableName() string {

@@ -13,20 +13,26 @@ type (
 		Note                          string `json:"note"`
 		TransferFrom                  string `json:"transfer_from,omitempty"`
 		TransferTo                    string `json:"transfer_to,omitempty"`
-		MutualFundProduct             string `json:"mutual_fund_product,omitempty"`
-		StockCode                     string `json:"stock_code,omitempty"`
-		Lot                           int64  `json:"lot,omitempty"`
-		SellBuy                       int    `json:"sellbuy,omitempty"`
 		IDWallet                      string `json:"id_wallets,omitempty"`
 		IDMasterIncomeCategories      string `json:"id_master_income_categories,omitempty"`
 		IDMasterExpenseCategories     string `json:"id_master_expense_categories,omitempty"`
 		IDMasterExpenseSubCategories  string `json:"id_master_expense_subcategories,omitempty"`
-		IDMasterInvest                string `json:"id_master_invest,omitempty"`
-		IDMasterBroker                string `json:"id_master_broker,omitempty"`
-		IDMasterReksanadaTypes        string `json:"id_master_reksadana_types,omitempty"`
 		IDMasterTransactionPriorities string `json:"id_master_transaction_priorities,omitempty"`
 		IDMasterTransactionTypes      string `json:"id_master_transaction_types,omitempty"`
 		IDTravel                      string `json:"id_travel,omitempty"`
+	}
+
+	TransactionRequestInvestment struct {
+		Date                          string `json:"date_time_transaction"`
+		Price                         int64  `json:"price"`
+		StockCode                     string `json:"stock_code,omitempty"`
+		Lot                           int64  `json:"lot,omitempty"`
+		SellBuy                       int    `json:"sellbuy,omitempty"`
+		IDWallet                      string `json:"id_wallets,omitempty"`
+		IDMasterInvest                string `json:"id_master_invest,omitempty"`
+		IDMasterBroker                string `json:"id_master_broker,omitempty"`
+		IDMasterTransactionPriorities string `json:"id_master_transaction_priorities,omitempty"`
+		IDMasterTransactionTypes      string `json:"id_master_transaction_types,omitempty"`
 	}
 
 	TransactionTotalIncomeSpending struct {
@@ -105,6 +111,7 @@ type (
 		Lot          int     `json:"lot"`
 		StockCode    string  `json:"stock_code"`
 		Price        int64   `json:"price"`
+		SellBuy      string  `json:"sell_buy"`
 	}
 
 	TransactionDetails struct {

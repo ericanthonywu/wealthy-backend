@@ -59,3 +59,18 @@ func TotalDaysBetweenDate(dateOrigin string) int {
 
 	return daysDiff
 }
+
+func TotalDaysBetweenDateTimeFormat(dateOrigin time.Time) int {
+	// Parse the date string to a time object
+	dateOrigin.Format("2006-01-02")
+
+	// Get the current date
+	now := time.Now().UTC()
+
+	truncatedNow := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	truncatedDate := time.Date(dateOrigin.Year(), dateOrigin.Month(), dateOrigin.Day(), 0, 0, 0, 0, time.UTC)
+
+	daysDiff := int(truncatedNow.Sub(truncatedDate).Hours() / 24)
+
+	return daysDiff
+}

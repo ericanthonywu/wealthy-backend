@@ -34,4 +34,8 @@ type (
 		Level            int       `gorm:"column:level"`
 		CreatedAt        time.Time `gorm:"column:created_at"`
 	}
+
+	PreviousCommission struct {
+		Commission float64 `gorm:"column:total_comission"`
+	}
 )

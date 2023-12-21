@@ -1,5 +1,10 @@
 package entities
 
+import (
+	"github.com/google/uuid"
+	"time"
+)
+
 type (
 	InvestmentTransaction struct {
 		Price           int64   `gorm:"column:price"`
@@ -10,6 +15,42 @@ type (
 		FeeBuy          float64 `gorm:"column:fee_buy"`
 		FeeSell         float64 `gorm:"column:fee_sell"`
 		DateTransaction string  `gorm:"column:date_transaction"`
+	}
+
+	InvestmentDataHelper struct {
+		StockCode         string    `gorm:"column:stock_code"`
+		TotalLot          int64     `gorm:"column:total_lot"`
+		ValueBuy          float64   `gorm:"column:value_buy"`
+		AverageBuy        float64   `gorm:"column:average_buy"`
+		InitialInvestment float64   `gorm:"column:initial_investment"`
+		IDMasterBroker    uuid.UUID `gorm:"column:id_master_broker"`
+		GainLoss          float64   `gorm:"column:gain_loss"`
+		PotentialReturn   float64   `gorm:"column:potential_return"`
+		PercentageReturn  float64   `gorm:"column:percentage_return"`
+		DateTransaction   time.Time `gorm:"column:created_at"`
+		FeeBuy            float64   `gorm:"column:fee_buy"`
+		NetBuy            float64   `gorm:"column:net_buy"`
+	}
+
+	InvestmentDataHelperPortfolio struct {
+		StockCode         string    `gorm:"column:stock_code"`
+		TotalLot          int64     `gorm:"column:total_lot"`
+		ValueBuy          float64   `gorm:"column:value_buy"`
+		AverageBuy        float64   `gorm:"column:average_buy"`
+		InitialInvestment float64   `gorm:"column:initial_investment"`
+		IDMasterBroker    uuid.UUID `gorm:"column:id_master_broker"`
+		GainLoss          float64   `gorm:"column:gain_loss"`
+		PotentialReturn   float64   `gorm:"column:potential_return"`
+		PercentageReturn  float64   `gorm:"column:percentage_return"`
+		DateTransaction   time.Time `gorm:"column:created_at"`
+		FeeBuy            float64   `gorm:"column:fee_buy"`
+		NetBuy            float64   `gorm:"column:net_buy"`
+		BrokerName        string    `gorm:"column:broker_name"`
+	}
+
+	BrokerInfo struct {
+		ID   uuid.UUID `gorm:"column:id"`
+		Name string    `gorm:"column:broker_name"`
 	}
 
 	InvestmentTreding struct {

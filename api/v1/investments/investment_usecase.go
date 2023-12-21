@@ -5,13 +5,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/investments/dtos"
-	"github.com/semicolon-indonesia/wealthy-backend/constants"
+	"github.com/semicolon-indonesia/wealthy-backend/api/v1/investments/entities"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/datecustoms"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/sirupsen/logrus"
 	"net/http"
-	"strconv"
+	"sort"
 )
 
 type (
@@ -22,6 +21,7 @@ type (
 	IInvestmentUseCase interface {
 		Portfolio(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		GainLoss(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		sortByAttribute(data []entities.InvestmentTransaction, attribute string)
 	}
 )
 
@@ -31,18 +31,9 @@ func NewInvestmentUseCase(repo IInvestmentRepository) *InvestmentUseCase {
 
 func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		dtoResponse            dtos.InvestmentResponse
-		investmentDetail       []dtos.InvestmentDetails
-		investmentInfo         []dtos.InvestmentInfo
-		stockCodePrevious      string
-		brokerNamePrevious     string
-		investmentNamePrevious string
-		totalLot               int64
-		buy                    float64
-		buyCollections         []float64
-		potentialReturn        float64
-		unreliazeReturn        float64
-		initialInvestment      float64
+		dtoResponse      dtos.InvestmentResponse
+		investmentDetail []dtos.InvestmentDetails
+		investmentInfo   []dtos.InvestmentInfo
 	)
 
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
@@ -65,385 +56,134 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 		return resp, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
-	maxTrxData := len(trxData)
+	// mapping response
+	brokerName := ""
+	maxData := len(trxData) - 1
+	totalInvestment := 0.0
+	totalPotentialReturn := 0.0
+	dateTotal := 0
 
-	// mapping for response
 	for k, v := range trxData {
 
-		// get trading info
+		dateTotal = datecustoms.TotalDaysBetweenDate(v.DateTransaction.Format("2006-01-02"))
+		if dateTotal < 0 {
+			dateTotal = 0
+		}
+
+		totalInvestment += v.InitialInvestment
+
 		dataTrading, err := s.repo.GetTradingInfo(v.StockCode)
 		if err != nil {
 			logrus.Error(err.Error())
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-			return response, http.StatusInternalServerError, errInfo
 		}
 
-		// get ready for mapping response
-		// if previous has data
-		if brokerNamePrevious != "" {
-			// if broker previous still same new broker
-			if brokerNamePrevious == v.BrokerName {
-				// if still same stock code
-				if stockCodePrevious == v.StockCode {
-					// calculate average
-					totalBuy := 0.0
-					var averageBuy float64
+		// if previous broker same with new data
+		if brokerName == v.BrokerName {
 
-					totalLot += v.Lot
+			// calculation for
+			closePrice := float64(dataTrading.Close)
+			potentialReturn := (closePrice - v.AverageBuy) * float64(v.TotalLot) * 100
+			percentagePotentialReturn := (potentialReturn / v.InitialInvestment) / 100
+			totalPotentialReturn += potentialReturn
 
-					// buy value
-					buy = float64(v.Lot * v.Price * 100)
+			investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
+				Name:                dataTrading.Name,
+				InitialInvestment:   v.InitialInvestment,
+				StockCode:           v.StockCode,
+				Lot:                 v.TotalLot,
+				AverageBuy:          v.AverageBuy,
+				PotentialReturn:     potentialReturn,
+				PercentageReturn:    fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
+				UnrealizedPotential: potentialReturn,
+				TotalDays:           int64(dateTotal),
+			})
 
-					// append buy to collection
-					buyCollections = append(buyCollections, buy)
-
-					// initial investment
-					initialInvestment += float64(v.Lot * v.Price)
-
-					// is latest
-					if k == (maxTrxData - 1) {
-						// calculate average
-						totalBuy = 0.0
-						averageBuy = 0
-
-						// add total buy
-						for _, buyColl := range buyCollections {
-							totalBuy += buyColl
-						}
-
-						// renew data
-						// average buy
-						averageBuy = totalBuy / float64(totalLot)
-
-						// rounding average buy
-						averageBuyRounding, err := strconv.ParseFloat(fmt.Sprintf("%.2f", averageBuy), 64)
-						if err != nil {
-							logrus.Error(err.Error())
-						}
-
-						// potential return
-						potentialReturn = float64(dataTrading.Close) - averageBuy*float64(totalLot)*100
-
-						unreliazeReturn += potentialReturn
-
-						// replace with new portfolio
-						investmentNamePrevious = dataTrading.Name
-
-						// append latest
-						investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
-							InitialInvestment: initialInvestment,
-							Name:              investmentNamePrevious,
-							StockCode:         stockCodePrevious,
-							Lot:               totalLot,
-							AverageBuy:        averageBuyRounding,
-							PotentialReturn:   potentialReturn,
-						})
-
-						// append to investment detail
-						investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
-							BokerName:           v.BrokerName,
-							UnrealizedPotential: float64(unreliazeReturn),
-							Info:                investmentInfo,
-						})
-
-						unreliazeReturn = 0.0
-						initialInvestment = 0
-					}
-				}
-
-				// if not same stock code with previous
-				if stockCodePrevious != v.StockCode {
-					// calculate average
-					totalBuy := 0.0
-					var averageBuy float64
-
-					//
-					for _, buyColl := range buyCollections {
-						totalBuy += buyColl
-					}
-
-					// renew data
-					// average buy
-					averageBuy = totalBuy / float64(totalLot)
-
-					// rounding average buy
-					averageBuyRounding, err := strconv.ParseFloat(fmt.Sprintf("%.2f", averageBuy), 64)
-
-					if err != nil {
-						logrus.Error(err.Error())
-					}
-
-					// potential return
-					potentialReturn = float64(dataTrading.Close) - averageBuy*float64(totalLot)*100
-
-					// append previous data
-					investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
-						InitialInvestment: initialInvestment,
-						Name:              investmentNamePrevious,
-						StockCode:         stockCodePrevious,
-						Lot:               totalLot,
-						AverageBuy:        averageBuyRounding,
-						PotentialReturn:   potentialReturn,
-					})
-
-					// clear previous data
-					buyCollections = nil
-					totalBuy = 0.0
-					averageBuy = 0
-					initialInvestment = 0
-
-					// override value and renew
-					totalLot = v.Lot
-					stockCodePrevious = v.StockCode
-					investmentNamePrevious = dataTrading.Name
-
-					// buy value
-					buy = float64(v.Lot * v.Price * 100)
-
-					// append new buy value
-					buyCollections = append(buyCollections, buy)
-
-					// initial investment
-					initialInvestment += float64(v.Lot * v.Price)
-
-					// if latest data
-					if k == (maxTrxData - 1) {
-						// calculate average
-						totalBuy = 0.0
-						averageBuy = 0
-
-						for _, buyColl := range buyCollections {
-							totalBuy += buyColl
-						}
-
-						// renew data
-						// average buy
-						averageBuy = totalBuy / float64(totalLot)
-
-						// rounding average buy
-						averageBuyRounding, err = strconv.ParseFloat(fmt.Sprintf("%.2f", averageBuy), 64)
-						if err != nil {
-							logrus.Error(err.Error())
-						}
-
-						// potential return
-						potentialReturn = float64(dataTrading.Close) - averageBuy*float64(totalLot)*100
-						unreliazeReturn += potentialReturn
-
-						// replace with new portfolio
-						investmentNamePrevious = dataTrading.Name
-
-						// append latest
-						investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
-							Name:              investmentNamePrevious,
-							InitialInvestment: initialInvestment,
-							StockCode:         stockCodePrevious,
-							Lot:               totalLot,
-							AverageBuy:        averageBuyRounding,
-							PotentialReturn:   potentialReturn,
-						})
-
-						// append to investment detail
-						investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
-							BokerName:           v.BrokerName,
-							UnrealizedPotential: unreliazeReturn,
-							Info:                investmentInfo,
-						})
-
-						unreliazeReturn = 0.0
-						initialInvestment = 0
-					}
-				}
-			}
-
-			// if broker previous is not same new broker
-			if brokerNamePrevious != v.BrokerName {
-				totalBuy := 0.0
-				var averageBuy float64
-
-				// calculate average
-				for _, buyColl := range buyCollections {
-					totalBuy += buyColl
-				}
-
-				// renew data
-
-				averageBuy = totalBuy / float64(totalLot)
-				averageBuyRounding, err := strconv.ParseFloat(fmt.Sprintf("%.2f", averageBuy), 64)
-				if err != nil {
-					logrus.Error(err.Error())
-				}
-
-				// potential return
-				potentialReturn = float64(dataTrading.Close) - averageBuy*float64(totalLot)*100
-				unreliazeReturn += potentialReturn
-
-				// append latest
-				investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
-					InitialInvestment: initialInvestment,
-					Name:              investmentNamePrevious,
-					StockCode:         stockCodePrevious,
-					Lot:               totalLot,
-					AverageBuy:        averageBuyRounding,
-					PotentialReturn:   potentialReturn,
-				})
-
-				// append to investment detail
+			// latest data
+			if k == maxData {
 				investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
-					BokerName:           brokerNamePrevious,
-					UnrealizedPotential: unreliazeReturn,
-					Info:                investmentInfo,
+					BrokerName: brokerName,
+					Info:       investmentInfo,
 				})
 
 				// clear
 				investmentInfo = nil
-				unreliazeReturn = 0.0
-				initialInvestment = 0
 
-				// replace with new portfolio
-				investmentNamePrevious = dataTrading.Name
-
-				// renew data
-				buyCollections = nil
-				brokerNamePrevious = v.BrokerName
-				stockCodePrevious = v.StockCode
-				investmentNamePrevious = dataTrading.Name
-				totalLot = v.Lot
-
-				// buy value
-				buy = float64(v.Lot * v.Price * 100)
-
-				// append buy collections
-				buyCollections = append(buyCollections, buy)
-
-				// initial investment
-				initialInvestment += float64(v.Lot * v.Price)
-
-				// is latest
-				if k == (maxTrxData - 1) {
-
-					// reset value
-					investmentInfo = nil
-					totalBuy = 0.0
-					averageBuy = 0
-
-					// renew value
-
-					totalLot = v.Lot
-
-					for _, buyColl := range buyCollections {
-						totalBuy += buyColl
-					}
-
-					// average buy
-					averageBuy = totalBuy / float64(totalLot)
-
-					// rounding average buy
-					averageBuyRounding, err := strconv.ParseFloat(fmt.Sprintf("%.2f", averageBuy), 64)
-					if err != nil {
-						logrus.Error(err.Error())
-					}
-
-					// potential return
-					potentialReturn = float64(dataTrading.Close) - averageBuy*float64(totalLot)*100
-					unreliazeReturn += potentialReturn
-
-					// replace with new portfolio
-					investmentNamePrevious = dataTrading.Name
-
-					// append latest
-					investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
-						InitialInvestment: initialInvestment,
-						Name:              investmentNamePrevious,
-						StockCode:         stockCodePrevious,
-						Lot:               totalLot,
-						AverageBuy:        averageBuyRounding,
-						PotentialReturn:   potentialReturn,
-					})
-
-					// append to investment detail
-					investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
-						BokerName:           v.BrokerName,
-						UnrealizedPotential: unreliazeReturn,
-						Info:                investmentInfo,
-					})
-
-					unreliazeReturn = 0.0
-					initialInvestment = 0
-				}
 			}
 		}
 
-		// fist time broker name
-		if brokerNamePrevious == "" {
-			// set data for first time
+		// if previous broker empty
+		if brokerName == "" {
+			// set broker name
+			brokerName = v.BrokerName
 
-			brokerNamePrevious = v.BrokerName
-			stockCodePrevious = v.StockCode
-			investmentNamePrevious = dataTrading.Name
-			totalLot = v.Lot
+			// calculation for
+			closePrice := float64(dataTrading.Close)
+			potentialReturn := (closePrice - v.AverageBuy) * float64(v.TotalLot) * 100
+			percentagePotentialReturn := (potentialReturn / v.InitialInvestment) / 100
+			totalPotentialReturn += potentialReturn
 
-			// buy value
-			buy = float64(v.Lot * v.Price * 100)
+			investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
+				Name:                dataTrading.Name,
+				InitialInvestment:   v.InitialInvestment,
+				StockCode:           v.StockCode,
+				Lot:                 v.TotalLot,
+				AverageBuy:          v.AverageBuy,
+				PotentialReturn:     potentialReturn,
+				PercentageReturn:    fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
+				UnrealizedPotential: potentialReturn,
+				TotalDays:           int64(dateTotal),
+			})
+		}
 
-			// initial investment
-			initialInvestment += float64(v.Lot * v.Price)
+		// if previous broker name different with new data
+		if brokerName != v.BrokerName {
+			investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
+				BrokerName: brokerName,
+				Info:       investmentInfo,
+			})
 
-			// append buy
-			buyCollections = append(buyCollections, buy)
+			// clear
+			investmentInfo = nil
 
-			// is latest
-			if k == (maxTrxData - 1) {
+			// renew
+			brokerName = v.BrokerName
 
-				// reset value
-				investmentInfo = nil
-				totalBuy := 0.0
-				var averageBuy float64
+			// calculation for
+			closePrice := float64(dataTrading.Close)
+			potentialReturn := (closePrice - v.AverageBuy) * float64(v.TotalLot) * 100
+			percentagePotentialReturn := (potentialReturn / v.InitialInvestment) / 100
+			totalPotentialReturn += potentialReturn
 
-				totalLot = v.Lot
+			investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
+				Name:                dataTrading.Name,
+				InitialInvestment:   v.InitialInvestment,
+				StockCode:           v.StockCode,
+				Lot:                 v.TotalLot,
+				AverageBuy:          v.AverageBuy,
+				PotentialReturn:     potentialReturn,
+				PercentageReturn:    fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
+				UnrealizedPotential: potentialReturn,
+				TotalDays:           int64(dateTotal),
+			})
 
-				for _, buyColl := range buyCollections {
-					totalBuy += buyColl
-				}
-
-				// renew data
-				averageBuy = totalBuy / float64(totalLot)
-
-				averageBuyRounding, err := strconv.ParseFloat(fmt.Sprintf("%.2f", averageBuy), 64)
-				if err != nil {
-					logrus.Error(err.Error())
-				}
-
-				// potential return
-				potentialReturn = float64(dataTrading.Close) - averageBuy*float64(totalLot)*100
-				unreliazeReturn += potentialReturn
-
-				// replace with new portfolio
-				investmentNamePrevious = dataTrading.Name
-
-				// append latest
-				investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
-					InitialInvestment: initialInvestment,
-					Name:              investmentNamePrevious,
-					StockCode:         stockCodePrevious,
-					Lot:               totalLot,
-					AverageBuy:        averageBuyRounding,
-					PotentialReturn:   potentialReturn,
-				})
-
-				// append to investment detail
+			// latest data
+			if k == maxData {
 				investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
-					BokerName:           v.BrokerName,
-					UnrealizedPotential: unreliazeReturn,
-					Info:                investmentInfo,
+					BrokerName: brokerName,
+					Info:       investmentInfo,
 				})
 
-				unreliazeReturn = 0.0
-				initialInvestment = 0
+				// clear
+				investmentInfo = nil
+
 			}
 		}
 	}
 
+	dtoResponse.TotalInvestment = totalInvestment
+	dtoResponse.TotalPotentialReturn = totalPotentialReturn
+	percentage := (totalPotentialReturn / totalInvestment) / 100
+	dtoResponse.PercentagePotentialReturn = fmt.Sprintf("%.2f", percentage) + "%"
 	dtoResponse.Details = investmentDetail
 
 	// clear
@@ -460,15 +200,9 @@ func (s *InvestmentUseCase) GainLoss(ctx *gin.Context) (response interface{}, ht
 		err         error
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
-		return response, http.StatusUnauthorized, errInfo
-	}
-
-	dataTrx, err := s.repo.TrxInfoSell(personalAccount.ID)
+	dataTrx, err := s.repo.InvestmentTrx(accountUUID)
 	if err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		return struct{}{}, http.StatusInternalServerError, errInfo
@@ -484,6 +218,14 @@ func (s *InvestmentUseCase) GainLoss(ctx *gin.Context) (response interface{}, ht
 	}
 
 	for _, v := range dataTrx {
+
+		dataInvestment, err := s.repo.GetInvestmentDataHelper(accountUUID, v.StockCode)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
+		}
+
+		// get trading info
 		dataTrading, err := s.repo.GetTradingInfo(v.StockCode)
 		if err != nil {
 			logrus.Error(err.Error())
@@ -491,15 +233,32 @@ func (s *InvestmentUseCase) GainLoss(ctx *gin.Context) (response interface{}, ht
 			return response, http.StatusInternalServerError, errInfo
 		}
 
+		// sell calculation
+		valueSell := float64(v.Lot * v.Price * 100)
+		feeSell := v.FeeSell * valueSell
+		netSell := valueSell - feeSell
+
+		// buy information
+		valueBuy := dataInvestment.ValueBuy
+		netBuy := dataInvestment.NetBuy
+
+		// gain loss
+		gainLoss := netSell - netBuy
+
+		// percentage return
+		percentageReturn := gainLoss / valueBuy
+
 		dtoResponse = append(dtoResponse, dtos.InvestmentGainLoss{
 			DataTransaction:   v.DateTransaction,
+			BrokerName:        v.BrokerName,
 			StockCode:         v.StockCode,
 			Lot:               v.Lot,
-			Price:             0,
+			Price:             float64(v.Price),
 			Name:              dataTrading.Name,
-			InitialInvestment: 0,
-			Percentage:        "",
+			InitialInvestment: valueSell,
+			Percentage:        fmt.Sprintf("%.2f", percentageReturn),
 			TotalDays:         datecustoms.TotalDaysBetweenDate(v.DateTransaction),
+			GainLoss:          gainLoss,
 		})
 	}
 
@@ -508,4 +267,13 @@ func (s *InvestmentUseCase) GainLoss(ctx *gin.Context) (response interface{}, ht
 	}
 
 	return dtoResponse, http.StatusOK, errInfo
+}
+
+func (s *InvestmentUseCase) sortByAttribute(data []entities.InvestmentTransaction, attribute string) {
+	switch attribute {
+	case "StockCode":
+		sort.Slice(data, func(i, j int) bool { return data[i].StockCode < data[j].StockCode })
+	default:
+		sort.Slice(data, func(i, j int) bool { return data[i].DateTransaction < data[j].DateTransaction })
+	}
 }

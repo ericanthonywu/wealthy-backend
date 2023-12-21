@@ -18,6 +18,7 @@ type (
 
 	ITransactionController interface {
 		Add(ctx *gin.Context)
+		AddInvestmentTransaction(ctx *gin.Context)
 		ExpenseTransactionHistory(ctx *gin.Context)
 		IncomeTransactionHistory(ctx *gin.Context)
 		TransferTransactionHistory(ctx *gin.Context)
@@ -92,18 +93,6 @@ func (c *TransactionController) Add(ctx *gin.Context) {
 		}
 	}
 
-	// for investments transaction
-	if dtoRequest.IDMasterInvest != "" {
-		errInfo = c.validateInvestTransactionPayload(&dtoRequest)
-
-		// response error
-		if len(errInfo) > 0 {
-			response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
-			return
-		}
-
-	}
-
 	// send back with err information
 	if len(errInfo) > 0 {
 		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
@@ -111,6 +100,34 @@ func (c *TransactionController) Add(ctx *gin.Context) {
 	}
 
 	data, httpCode, errInfo := c.useCase.Add(ctx, &dtoRequest)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *TransactionController) AddInvestmentTransaction(ctx *gin.Context) {
+	var (
+		request dtos.TransactionRequestInvestment
+		errInfo []errorsinfo.Errors
+	)
+
+	// bind
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		errInfo := errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	// validate first
+	errInfo = c.validateInvestTransactionPayload(&request)
+
+	// if error occurs
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	// do logic and return
+	data, httpCode, errInfo := c.useCase.AddInvestmentTransaction(ctx, &request)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
@@ -248,34 +265,6 @@ func (c *TransactionController) validateTravelTransactionPayload(request *dtos.T
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master income categories unnecessary for travel transaction")
 	}
 
-	if request.IDMasterInvest != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master invest unnecessary for travel transaction")
-	}
-
-	if request.IDMasterReksanadaTypes != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master reksadana type unnecessary for travel transaction")
-	}
-
-	if request.IDMasterBroker != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master broker unnecessary for travel transaction")
-	}
-
-	if request.Lot >= 0 || request.Lot < 0 {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "lot unnecessary for travel transaction")
-	}
-
-	if request.MutualFundProduct != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "mutual fund product unnecessary for travel transaction")
-	}
-
-	if request.SellBuy >= 0 || request.SellBuy < 0 {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "sell buy unnecessary for travel transaction")
-	}
-
-	if request.StockCode != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "stock code unnecessary for travel transaction")
-	}
-
 	return errInfo
 }
 
@@ -307,40 +296,45 @@ func (c *TransactionController) validateIncomeTransactionPayload(request *dtos.T
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id travel unnecessary for income transaction")
 	}
 
-	if request.IDMasterInvest != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master invest unnecessary for income transaction")
-	}
-
-	if request.IDMasterReksanadaTypes != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master reksadana type unnecessary for income transaction")
-	}
-
-	if request.IDMasterBroker != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master broker unnecessary for income transaction")
-	}
-
-	if request.Lot >= 0 || request.Lot < 0 {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "lot unnecessary for income transaction")
-	}
-
-	if request.MutualFundProduct != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "mutual fund product unnecessary for income transaction")
-	}
-
-	if request.SellBuy >= 0 || request.SellBuy < 0 {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "sell buy unnecessary for income transaction")
-	}
-
-	if request.StockCode != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "stock code unnecessary for income transaction")
-	}
-
 	return errInfo
 }
 
 func (c *TransactionController) validateExpenseTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors) {
 	return
 }
-func (c *TransactionController) validateInvestTransactionPayload(requst *dtos.TransactionRequest) (errInfo []errorsinfo.Errors) {
-	return
+func (c *TransactionController) validateInvestTransactionPayload(request *dtos.TransactionRequestInvestment) (errInfo []errorsinfo.Errors) {
+
+	if request.IDWallet == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet empty value")
+	}
+
+	if request.IDMasterBroker == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master broker empty value")
+	}
+
+	if request.IDMasterInvest == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master invest empty value")
+	}
+
+	if request.IDMasterTransactionTypes == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master transaction type empty value")
+	}
+
+	if request.Lot <= 0 {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "lot must greater than 0")
+	}
+
+	if request.Price <= 0 {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "price must greater than 0")
+	}
+
+	if request.SellBuy < 0 || request.SellBuy > 2 {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "sell buy must one of two values : 0 [ sell ] or 1 [ buy ] ")
+	}
+
+	if request.StockCode == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "stock code empty value")
+	}
+
+	return errInfo
 }
