@@ -17,6 +17,7 @@ type (
 		AccountProfileByRefCode(refCode string) (data entities.ReferralAccountProfileRefCode, err error)
 		FirstNode(refCode string) (data entities.ReferralUserReward, err error)
 		MemberNode(refCode string) (data []entities.ReferralUserReward, err error)
+		GetPreviousCommission(refCodeRefference string) (data entities.PreviousCommission, err error)
 	}
 )
 
@@ -63,5 +64,15 @@ ORDER BY tur.level ASC`, refCode).Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return []entities.ReferralUserReward{}, err
 	}
+	return data, nil
+}
+
+func (r *ReferralRepository) GetPreviousCommission(refCodeRefference string) (data entities.PreviousCommission, err error) {
+
+	if err := r.db.Raw(`SELECT total_comission FROM tbl_user_rewards WHERE tbl_user_rewards.ref_code=?`, refCodeRefference).Scan(&data).Error; err != nil {
+		logrus.Error((err))
+		return entities.PreviousCommission{}, err
+	}
+
 	return data, nil
 }
