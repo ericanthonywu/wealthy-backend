@@ -78,7 +78,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 
-		accountGroup := v1group.Group("/accounts")
+		accountGroup := v1group.Group("/accounts", accountType())
 		{
 			accountGroup.POST("/signup", account.SignUp)
 			accountGroup.POST("/signin", account.SignIn)

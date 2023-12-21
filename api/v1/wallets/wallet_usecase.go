@@ -97,9 +97,9 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 			resp := struct {
 				Message string `json:"message"`
 			}{
-				Message: "can not add new wallet. please upgrade to PRO subscription",
+				Message: constants.ProPlan,
 			}
-			return resp, http.StatusUnprocessableEntity, []errorsinfo.Errors{}
+			return resp, http.StatusUpgradeRequired, []errorsinfo.Errors{}
 		}
 
 		err = s.repo.Add(&walletEntity)
@@ -118,7 +118,6 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 				return struct{}{}, http.StatusInternalServerError, errInfo
 			}
 		}
-
 	}
 
 	// account type PRO

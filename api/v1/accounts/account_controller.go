@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts/dtos"
+	"github.com/semicolon-indonesia/wealthy-backend/constants"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
 	"net/http"
@@ -312,6 +313,20 @@ func (c *AccountController) SearchAccount(ctx *gin.Context) {
 		httpCode   int
 	)
 
+	// get account type
+	accountType := ctx.MustGet("accountType").(string)
+
+	// if basic account
+	if accountType == constants.AccountBasic {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: constants.ProPlan,
+		}
+		response.SendBack(ctx, resp, []errorsinfo.Errors{}, http.StatusUpgradeRequired)
+		return
+	}
+
 	// binding
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
@@ -337,6 +352,20 @@ func (c *AccountController) InviteSharing(ctx *gin.Context) {
 		errInfo    []errorsinfo.Errors
 		httpCode   int
 	)
+
+	// get account type
+	accountType := ctx.MustGet("accountType").(string)
+
+	// if basic account
+	if accountType == constants.AccountBasic {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: constants.ProPlan,
+		}
+		response.SendBack(ctx, resp, []errorsinfo.Errors{}, http.StatusUpgradeRequired)
+		return
+	}
 
 	// binding
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
@@ -501,12 +530,40 @@ func (c *AccountController) ChangePasswordForgot(ctx *gin.Context) {
 }
 
 func (c *AccountController) GroupSharingAccepted(ctx *gin.Context) {
+	// get account type
+	accountType := ctx.MustGet("accountType").(string)
+
+	// if basic account
+	if accountType == constants.AccountBasic {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: constants.ProPlan,
+		}
+		response.SendBack(ctx, resp, []errorsinfo.Errors{}, http.StatusUpgradeRequired)
+		return
+	}
+
 	data, httpCode, errInfo := c.useCase.GroupSharingAccepted(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
 
 func (c *AccountController) GroupSharingPending(ctx *gin.Context) {
+	// get account type
+	accountType := ctx.MustGet("accountType").(string)
+
+	// if basic account
+	if accountType == constants.AccountBasic {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: constants.ProPlan,
+		}
+		response.SendBack(ctx, resp, []errorsinfo.Errors{}, http.StatusUpgradeRequired)
+		return
+	}
+
 	data, httpCode, errInfo := c.useCase.GroupSharingPending(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
