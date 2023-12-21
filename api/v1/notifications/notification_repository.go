@@ -26,8 +26,7 @@ func (r *NotificationRepository) GetNotification(personalAccount uuid.UUID) (dat
        tn.notification_description,
        tn.id_personal_accounts,
        tn.is_read,
-       tn.id_group_sender,
-       tn.id_group_recipient,
+       tn.id_group_sharing,
        tpa.image_path,
        tmat.account_type as type,
        tn.created_at
