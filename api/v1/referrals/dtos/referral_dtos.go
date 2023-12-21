@@ -24,4 +24,11 @@ type (
 		Name        string `json:"name,omitempty"`
 		AccountType string `json:"account_type,omitempty"`
 	}
+
+	WithdrawRequest struct {
+		WithdrawAmount int    `json:"withdraw_amount"`
+		BankIssue      string `json:"bank_issue"`
+		AccountNumber  int    `json:"account_number"`
+		AccountName    string `json:"account_name"`
+	}
 )

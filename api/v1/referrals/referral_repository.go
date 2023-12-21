@@ -18,6 +18,7 @@ type (
 		FirstNode(refCode string) (data entities.ReferralUserReward, err error)
 		MemberNode(refCode string) (data []entities.ReferralUserReward, err error)
 		GetPreviousCommission(refCodeRefference string) (data entities.PreviousCommission, err error)
+		SaveWithdraws(model *entities.WithdrawEntities) (id uuid.UUID, err error)
 	}
 )
 
@@ -75,4 +76,12 @@ func (r *ReferralRepository) GetPreviousCommission(refCodeRefference string) (da
 	}
 
 	return data, nil
+}
+
+func (r *ReferralRepository) SaveWithdraws(model *entities.WithdrawEntities) (id uuid.UUID, err error) {
+	if err := r.db.Create(&model).Error; err != nil {
+		logrus.Error(err.Error())
+		return uuid.Nil, err
+	}
+	return model.ID, nil
 }
