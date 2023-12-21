@@ -2,7 +2,10 @@ package investments
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/semicolon-indonesia/wealthy-backend/constants"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
+	"net/http"
 )
 
 type (
@@ -21,12 +24,40 @@ func NewInvestmentController(useCase IInvestmentUseCase) *InvestmentController {
 }
 
 func (c *InvestmentController) Portfolio(ctx *gin.Context) {
+	// get account type
+	accountType := ctx.MustGet("accountType").(string)
+
+	// if basic account
+	if accountType == constants.AccountBasic {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: constants.ProPlan,
+		}
+		response.SendBack(ctx, resp, []errorsinfo.Errors{}, http.StatusUpgradeRequired)
+		return
+	}
+
 	data, httpCode, errInfo := c.useCase.Portfolio(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
 
 func (c *InvestmentController) GainLoss(ctx *gin.Context) {
+	// get account type
+	accountType := ctx.MustGet("accountType").(string)
+
+	// if basic account
+	if accountType == constants.AccountBasic {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: constants.ProPlan,
+		}
+		response.SendBack(ctx, resp, []errorsinfo.Errors{}, http.StatusUpgradeRequired)
+		return
+	}
+
 	data, httpCode, errInfo := c.useCase.GainLoss(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return

@@ -63,6 +63,20 @@ func (c *TransactionController) Add(ctx *gin.Context) {
 
 	// for travel transaction
 	if dtoRequest.IDMasterTransactionTypes == constants.TravelTrx {
+		// get account type
+		accountType := ctx.MustGet("accountType").(string)
+
+		// if basic account
+		if accountType == constants.AccountBasic {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: constants.ProPlan,
+			}
+			response.SendBack(ctx, resp, []errorsinfo.Errors{}, http.StatusUpgradeRequired)
+			return
+		}
+
 		errInfo = c.validateTravelTransactionPayload(&dtoRequest)
 
 		// response error
@@ -110,6 +124,20 @@ func (c *TransactionController) AddInvestmentTransaction(ctx *gin.Context) {
 		request dtos.TransactionRequestInvestment
 		errInfo []errorsinfo.Errors
 	)
+
+	// get account type
+	accountType := ctx.MustGet("accountType").(string)
+
+	// if basic account
+	if accountType == constants.AccountBasic {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: constants.ProPlan,
+		}
+		response.SendBack(ctx, resp, []errorsinfo.Errors{}, http.StatusUpgradeRequired)
+		return
+	}
 
 	// bind
 	if err := ctx.ShouldBindJSON(&request); err != nil {
@@ -211,6 +239,20 @@ func (c *TransactionController) ByNotes(ctx *gin.Context) {
 
 func (c *TransactionController) TravelTransactionHistory(ctx *gin.Context) {
 	var errInfo []errorsinfo.Errors
+
+	// get account type
+	accountType := ctx.MustGet("accountType").(string)
+
+	// if basic account
+	if accountType == constants.AccountBasic {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: constants.ProPlan,
+		}
+		response.SendBack(ctx, resp, []errorsinfo.Errors{}, http.StatusUpgradeRequired)
+		return
+	}
 
 	idTravel := ctx.Query("idTravel")
 

@@ -109,6 +109,21 @@ func (c *BudgetController) Limit(ctx *gin.Context) {
 
 	// validation sections
 	if !utilities.IsEmptyString(dtoRequest.TravelStartDate) {
+
+		// get account type
+		accountType := ctx.MustGet("accountType").(string)
+
+		// if basic account
+		if accountType == constants.AccountBasic {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: constants.ProPlan,
+			}
+			response.SendBack(ctx, resp, []errorsinfo.Errors{}, http.StatusUpgradeRequired)
+			return
+		}
+
 		purpose = constants.Travel
 		if utilities.IsEmptyString(dtoRequest.TravelEndDate) {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "travel_end_date attribute needed in body payload")
@@ -174,6 +189,20 @@ func (c *BudgetController) Trends(ctx *gin.Context) {
 }
 
 func (c *BudgetController) Travels(ctx *gin.Context) {
+	// get account type
+	accountType := ctx.MustGet("accountType").(string)
+
+	// if basic account
+	if accountType == constants.AccountBasic {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: constants.ProPlan,
+		}
+		response.SendBack(ctx, resp, []errorsinfo.Errors{}, http.StatusUpgradeRequired)
+		return
+	}
+
 	dtoResponse, httpCode, errInfo := c.useCase.Travels(ctx)
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
 	return
