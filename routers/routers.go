@@ -23,7 +23,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 	v1group := router.Group("/v1")
 	{
-		masterGroup := v1group.Group("/masters", tokenSignature(), accountType())
+		masterGroup := v1group.Group("/masters", tokenSignature(), accountType(), betaVersion())
 		{
 			typeGroup := masterGroup.Group("/types")
 			{
@@ -78,7 +78,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 
-		accountGroup := v1group.Group("/accounts", accountType())
+		accountGroup := v1group.Group("/accounts", accountType(), betaVersion())
 		{
 			accountGroup.POST("/signup", account.SignUp)
 			accountGroup.POST("/signin", account.SignIn)
@@ -123,7 +123,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 
-		budgetGroup := v1group.Group("/budgets", tokenSignature(), accountType())
+		budgetGroup := v1group.Group("/budgets", tokenSignature(), accountType(), betaVersion())
 		{
 			limitGroup := budgetGroup.Group("/limits")
 			{
@@ -140,7 +140,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			budgetGroup.GET("/overview", budget.Overview)
 		}
 
-		statisticGroup := v1group.Group("/statistics", tokenSignature(), accountType())
+		statisticGroup := v1group.Group("/statistics", tokenSignature(), accountType(), betaVersion())
 		{
 			statisticGroup.GET("/trends", statistic.Trend)
 
@@ -168,7 +168,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 
-		transactionGroup := v1group.Group("/transactions", tokenSignature(), accountType())
+		transactionGroup := v1group.Group("/transactions", tokenSignature(), accountType(), betaVersion())
 		{
 			transactionGroup.POST("/", transaction.Add)
 			transactionGroup.GET("/income-spending", transaction.IncomeSpending)
@@ -196,13 +196,13 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 
-		investmentGroup := v1group.Group("/investments", tokenSignature(), accountType())
+		investmentGroup := v1group.Group("/investments", tokenSignature(), accountType(), betaVersion())
 		{
 			investmentGroup.GET("/portfolio", investment.Portfolio)
 			investmentGroup.GET("/gain-loss", investment.GainLoss)
 		}
 
-		walletGroup := v1group.Group("/wallets", tokenSignature(), accountType())
+		walletGroup := v1group.Group("/wallets", tokenSignature(), accountType(), betaVersion())
 		{
 			walletGroup.POST("/", wallet.Add)
 			walletGroup.GET("/", wallet.List)
@@ -224,7 +224,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 
-		referralGroup := v1group.Group("/referrals", tokenSignature(), accountType())
+		referralGroup := v1group.Group("/referrals", tokenSignature(), accountType(), betaVersion())
 		{
 			referralGroup.GET("/statistics", referrals.Statistic)
 			referralGroup.GET("/list", referrals.List)
@@ -250,7 +250,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			trackGroup.POST("/screen-time", tracks.ScreenTime)
 		}
 
-		notificationGroup := v1group.Group("/notifications", tokenSignature(), accountType())
+		notificationGroup := v1group.Group("/notifications", tokenSignature(), accountType(), betaVersion())
 		{
 			notificationGroup.GET("", notification.GetNotification)
 		}
