@@ -34,6 +34,7 @@ type (
 		SubExpenseDetail(ctx *gin.Context, month, year string, IDCategory uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		isDataPriorityNotEmpty(data entities.StatisticPriority) bool
 		AnalyticsTrend(ctx *gin.Context, period string, typeName string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		TopThreeInvestment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -726,4 +727,30 @@ func (s *StatisticUseCase) AnalyticsTrend(ctx *gin.Context, period string, typeN
 	}
 
 	return dataRepo, http.StatusOK, errInfo
+}
+
+func (s *StatisticUseCase) TopThreeInvestment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+	dataTopThreeInvestment, err := s.repo.TopThreeInvestment(accountUUID)
+	if err != nil {
+		logrus.Error()
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	if len(dataTopThreeInvestment) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no data for investment",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return dataTopThreeInvestment, http.StatusOK, errInfo
 }

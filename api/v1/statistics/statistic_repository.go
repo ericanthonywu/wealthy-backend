@@ -22,6 +22,7 @@ type (
 		SubExpenseDetail(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.StatisticExpenseWeekly, err error)
 		AnalyticsTrend(IDPersonal uuid.UUID, typeName, period string) (data []entities.StatisticAnalyticsTrends)
 		GetProfileByEmail(email string) (data entities.StatisticAccountProfile, err error)
+		TopThreeInvestment(IDPersonal uuid.UUID) (data []entities.TopThreeInvestment, err error)
 	}
 )
 
@@ -212,6 +213,13 @@ INNER JOIN tbl_authentications ta ON ta.id_personal_accounts = pa.id
 INNER JOIN tbl_master_roles tmr ON tmr.id = ta.id_master_roles
 WHERE pa.email=?`, email).Scan(&data).Error; err != nil {
 		return entities.StatisticAccountProfile{}, err
+	}
+	return data, nil
+}
+
+func (r *StatisticRepository) TopThreeInvestment(IDPersonal uuid.UUID) (data []entities.TopThreeInvestment, err error) {
+	if err := r.db.Raw(`SELECT ti.stock_code, ti.initial_investment FROM tbl_investment ti WHERE ti.id_personal_accounts = ? ORDER BY ti.initial_investment DESC lIMIT 3`, IDPersonal).Scan(&data).Error; err != nil {
+		return []entities.TopThreeInvestment{}, err
 	}
 	return data, nil
 }

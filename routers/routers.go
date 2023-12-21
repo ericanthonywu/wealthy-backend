@@ -161,6 +161,11 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 					transactionsDetailGroup.GET("/sub-expense", statistic.SubExpenseDetail)
 				}
 			}
+
+			investmentGroup := statisticGroup.Group("/investments")
+			{
+				investmentGroup.GET("/top-three", statistic.TopThreeInvestment)
+			}
 		}
 
 		transactionGroup := v1group.Group("/transactions", tokenSignature(), accountType())
