@@ -27,6 +27,7 @@ type (
 	IPaymentUseCase interface {
 		Subscriptions(ctx *gin.Context, request *dtos.PaymentSubscription) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		MidtransWebhook(ctx *gin.Context, request *dtos.MidTransWebhook) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		CalculateRewards(IDPersonalAccount uuid.UUID, amount float64)
 	}
 )
 
@@ -245,10 +246,78 @@ func (s *PaymentUseCase) MidtransWebhook(ctx *gin.Context, request *dtos.MidTran
 		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
+	// calculate referral
+	s.CalculateRewards(dataTransaction.IDPersonalAccount, dataTransaction.Amount)
+
 	// if empty
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
 
 	return struct{}{}, http.StatusOK, errInfo
+}
+
+func (s *PaymentUseCase) CalculateRewards(IDPersonalAccount uuid.UUID, amount float64) {
+	rewardCollection := make(map[int]float64)
+
+	// get personal information
+	dataPersonal, err := s.repo.GetReferralCodeByIDPA(IDPersonalAccount)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	// get referral info by reference_code
+	dataReferral, err := s.repo.GetReferralInfo(dataPersonal.RefCode)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	// get reward percentage
+	dataReward, err := s.repo.GetReward()
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	// store data into map collections
+	if len(dataReward) > 0 {
+		for _, v := range dataReward {
+			rewardCollection[v.Level] = v.Percentage
+		}
+	}
+
+	// commission calculation
+	if len(dataReferral) > 0 {
+		for _, v := range dataReferral {
+
+			// if reference not empty, then store
+			if v.RefCodeReference != "" {
+
+				commission := 0.0
+				final_commission := 0.0
+
+				// get previous commision
+				dataPreviousCommission, err := s.repo.GetPreviousCommission(v.RefCodeReference)
+				if err != nil {
+					logrus.Error(err.Error())
+				}
+
+				// is exists in collection
+				if percentage, isExist := rewardCollection[v.Level]; isExist {
+					commission = percentage * amount
+					final_commission = commission + dataPreviousCommission.Commission
+				}
+
+				// set new commision value
+				err = s.repo.SetCommissionByRefCode(v.RefCodeReference, final_commission)
+				if err != nil {
+					logrus.Error(err.Error())
+				}
+			}
+
+			// if reference empty
+			if v.RefCodeReference == "" {
+				continue
+			}
+		}
+	}
 }
