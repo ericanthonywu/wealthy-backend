@@ -245,7 +245,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			trackGroup.POST("/screen-time", tracks.ScreenTime)
 		}
 
-		notificationGroup := v1group.Group("/notifications", tokenSignature())
+		notificationGroup := v1group.Group("/notifications", tokenSignature(), accountType())
 		{
 			notificationGroup.GET("", notification.GetNotification)
 		}

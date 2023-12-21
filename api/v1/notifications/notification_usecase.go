@@ -6,7 +6,6 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/notifications/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/datecustoms"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -29,16 +28,10 @@ func NewNotificationUseCase(repo INotificationRepository) *NotificationUseCase {
 func (s *NotificationUseCase) GetNotification(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var dtoResponse []dtos.Notification
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, http.StatusUnauthorized, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// get notification info by personal ID
-	dataNotification, err := s.repo.GetNotification(personalAccount.ID)
+	dataNotification, err := s.repo.GetNotification(accountUUID)
 	if err != nil {
 		logrus.Error(err.Error())
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -70,8 +63,7 @@ func (s *NotificationUseCase) GetNotification(ctx *gin.Context) (response interf
 			NotificationDescription: v.NotificationDescription,
 			IDPersonalAccounts:      v.IDPersonalAccounts,
 			IsRead:                  v.IsRead,
-			IDGroupSender:           v.IDGroupSender,
-			IDGroupRecipient:        v.IDGroupRecipient,
+			IDGroupSharing:          v.IDGroupSharing,
 			AccountDetail: dtos.NotificationAccountDetail{
 				AccountImage: os.Getenv("APP_HOST") + "/v1/" + v.ImagePath,
 				AccountType:  v.Type,

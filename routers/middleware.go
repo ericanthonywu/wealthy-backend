@@ -5,6 +5,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/semicolon-indonesia/wealthy-backend/constants"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
@@ -81,7 +82,7 @@ func accountType() gin.HandlerFunc {
 		personalAccount := personalaccounts.Informations(c, usrEmail)
 
 		if personalAccount.ID == uuid.Nil {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
 			response.SendBack(c, struct{}{}, errInfo, http.StatusUnauthorized)
 			c.Abort()
 			return
