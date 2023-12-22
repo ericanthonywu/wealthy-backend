@@ -78,14 +78,14 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 
-		accountGroup := v1group.Group("/accounts", accountType(), betaVersion())
+		accountGroup := v1group.Group("/accounts")
 		{
 			accountGroup.POST("/signup", account.SignUp)
 			accountGroup.POST("/signin", account.SignIn)
-			accountGroup.PATCH("/profiles", tokenSignature(), account.UpdateProfile)
-			accountGroup.GET("/profiles", tokenSignature(), account.GetProfile)
+			accountGroup.PATCH("/profiles", tokenSignature(), accountType(), account.UpdateProfile)
+			accountGroup.GET("/profiles", tokenSignature(), accountType(), account.GetProfile)
 
-			accountProfileGroup := accountGroup.Group("/profiles", tokenSignature())
+			accountProfileGroup := accountGroup.Group("/profiles", tokenSignature(), accountType())
 			{
 				accountProfileGroup.POST("/avatar", account.SetAvatar)
 				accountProfileGroup.DELETE("/avatar", account.RemoveAvatar)
@@ -97,17 +97,17 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				{
 					forgotGroup.POST("", account.ForgotPassword)
 					forgotGroup.POST("/verify", account.VerifyOTP)
-					forgotGroup.POST("/change-password", tokenSignature(), account.ChangePasswordForgot)
+					forgotGroup.POST("/change-password", tokenSignature(), accountType(), account.ChangePasswordForgot)
 				}
-				accountPasswordGroup.POST("/change", tokenSignature(), account.ChangePassword)
+				accountPasswordGroup.POST("/change", tokenSignature(), accountType(), account.ChangePassword)
 			}
 
-			accountReferral := accountGroup.Group("/referrals")
+			accountReferral := accountGroup.Group("/referrals", tokenSignature(), accountType())
 			{
 				accountReferral.POST("/validate", account.ValidateRefCode)
 			}
 
-			sharingGroup := accountGroup.Group("/shares", tokenSignature())
+			sharingGroup := accountGroup.Group("/shares", tokenSignature(), accountType(), betaVersion())
 			{
 				sharingGroup.POST("/search", account.SearchAccount)
 				sharingGroup.POST("/invite", account.InviteSharing)
