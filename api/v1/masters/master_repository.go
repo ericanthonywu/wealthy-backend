@@ -34,6 +34,8 @@ type (
 		AddIncomeCategory(newCategory string, IDPersonal uuid.UUID) (data entities.AddEntities, err error)
 		AddExpenseCategory(newCategory string, IDPersonal uuid.UUID) (data entities.AddEntities, err error)
 		AddSubExpenseCategory(newCategory string, ExpenseID uuid.UUID, IDPersonal uuid.UUID) (data entities.AddEntities, err error)
+		Price() (data []entities.Price)
+		UserSubscriptionInfo(IDAccount uuid.UUID) (data entities.SubscriptionInfo, err error)
 	}
 )
 
@@ -199,6 +201,24 @@ func (r *MasterRepository) AddSubExpenseCategory(newCategory string, ExpenseID u
 	if err = r.db.Raw(`INSERT INTO tbl_master_expense_subcategories_editable (id, subcategories,id_master_expense_categories, active, id_personal_accounts ) VALUES (?,?, ?, ?, ?) RETURNING id`, id, newCategory, ExpenseID, true, IDPersonal).Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.AddEntities{}, err
+	}
+	return data, nil
+}
+
+func (r *MasterRepository) Price() (data []entities.Price) {
+	if err := r.db.Find(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return []entities.Price{}
+	}
+	return data
+}
+
+func (r *MasterRepository) UserSubscriptionInfo(IDAccount uuid.UUID) (data entities.SubscriptionInfo, err error) {
+	if err = r.db.Raw(`SELECT tst.subscription_id FROM tbl_user_subscription tus
+INNER JOIN tbl_subscriptions_transaction tst ON tst.id = tus.id_subscriptions_transaction
+WHERE tus.id_personal_accounts = ?
+ORDER BY tus.period_expired DESC LIMIT 1`, IDAccount).Scan(&data).Error; err != nil {
+		return entities.SubscriptionInfo{}, err
 	}
 	return data, nil
 }

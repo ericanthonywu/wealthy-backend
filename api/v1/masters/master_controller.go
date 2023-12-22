@@ -37,6 +37,7 @@ type (
 		AddIncomeCategory(ctx *gin.Context)
 		AddExpenseCategory(ctx *gin.Context)
 		AddSubExpenseCategory(ctx *gin.Context)
+		Price(ctx *gin.Context)
 	}
 )
 
@@ -423,6 +424,12 @@ func (c *MasterController) AddSubExpenseCategory(ctx *gin.Context) {
 	}
 
 	data, httpCode, errInfo := c.useCase.AddSubExpenseCategory(ctx, &dtoRequest)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *MasterController) Price(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.Price(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }

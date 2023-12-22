@@ -83,6 +83,19 @@ type (
 	AddEntities struct {
 		ID uuid.UUID `gorm:"column:id" json:"id"`
 	}
+
+	Price struct {
+		ID            uuid.UUID `gorm:"column:id"`
+		Title         string    `gorm:"column:title"`
+		Price         float64   `gorm:"column:price"`
+		ActualPrice   float64   `gorm:"column:actual_price"`
+		Description   string    `gorm:"column:description"`
+		IsRecommended bool      `gorm:"column:is_recommended"`
+	}
+
+	SubscriptionInfo struct {
+		ID uuid.UUID `gorm:"column:subscription_id"`
+	}
 )
 
 func (TransactionType) TableName() string {
@@ -123,4 +136,8 @@ func (Gender) TableName() string {
 
 func (SubExpenseCategories) TableName() string {
 	return "tbl_master_expense_subcategories"
+}
+
+func (Price) TableName() string {
+	return "tbl_master_price"
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters/entities"
+	"github.com/semicolon-indonesia/wealthy-backend/constants"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
@@ -28,6 +29,7 @@ type (
 		Broker() (data interface{})
 		TransactionPriority() (data interface{})
 		Gender() (data interface{})
+		Price(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		SubExpenseCategories(expenseID uuid.UUID) (data interface{})
 		Exchange() (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		PersonalIncomeCategory(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
@@ -362,7 +364,7 @@ func (s *MasterUseCase) AddSubExpenseCategory(ctx *gin.Context, request *dtos.Ad
 
 	if personalAccount.ID == uuid.Nil {
 		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
 		return data, httpCode, errInfo
 	}
 
@@ -376,4 +378,63 @@ func (s *MasterUseCase) AddSubExpenseCategory(ctx *gin.Context, request *dtos.Ad
 	}
 
 	return data, http.StatusOK, errInfo
+}
+
+func (s *MasterUseCase) Price(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		dtoResponse    []dtos.PriceResponse
+		idSubscription uuid.UUID
+		isCurrent      bool
+	)
+
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	dataSubscription, err := s.repo.UserSubscriptionInfo(accountUUID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	if dataSubscription.ID != uuid.Nil {
+		idSubscription = dataSubscription.ID
+	} else {
+		dataSubscription.ID = uuid.Nil
+	}
+
+	dataPrice := s.repo.Price()
+	if len(dataPrice) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "code for price not available",
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
+
+	if len(dataPrice) > 0 {
+		for _, v := range dataPrice {
+			isCurrent = false
+
+			if idSubscription == v.ID {
+				isCurrent = true
+			}
+
+			dtoResponse = append(dtoResponse, dtos.PriceResponse{
+				ID:            v.ID,
+				Title:         v.Title,
+				Price:         v.Price,
+				ActualPrice:   v.ActualPrice,
+				Description:   v.Description,
+				IsCurrent:     isCurrent,
+				IsRecommended: v.IsRecommended,
+			})
+		}
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
 }
