@@ -52,15 +52,10 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		IDMasterSubExpCatUUID uuid.UUID
 		IDMasterTransPriUUID  uuid.UUID
 		IDMasterTransTypeUUID uuid.UUID
+		IDWalletUUID          uuid.UUID
 	)
 
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
-
-	// convert string to UUID
-	IDWalletUUID, err := uuid.Parse(request.IDWallet)
-	if err != nil {
-		logrus.Error(err.Error())
-	}
 
 	if request.IDTravel != "" {
 		IDTravelUUID, err = uuid.Parse(request.IDTravel)
@@ -78,14 +73,6 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 	if request.IDTravel == "" {
 		convertAmount = request.Amount
 		IDTravelUUID = uuid.Nil
-
-		// is wallet true exists
-		if !s.repo.WalletExist(IDWalletUUID) {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet unregistered before")
-			return struct{}{}, http.StatusBadRequest, errInfo
-		}
-
-		// check for wallet type
 	}
 
 	// translate string to uuid
@@ -94,6 +81,18 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		if err != nil {
 			logrus.Error(err.Error())
 		}
+
+		// convert string to UUID
+		IDWalletUUID, err = uuid.Parse(request.IDWallet)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		// is wallet true exists
+		if !s.repo.WalletExist(IDWalletUUID) {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet unregistered before")
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
 	}
 
 	if request.IDMasterExpenseCategories != "" {
@@ -101,9 +100,26 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		if err != nil {
 			logrus.Error(err.Error())
 		}
+
+		// convert string to UUID
+		IDWalletUUID, err = uuid.Parse(request.IDWallet)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		// is wallet true exists
+		if !s.repo.WalletExist(IDWalletUUID) {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet unregistered before")
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
 	}
 
 	if request.IDMasterExpenseSubCategories != "" {
+		if request.IDMasterExpenseCategories == "" {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense categories need along use id master expense subcategories")
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
+
 		IDMasterSubExpCatUUID, err = uuid.Parse(request.IDMasterExpenseSubCategories)
 		if err != nil {
 			logrus.Error(err.Error())
