@@ -76,6 +76,11 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			{
 				currencyGroup.GET("/exchange", master.Exchange)
 			}
+
+			subscriptionGroup := masterGroup.Group("/subscriptions")
+			{
+				subscriptionGroup.GET("/price", master.Price)
+			}
 		}
 
 		accountGroup := v1group.Group("/accounts")
