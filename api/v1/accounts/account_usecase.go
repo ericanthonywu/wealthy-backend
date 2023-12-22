@@ -1291,6 +1291,15 @@ func (s *AccountUseCase) VerifyOTP(ctx *gin.Context, request *dtos.AccountOTPVer
 		return struct{}{}, http.StatusBadRequest, errInfo
 	}
 
+	if dataForgotPassword.OTPCode != request.OTPCode {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "otp code in valid. please resend new otp code",
+		}
+		return resp, http.StatusBadRequest, errInfo
+	}
+
 	// duration expired
 	duration := dataForgotPassword.Expired.Sub(dataForgotPassword.CreatedAt)
 	if duration <= 0 {
