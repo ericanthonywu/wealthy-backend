@@ -87,26 +87,28 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 			totalPotentialReturn += potentialReturn
 
 			investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
-				Name:                dataTrading.Name,
-				InitialInvestment:   v.InitialInvestment,
-				StockCode:           v.StockCode,
-				Lot:                 v.TotalLot,
-				AverageBuy:          v.AverageBuy,
-				PotentialReturn:     potentialReturn,
-				PercentageReturn:    fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
-				UnrealizedPotential: potentialReturn,
-				TotalDays:           int64(dateTotal),
+				Name:              dataTrading.Name,
+				InitialInvestment: v.InitialInvestment,
+				StockCode:         v.StockCode,
+				Lot:               v.TotalLot,
+				AverageBuy:        v.AverageBuy,
+				PotentialReturn:   potentialReturn,
+				PercentageReturn:  fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
+				TotalDays:         int64(dateTotal),
 			})
 
 			// latest data
 			if k == maxData {
 				investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
-					BrokerName: brokerName,
-					Info:       investmentInfo,
+					BrokerName:          brokerName,
+					Info:                investmentInfo,
+					UnrealizedPotential: potentialReturn,
 				})
 
 				// clear
 				investmentInfo = nil
+				closePrice = 0
+				potentialReturn = 0
 
 			}
 		}
@@ -123,54 +125,60 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 			totalPotentialReturn += potentialReturn
 
 			investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
-				Name:                dataTrading.Name,
-				InitialInvestment:   v.InitialInvestment,
-				StockCode:           v.StockCode,
-				Lot:                 v.TotalLot,
-				AverageBuy:          v.AverageBuy,
-				PotentialReturn:     potentialReturn,
-				PercentageReturn:    fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
-				UnrealizedPotential: potentialReturn,
-				TotalDays:           int64(dateTotal),
+				Name:              dataTrading.Name,
+				InitialInvestment: v.InitialInvestment,
+				StockCode:         v.StockCode,
+				Lot:               v.TotalLot,
+				AverageBuy:        v.AverageBuy,
+				PotentialReturn:   potentialReturn,
+				PercentageReturn:  fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
+				TotalDays:         int64(dateTotal),
 			})
 		}
 
 		// if previous broker name different with new data
 		if brokerName != v.BrokerName {
+			// potential return
+			closePrice := float64(dataTrading.Close)
+			potentialReturn := (closePrice - v.AverageBuy) * float64(v.TotalLot) * 100
+
 			investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
-				BrokerName: brokerName,
-				Info:       investmentInfo,
+				BrokerName:          brokerName,
+				Info:                investmentInfo,
+				UnrealizedPotential: potentialReturn,
 			})
 
 			// clear
 			investmentInfo = nil
+			closePrice = 0
+			potentialReturn = 0
 
 			// renew
 			brokerName = v.BrokerName
 
 			// calculation for
-			closePrice := float64(dataTrading.Close)
-			potentialReturn := (closePrice - v.AverageBuy) * float64(v.TotalLot) * 100
+			closePrice = float64(dataTrading.Close)
+			potentialReturn = (closePrice - v.AverageBuy) * float64(v.TotalLot) * 100
 			percentagePotentialReturn := (potentialReturn / v.InitialInvestment) / 100
 			totalPotentialReturn += potentialReturn
 
 			investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
-				Name:                dataTrading.Name,
-				InitialInvestment:   v.InitialInvestment,
-				StockCode:           v.StockCode,
-				Lot:                 v.TotalLot,
-				AverageBuy:          v.AverageBuy,
-				PotentialReturn:     potentialReturn,
-				PercentageReturn:    fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
-				UnrealizedPotential: potentialReturn,
-				TotalDays:           int64(dateTotal),
+				Name:              dataTrading.Name,
+				InitialInvestment: v.InitialInvestment,
+				StockCode:         v.StockCode,
+				Lot:               v.TotalLot,
+				AverageBuy:        v.AverageBuy,
+				PotentialReturn:   potentialReturn,
+				PercentageReturn:  fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
+				TotalDays:         int64(dateTotal),
 			})
 
 			// latest data
 			if k == maxData {
 				investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
-					BrokerName: brokerName,
-					Info:       investmentInfo,
+					BrokerName:          brokerName,
+					Info:                investmentInfo,
+					UnrealizedPotential: potentialReturn,
 				})
 
 				// clear
