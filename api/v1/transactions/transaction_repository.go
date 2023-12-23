@@ -65,6 +65,9 @@ type (
 		AverageExpenseEachDay(accountUUID uuid.UUID) (data entities.ExpenseEachDay, err error)
 		AverageIncomeMonthly(accountUUID uuid.UUID) (data entities.IncomeMonthly, err error)
 		AverageExpenseMonthly(accountUUID uuid.UUID) (data entities.ExpenseMonthly, err error)
+
+		CountIncomeTransaction(accountUUID uuid.UUID) (data entities.CountIncomeTrxMonthly, err error)
+		CountExpenseTransaction(accountUUID uuid.UUID) (data entities.CountExpenseTrxMonthly, err error)
 	}
 )
 
@@ -748,6 +751,28 @@ WHERE to_char(tt.date_time_transaction::DATE, 'MM')::numeric = EXTRACT(MONTH FRO
   AND tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'
   AND tt.id_personal_account = ?`, accountUUID).Scan(&data).Error; err != nil {
 		return entities.ExpenseMonthly{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) CountIncomeTransaction(accountUUID uuid.UUID) (data entities.CountIncomeTrxMonthly, err error) {
+	if err := r.db.Raw(`SELECT count(id) as count_income FROM tbl_transactions tt
+WHERE to_char(tt.date_time_transaction::DATE, 'MM')::numeric = EXTRACT(MONTH FROM CURRENT_DATE)
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY')::numeric = EXTRACT(YEAR FROM CURRENT_DATE)
+  AND tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000'
+  AND tt.id_personal_account = ?`, accountUUID).Scan(&data).Error; err != nil {
+		return entities.CountIncomeTrxMonthly{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) CountExpenseTransaction(accountUUID uuid.UUID) (data entities.CountExpenseTrxMonthly, err error) {
+	if err := r.db.Raw(`SELECT count(id) as count_expense FROM tbl_transactions tt
+WHERE to_char(tt.date_time_transaction::DATE, 'MM')::numeric = EXTRACT(MONTH FROM CURRENT_DATE)
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY')::numeric = EXTRACT(YEAR FROM CURRENT_DATE)
+  AND tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'
+  AND tt.id_personal_account = ?`, accountUUID).Scan(&data).Error; err != nil {
+		return entities.CountExpenseTrxMonthly{}, err
 	}
 	return data, nil
 }

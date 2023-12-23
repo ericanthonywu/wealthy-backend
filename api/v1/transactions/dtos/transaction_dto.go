@@ -138,6 +138,8 @@ type (
 	}
 
 	CashFlowResponse struct {
+		CountIncome         int64   `json:"count_income"`
+		CountExpense        int64   `json:"count_expense"`
 		CashFlow            float64 `json:"cashflow"`
 		TotalAverageIncome  float64 `json:"total_average_income"`
 		TotalAverageExpense float64 `json:"total_average_expense"`
