@@ -188,6 +188,14 @@ type (
 	ExpenseMonthly struct {
 		ExpenseAverage float64 `gorm:"column:expense_average"`
 	}
+
+	CountIncomeTrxMonthly struct {
+		CountIncome int64 `gorm:"column:count_income"`
+	}
+
+	CountExpenseTrxMonthly struct {
+		CountExpense int64 `gorm:"column:count_expense"`
+	}
 )
 
 func (TransactionEntity) TableName() string {

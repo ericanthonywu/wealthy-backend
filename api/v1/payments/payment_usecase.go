@@ -164,7 +164,7 @@ func (s *PaymentUseCase) Subscriptions(ctx *gin.Context, request *dtos.PaymentSu
 		if len(errInfo) == 0 {
 			errInfo = []errorsinfo.Errors{}
 		}
-		return midTransResponse, resp.StatusCode, errInfo
+		return midTransResponse, http.StatusOK, errInfo
 	} else {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "payment gateway problem")
 		return midTransResponse, resp.StatusCode, errInfo
