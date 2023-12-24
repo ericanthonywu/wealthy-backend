@@ -307,7 +307,7 @@ func (s *PaymentUseCase) CalculateRewards(IDPersonalAccount uuid.UUID, amount fl
 					final_commission = commission + dataPreviousCommission.Commission
 				}
 
-				// set new commision value
+				// set new commission value
 				err = s.repo.SetCommissionByRefCode(v.RefCodeReference, final_commission)
 				if err != nil {
 					logrus.Error(err.Error())
