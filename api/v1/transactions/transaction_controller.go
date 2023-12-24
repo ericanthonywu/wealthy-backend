@@ -301,17 +301,17 @@ func (c *TransactionController) validateTravelTransactionPayload(request *dtos.T
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense category empty value")
 	}
 
-	if request.IDMasterExpenseSubCategories == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense sub category empty value")
-	}
-
-	if request.IDWallet == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet empty value")
-	}
-
 	// unnecessary field
 	if request.IDMasterIncomeCategories != "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master income categories unnecessary for travel transaction")
+	}
+
+	if request.IDWallet == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet unnecessary for travel transaction")
+	}
+
+	if request.IDMasterExpenseSubCategories == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense sub categories unnecessary for travel transaction")
 	}
 
 	return errInfo
