@@ -848,6 +848,14 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 						Value:        v.Budget,
 					},
 				})
+
+				if k == lengthData-1 {
+					// save previous
+					detailNotes.TransactionCategory = catPrev
+					detailNotes.TransactionNotesDeepDetail = append(detailNotes.TransactionNotesDeepDetail, deepDetailsNotes...)
+
+					dtoResponse.TransactionNotesDetail = append(dtoResponse.TransactionNotesDetail, detailNotes)
+				}
 			}
 
 			if catPrev != v.TransactionCategory {
