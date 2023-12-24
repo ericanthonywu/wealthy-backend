@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/constants"
+	"github.com/semicolon-indonesia/wealthy-backend/utils/datecustoms"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
 	"github.com/sirupsen/logrus"
@@ -32,6 +33,7 @@ type (
 		validateIncomeTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
 		validateExpenseTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
 		validateInvestTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
+		validateTransferTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -57,58 +59,72 @@ func (c *TransactionController) Add(ctx *gin.Context) {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "date transaction empty value")
 	}
 
+	if dtoRequest.Date != "" {
+		if !datecustoms.ValidDateFormat(dtoRequest.Date) {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "date transaction must format YYYY-MM-DD")
+		}
+
+		if datecustoms.TotalDaysBetweenDate(dtoRequest.Date) < 0 {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "date transaction not permit for future transaction record")
+		}
+	}
+
 	if dtoRequest.IDMasterTransactionTypes == "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master transaction type empty value")
 	}
 
-	// for travel transaction
-	if dtoRequest.IDMasterTransactionTypes == constants.TravelTrx {
-		// get account type
-		accountType := ctx.MustGet("accountType").(string)
+	switch dtoRequest.IDMasterTransactionTypes {
+	case constants.TravelTrx:
+		{
+			// get account type
+			accountType := ctx.MustGet("accountType").(string)
 
-		// if basic account
-		if accountType == constants.AccountBasic {
-			resp := struct {
-				Message string `json:"message"`
-			}{
-				Message: constants.ProPlan,
+			// check account type
+			if accountType == constants.AccountBasic {
+				resp := struct {
+					Message string `json:"message"`
+				}{
+					Message: constants.ProPlan,
+				}
+				response.SendBack(ctx, resp, []errorsinfo.Errors{}, http.StatusUpgradeRequired)
+				return
 			}
-			response.SendBack(ctx, resp, []errorsinfo.Errors{}, http.StatusUpgradeRequired)
-			return
+
+			// validate for travel transaction
+			errInfoValidate := c.validateTravelTransactionPayload(&dtoRequest)
+			errInfo = append(errInfo, errInfoValidate...)
+			break
 		}
-
-		errInfo = c.validateTravelTransactionPayload(&dtoRequest)
-
-		// response error
-		if len(errInfo) > 0 {
-			response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
-			return
+	case constants.IncomeTrx:
+		{
+			// validate for income transaction
+			errInfoValidate := c.validateIncomeTransactionPayload(&dtoRequest)
+			errInfo = append(errInfo, errInfoValidate...)
+			break
+		}
+	case constants.ExpenseTrx:
+		{
+			// validate for expense transaction
+			errInfoValidate := c.validateExpenseTransactionPayload(&dtoRequest)
+			errInfo = append(errInfo, errInfoValidate...)
+			break
+		}
+	case constants.TransferTrx:
+		{
+			// validate for transfer transaction
+			errInfoValidate := c.validateTransferTransactionPayload(&dtoRequest)
+			errInfo = append(errInfo, errInfoValidate...)
+			break
+		}
+	default:
+		{
+			errInfoValidate := errorsinfo.ErrorWrapper(errInfo, "", "unknown transaction types")
+			errInfo = append(errInfo, errInfoValidate...)
+			break
 		}
 	}
 
-	// for income transaction
-	if dtoRequest.IDMasterIncomeCategories == constants.IncomeTrx {
-		errInfo = c.validateIncomeTransactionPayload(&dtoRequest)
-
-		// response error
-		if len(errInfo) > 0 {
-			response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
-			return
-		}
-	}
-
-	// for expense transaction
-	if dtoRequest.IDMasterExpenseCategories == constants.ExpenseTrx {
-		errInfo = c.validateExpenseTransactionPayload(&dtoRequest)
-
-		// response error
-		if len(errInfo) > 0 {
-			response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
-			return
-		}
-	}
-
-	// send back with err information
+	// response error
 	if len(errInfo) > 0 {
 		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
@@ -310,8 +326,24 @@ func (c *TransactionController) validateTravelTransactionPayload(request *dtos.T
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet unnecessary for travel transaction")
 	}
 
+	if request.IDMasterTransactionPriorities != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master transaction priorities unnecessary for travel transaction")
+	}
+
 	if request.IDMasterExpenseSubCategories != "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense sub categories unnecessary for travel transaction")
+	}
+
+	if request.TransferFrom != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "transfer form unnecessary for travel transaction")
+	}
+
+	if request.TransferTo != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "transfer to unnecessary for travel transaction")
+	}
+
+	if request.Fees < 0 || request.Fees > 0 {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "fee unnecessary for travel transaction")
 	}
 
 	return errInfo
@@ -319,7 +351,6 @@ func (c *TransactionController) validateTravelTransactionPayload(request *dtos.T
 
 func (c *TransactionController) validateIncomeTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors) {
 	// mandatory field
-
 	if request.Amount == 0 {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "amount have greater than 0")
 	}
@@ -333,24 +364,83 @@ func (c *TransactionController) validateIncomeTransactionPayload(request *dtos.T
 	}
 
 	// unnecessary field
-	if request.IDMasterExpenseCategories == "" {
+	if request.IDMasterExpenseCategories != "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense category unnecessary for income transaction")
 	}
 
-	if request.IDMasterExpenseSubCategories == "" {
+	if request.IDMasterExpenseSubCategories != "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense sub category unnecessary for income transaction")
 	}
 
-	if request.IDTravel == "" {
+	if request.IDTravel != "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id travel unnecessary for income transaction")
+	}
+
+	if request.IDMasterTransactionPriorities != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master transaction priorities unnecessary for income transaction")
+	}
+
+	if request.TransferFrom != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "transfer form unnecessary for income transaction")
+	}
+
+	if request.TransferTo != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "transfer to unnecessary for income transaction")
+	}
+
+	if request.Fees > 0 || request.Fees < 0 {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "fee unnecessary for income transaction")
 	}
 
 	return errInfo
 }
 
 func (c *TransactionController) validateExpenseTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors) {
-	return
+	// mandatory field
+	if request.Amount == 0 {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "amount have greater than 0")
+	}
+
+	if request.IDWallet == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet empty value")
+	}
+
+	if request.IDMasterExpenseCategories == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense category empty value")
+	}
+
+	if request.IDMasterExpenseSubCategories == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense sub category empty value")
+	}
+
+	if request.IDMasterTransactionPriorities == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master transaction priorities empty value")
+	}
+
+	// unnecessary field
+	if request.IDMasterIncomeCategories != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master income categories unnecessary for expense transaction")
+	}
+
+	if request.IDTravel != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id travel unnecessary unnecessary for expense transaction")
+	}
+
+	if request.TransferFrom != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "transfer form unnecessary for expense transaction")
+	}
+
+	if request.TransferTo != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "transfer to unnecessary for expense transaction")
+	}
+
+	if request.Fees > 0 || request.Fees < 0 {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "fee unnecessary for expense transaction")
+	}
+
+	return errInfo
 }
+
 func (c *TransactionController) validateInvestTransactionPayload(request *dtos.TransactionRequestInvestment) (errInfo []errorsinfo.Errors) {
 
 	if request.IDWallet == "" {
@@ -383,6 +473,52 @@ func (c *TransactionController) validateInvestTransactionPayload(request *dtos.T
 
 	if request.StockCode == "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "stock code empty value")
+	}
+
+	return errInfo
+}
+
+func (c *TransactionController) validateTransferTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors) {
+	// mandatory field
+	if request.Amount == 0 {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "amount have greater than 0")
+	}
+
+	if request.TransferFrom == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "transfer form empty value")
+	}
+
+	if request.TransferTo == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "transfer to empty value")
+	}
+
+	if request.Fees <= 0 {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "fee must greater than 0")
+	}
+
+	// unnecessary field
+	if request.IDMasterExpenseCategories != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense category unnecessary for transfer transaction")
+	}
+
+	if request.IDMasterExpenseSubCategories != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense sub category unnecessary for transfer transaction")
+	}
+
+	if request.IDMasterTransactionPriorities != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master transaction priorities unnecessary for transfer transaction")
+	}
+
+	if request.IDMasterIncomeCategories != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master income categories unnecessary for transfer transaction")
+	}
+
+	if request.IDTravel != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id travel unnecessary unnecessary for transfer transaction")
+	}
+
+	if request.IDWallet != "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet unnecessary unnecessary for transfer transaction")
 	}
 
 	return errInfo

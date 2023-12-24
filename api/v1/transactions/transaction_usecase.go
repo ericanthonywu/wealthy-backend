@@ -107,32 +107,38 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 			logrus.Error(err.Error())
 		}
 
-		// is wallet true exists
-		if !s.repo.WalletExist(IDWalletUUID) {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet unregistered before")
-			return struct{}{}, http.StatusBadRequest, errInfo
+		if request.IDTravel == "" {
+			// is wallet true exists
+			if !s.repo.WalletExist(IDWalletUUID) {
+				errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet unregistered before")
+				return struct{}{}, http.StatusBadRequest, errInfo
+			}
+
+			// check sub expense
+			if request.IDMasterExpenseSubCategories != "" {
+				if request.IDMasterExpenseCategories == "" {
+					errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense categories need along use id master expense subcategories")
+					return struct{}{}, http.StatusBadRequest, errInfo
+				}
+
+				IDMasterSubExpCatUUID, err = uuid.Parse(request.IDMasterExpenseSubCategories)
+				if err != nil {
+					logrus.Error(err.Error())
+				}
+			}
 		}
 	}
 
-	if request.IDMasterExpenseSubCategories != "" {
-		if request.IDMasterExpenseCategories == "" {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense categories need along use id master expense subcategories")
-			return struct{}{}, http.StatusBadRequest, errInfo
-		}
-
-		IDMasterSubExpCatUUID, err = uuid.Parse(request.IDMasterExpenseSubCategories)
-		if err != nil {
-			logrus.Error(err.Error())
+	if request.IDMasterIncomeCategories != "" || request.IDMasterExpenseCategories != "" {
+		if request.IDMasterTransactionPriorities != "" {
+			IDMasterTransPriUUID, err = uuid.Parse(request.IDMasterTransactionPriorities)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
 		}
 	}
 
-	if request.IDMasterTransactionPriorities != "" {
-		IDMasterTransPriUUID, err = uuid.Parse(request.IDMasterTransactionPriorities)
-		if err != nil {
-			logrus.Error(err.Error())
-		}
-	}
-
+	// all transactions using this
 	if request.IDMasterTransactionTypes != "" {
 		IDMasterTransTypeUUID, err = uuid.Parse(request.IDMasterTransactionTypes)
 		if err != nil {
