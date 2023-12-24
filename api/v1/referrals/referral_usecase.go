@@ -96,61 +96,30 @@ func (s *ReferralUseCase) Statistic(ctx *gin.Context) (response dtos.ReferralRes
 
 func (s *ReferralUseCase) List(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		dtoResponse   dtos.ReferralResponseWithCustomer
-		dataProfile   entities.ReferralAccountProfile
-		dataFirstNode entities.ReferralUserReward
-		dataMember    []entities.ReferralUserReward
-		err           error
+		dtoResponse  dtos.ReferralResponseWithCustomer
+		tierInfo     []dtos.TierDetailWithCustomer
+		customerInfo []dtos.CustomerDetail
+		dataProfile  entities.ReferralAccountProfile
+		tierName     string
+		err          error
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
-
-	dataProfile, err = s.AccountProfile(personalAccount.ID)
+	dataProfile, err = s.AccountProfile(accountUUID)
 	if err != nil {
 		logrus.Error(err.Error())
 	}
 
 	referralCode := dataProfile.ReferType
 
-	// GETTING ROOT NODE INFORMATION
-	dataFirstNode, err = s.repo.FirstNode(referralCode)
+	// get tier of referral code :
+	dataTierOfRefCode, err := s.repo.GetTierReferralCode(referralCode)
 	if err != nil {
-		res := struct {
-			Message string `json:"message"`
-		}{
-			Message: " have not member list for referral code : " + referralCode,
-		}
-		return res, http.StatusNotFound, []errorsinfo.Errors{}
+		logrus.Error(err.Error())
 	}
 
-	// GETTING MEMBER OF NODE
-	dataMember, err = s.repo.MemberNode(referralCode)
-	if err != nil || len(dataMember) == 0 {
-		res := struct {
-			Message string `json:"message"`
-		}{
-			Message: " have not member list for referral code : " + referralCode,
-		}
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found data from referral code : "+referralCode)
-		return res, http.StatusNotFound, []errorsinfo.Errors{}
-	}
-
-	// MAPPING FOR TIERS
-	if dataFirstNode.Level == 0 {
-		_, dtoResponse.Tier = s.NormalTier(dataMember)
-	}
-
-	if dataFirstNode.Level > 0 {
-		_, dtoResponse.Tier = s.UnusualTier(dataMember, dataFirstNode.Level)
-	}
-
-	if len(dtoResponse.Tier) == 0 {
+	if len(dataTierOfRefCode) == 0 {
 		res := struct {
 			Message string `json:"message"`
 		}{
@@ -158,6 +127,133 @@ func (s *ReferralUseCase) List(ctx *gin.Context) (response interface{}, httpCode
 		}
 		return res, http.StatusNotFound, []errorsinfo.Errors{}
 	}
+
+	// determine mapping
+	var titleCollection = map[int]string{
+		1: "1st tier",
+		2: "2nd tier",
+		3: "3nd tier",
+		4: "4nd tier",
+		5: "5nd tier",
+	}
+
+	// response mapping
+	levelPrevious := 0
+	totalInTier := 0
+	maxData := len(dataTierOfRefCode) - 1
+
+	if len(dataTierOfRefCode) > 0 {
+		for k, v := range dataTierOfRefCode {
+
+			dataAccount, err := s.repo.GetAccountInfoFromRefCode(v.RefCode)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
+
+			if v.Level == 0 {
+				continue
+			}
+
+			if levelPrevious == v.Level {
+				// continue to increment
+				totalInTier++
+
+				// store into customer info
+				customerInfo = append(customerInfo, dtos.CustomerDetail{
+					Name:        dataAccount.Name,
+					AccountType: dataAccount.Type,
+				})
+
+				// latest data
+				if k == maxData {
+					// get tier name
+					if value, exist := titleCollection[levelPrevious]; exist {
+						tierName = value
+					}
+
+					// append to tier
+					tierInfo = append(tierInfo, dtos.TierDetailWithCustomer{
+						Name:           tierName,
+						Value:          totalInTier,
+						CustomerDetail: customerInfo,
+					})
+				}
+			}
+
+			if levelPrevious == 0 {
+
+				// setup information
+				levelPrevious = v.Level
+				totalInTier++
+
+				// store into customer info
+				customerInfo = append(customerInfo, dtos.CustomerDetail{
+					Name:        dataAccount.Name,
+					AccountType: dataAccount.Type,
+				})
+
+				// latest data
+				if k == maxData {
+					// get tier name
+					if value, exist := titleCollection[levelPrevious]; exist {
+						tierName = value
+					}
+
+					//append to tier
+					tierInfo = append(tierInfo, dtos.TierDetailWithCustomer{
+						Name:           tierName,
+						Value:          totalInTier,
+						CustomerDetail: customerInfo,
+					})
+				}
+			}
+
+			if levelPrevious != v.Level {
+				// get tier name
+				if value, exist := titleCollection[levelPrevious]; exist {
+					tierName = value
+				}
+
+				//append to tier
+				tierInfo = append(tierInfo, dtos.TierDetailWithCustomer{
+					Name:           tierName,
+					Value:          totalInTier,
+					CustomerDetail: customerInfo,
+				})
+
+				// clear previous
+				customerInfo = nil
+				totalInTier = 0
+
+				// renew data
+				levelPrevious = v.Level
+				totalInTier++
+
+				// store into customer info
+				customerInfo = append(customerInfo, dtos.CustomerDetail{
+					Name:        dataAccount.Name,
+					AccountType: dataAccount.Type,
+				})
+
+				// latest data
+				if k == maxData {
+					// get tier name
+					if value, exist := titleCollection[levelPrevious]; exist {
+						tierName = value
+					}
+
+					//append to tier
+					tierInfo = append(tierInfo, dtos.TierDetailWithCustomer{
+						Name:           tierName,
+						Value:          totalInTier,
+						CustomerDetail: customerInfo,
+					})
+				}
+			}
+		}
+	}
+
+	dtoResponse.Tier = tierInfo
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}

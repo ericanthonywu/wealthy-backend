@@ -48,8 +48,23 @@ type (
 		Amount             float64   `gorm:"column:amount"`
 		Status             int       `gorm:"column:status"`
 	}
+
+	GetReferralInfo struct {
+		RefCode          string `gorm:"column:ref_code"`
+		RefCodeReference string `gorm:"column:ref_code_reference"`
+		Level            int    `gorm:"column:level"`
+	}
+
+	GetAccountInfo struct {
+		Name string `gorm:"column:name"`
+		Type string `gorm:"column:account_type"`
+	}
 )
 
 func (WithdrawEntities) TableName() string {
 	return "tbl_withdraw_request_transaction"
+}
+
+func (GetAccountInfo) TableName() string {
+	return "tbl_personal_accounts"
 }

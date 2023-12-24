@@ -19,6 +19,8 @@ type (
 		MemberNode(refCode string) (data []entities.ReferralUserReward, err error)
 		GetPreviousCommission(refCodeRefference string) (data entities.PreviousCommission, err error)
 		SaveWithdraws(model *entities.WithdrawEntities) (id uuid.UUID, err error)
+		GetTierReferralCode(referralCode string) (data []entities.GetReferralInfo, err error)
+		GetAccountInfoFromRefCode(referralCode string) (data entities.GetAccountInfo, err error)
 	}
 )
 
@@ -84,4 +86,31 @@ func (r *ReferralRepository) SaveWithdraws(model *entities.WithdrawEntities) (id
 		return uuid.Nil, err
 	}
 	return model.ID, nil
+}
+
+func (r *ReferralRepository) GetTierReferralCode(referralCode string) (data []entities.GetReferralInfo, err error) {
+	if err := r.db.Raw(`WITH RECURSIVE recursiveTable AS (
+      SELECT ref_code, ref_code_reference, 0 as level
+      FROM tbl_user_rewards
+      WHERE ref_code = ?
+   UNION ALL
+      SELECT tbl_user_rewards.ref_code, tbl_user_rewards.ref_code_reference, recursiveTable.level + 1
+      FROM tbl_user_rewards
+         JOIN recursiveTable ON tbl_user_rewards.ref_code_reference = recursiveTable.ref_code )
+SELECT * FROM recursiveTable`, referralCode).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return []entities.GetReferralInfo{}, err
+	}
+	return data, nil
+}
+
+func (r *ReferralRepository) GetAccountInfoFromRefCode(referralCode string) (data entities.GetAccountInfo, err error) {
+	if err := r.db.Joins(`JOIN tbl_master_account_types ON tbl_personal_accounts.id_master_account_types = tbl_master_account_types.id`).
+		Where("refer_code=?", referralCode).
+		Select("tbl_personal_accounts.name", "tbl_master_account_types.account_type").
+		Find(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.GetAccountInfo{}, err
+	}
+	return data, nil
 }
