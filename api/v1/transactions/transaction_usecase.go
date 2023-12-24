@@ -93,6 +93,8 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet unregistered before")
 			return struct{}{}, http.StatusBadRequest, errInfo
 		}
+
+		// add last balance
 	}
 
 	if request.IDMasterExpenseCategories != "" {
@@ -126,6 +128,8 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 					logrus.Error(err.Error())
 				}
 			}
+
+			// deduction last balance
 		}
 	}
 

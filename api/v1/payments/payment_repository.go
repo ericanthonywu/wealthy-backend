@@ -35,7 +35,7 @@ func NewPaymentRepository(db *gorm.DB) *PaymentRepository {
 }
 
 func (r *PaymentRepository) GetPrice(subs uuid.UUID) (data entities.DataPriceInfo) {
-	if err := r.db.Raw(`SELECT tmp.actual_price as price, tmat.account_type, tmp.description, tmsp.period_name, tmp.id_master_subs_period FROM tbl_master_price tmp
+	if err := r.db.Raw(`SELECT tmp.price as price, tmat.account_type, tmp.description, tmsp.period_name, tmp.id_master_subs_period FROM tbl_master_price tmp
          INNER JOIN tbl_master_account_types tmat ON tmp.id_master_account_types = tmat.id
          INNER JOIN tbl_master_subs_period tmsp ON tmp.id_master_subs_period = tmsp.id WHERE tmp.id = ? AND tmp.active=true`, subs).Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
