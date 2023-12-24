@@ -4,6 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      no_cache: true
     ports:
       - '8888:8080'
     volumes:
