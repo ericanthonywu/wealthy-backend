@@ -164,16 +164,9 @@ func (s *MasterUseCase) PersonalIncomeCategory(ctx *gin.Context) (response inter
 }
 
 func (s *MasterUseCase) PersonalExpenseCategory(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
-	}
-
-	data, err := s.repo.PersonalExpenseCategory(personalAccount.ID)
+	data, err := s.repo.PersonalExpenseCategory(accountUUID)
 	if err != nil {
 		logrus.Error(err.Error())
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -246,16 +239,10 @@ func (s *MasterUseCase) RenameIncomeCategory(ctx *gin.Context, id uuid.UUID, req
 }
 
 func (s *MasterUseCase) RenameExpenseCategory(ctx *gin.Context, id uuid.UUID, request *dtos.RenameCatRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	// account uuid format
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return data, httpCode, errInfo
-	}
-
-	err := s.repo.RenameExpenseCategory(request.NewCategoryName, id, personalAccount.ID)
+	err := s.repo.RenameExpenseCategory(request.NewCategoryName, id, accountUUID)
 	if err != nil {
 		logrus.Error()
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -276,21 +263,15 @@ func (s *MasterUseCase) RenameExpenseCategory(ctx *gin.Context, id uuid.UUID, re
 	}{
 		Message: "rename expense category success",
 	}
-	return response, http.StatusInternalServerError, errInfo
+	return response, http.StatusOK, errInfo
 }
 
 func (s *MasterUseCase) RenameSubExpenseCategory(ctx *gin.Context, id uuid.UUID, request *dtos.RenameCatRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	// account uuid format
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return data, httpCode, errInfo
-	}
-
-	err := s.repo.RenameSubExpenseCategory(request.NewCategoryName, id, personalAccount.ID)
+	err := s.repo.RenameSubExpenseCategory(request.NewCategoryName, id, accountUUID)
 	if err != nil {
 		logrus.Error()
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -311,7 +292,7 @@ func (s *MasterUseCase) RenameSubExpenseCategory(ctx *gin.Context, id uuid.UUID,
 	}{
 		Message: "rename sub-expense category success",
 	}
-	return response, http.StatusInternalServerError, errInfo
+	return response, http.StatusOK, errInfo
 }
 
 func (s *MasterUseCase) AddIncomeCategory(ctx *gin.Context, request *dtos.AddCategory) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
