@@ -306,11 +306,11 @@ func (c *TransactionController) validateTravelTransactionPayload(request *dtos.T
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master income categories unnecessary for travel transaction")
 	}
 
-	if request.IDWallet == "" {
+	if request.IDWallet != "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet unnecessary for travel transaction")
 	}
 
-	if request.IDMasterExpenseSubCategories == "" {
+	if request.IDMasterExpenseSubCategories != "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense sub categories unnecessary for travel transaction")
 	}
 
