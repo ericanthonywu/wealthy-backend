@@ -107,7 +107,7 @@ func (r *PaymentRepository) ChangeAccountUser(IDPersonalAccount, IDProAccountUUI
 }
 
 func (r *PaymentRepository) GetReward() (data []entities.RewardInfo, err error) {
-	if err := r.db.Raw(`SELECT ROW_NUMBER() OVER () as Level, tmr.percentace as percentage FROM tbl_master_rewards tmr ORDER BY percentace DESC`).
+	if err := r.db.Raw(`SELECT  tmr.reward_name::numeric as level, tmr.percentace as percentage FROM tbl_master_rewards tmr ORDER BY level ASC`).
 		Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return []entities.RewardInfo{}, err

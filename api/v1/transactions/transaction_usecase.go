@@ -95,6 +95,7 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		}
 
 		// add last balance
+
 	}
 
 	if request.IDMasterExpenseCategories != "" {
