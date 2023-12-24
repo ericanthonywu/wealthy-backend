@@ -36,6 +36,8 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifi
 COPY --from=builder /dist/main /
 COPY --from=builder /build/assets/files/ /assets/files/
 COPY --from=builder /build/assets/icon/ /assets/icon/
+COPY --from=builder /build/assets/avatar/ /assets/avatar/
+COPY --from=builder /build/assets/travel/ /assets/travel/
 
 COPY ./.env /.env
 ENV TZ=Asia/Jakarta
