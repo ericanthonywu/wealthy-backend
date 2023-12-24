@@ -175,7 +175,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 		transactionGroup := v1group.Group("/transactions", tokenSignature(), accountType(), betaVersion())
 		{
-			transactionGroup.POST("/", transaction.Add)
+			transactionGroup.POST("", transaction.Add)
 			transactionGroup.GET("/income-spending", transaction.IncomeSpending)
 			transactionGroup.GET("/investments", transaction.Investment)
 			transactionGroup.GET("/notes", transaction.ByNotes)
@@ -212,7 +212,6 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			walletGroup.POST("/", wallet.Add)
 			walletGroup.GET("/", wallet.List)
 			walletGroup.PATCH("/amount/:id-wallet", wallet.UpdateAmount)
-
 		}
 
 		subscriptionGroup := v1group.Group("/subscriptions", tokenSignature())
