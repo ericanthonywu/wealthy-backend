@@ -192,23 +192,23 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 	}
 
 	for _, v := range dataList {
-		//var totalAsset int64
+		var totalAsset int64
 
 		// if wallet type is not investments
 		if strings.ToUpper(v.WalletType) != constants.Investment {
 
 			// fetch data from transaction latest row to get balance information
-			//dataTrx, err := s.repo.LatestAmountWalletInTransaction(v.ID)
-			//if err != nil {
-			//	logrus.Error(err.Error())
-			//}
+			dataTrx, err := s.repo.LatestAmountWalletInTransaction(v.ID)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
 
-			//totalAsset = int64(dataTrx.Balance)
+			totalAsset = int64(dataTrx.Balance)
 		}
 
 		// if wallet type is investments
 		if strings.ToUpper(v.WalletType) == constants.Investment {
-			//totalAsset = v.TotalAssets
+			totalAsset = v.TotalAssets
 		}
 
 		dtoResponse = append(dtoResponse, dtos.WalletListResponse{
@@ -222,7 +222,7 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 			Active:        v.Active,
 			FeeInvestBuy:  v.FeeInvestBuy,
 			FeeInvestSell: v.FeeInvestSell,
-			TotalAssets:   v.TotalAssets,
+			TotalAssets:   totalAsset,
 		})
 	}
 
