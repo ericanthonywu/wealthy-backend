@@ -53,10 +53,14 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		IDMasterTransPriUUID  uuid.UUID
 		IDMasterTransTypeUUID uuid.UUID
 		IDWalletUUID          uuid.UUID
+		Credit                float64
+		Debit                 float64
+		Balance               float64
 	)
 
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
+	// if transaction is travel
 	if request.IDTravel != "" {
 		IDTravelUUID, err = uuid.Parse(request.IDTravel)
 		if err != nil {
@@ -70,6 +74,7 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		convertAmount = dataCurrency.CurrencyValue * request.Amount
 	}
 
+	// if transaction is not travel
 	if request.IDTravel == "" {
 		convertAmount = request.Amount
 		IDTravelUUID = uuid.Nil
@@ -93,8 +98,6 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet unregistered before")
 			return struct{}{}, http.StatusBadRequest, errInfo
 		}
-
-		// add last balance
 
 	}
 
@@ -151,6 +154,24 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		}
 	}
 
+	// get last balance
+	dataLastBalance, err := s.repo.LastBalance(accountUUID, IDWalletUUID)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	if request.IDMasterIncomeCategories != "" {
+		Balance = dataLastBalance.Balance + float64(request.Amount)
+		Debit = 0
+		Credit = float64(request.Amount)
+	}
+
+	if request.IDMasterExpenseCategories != "" {
+		Balance = dataLastBalance.Balance - float64(request.Amount)
+		Credit = 0
+		Debit = float64(request.Amount)
+	}
+
 	trxID = uuid.New()
 	modelTransaction := entities.TransactionEntity{
 		ID:                            trxID,
@@ -164,6 +185,9 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		IDMasterExpenseSubCategories:  IDMasterSubExpCatUUID,
 		IDMasterTransactionPriorities: IDMasterTransPriUUID,
 		IDMasterTransactionTypes:      IDMasterTransTypeUUID,
+		Balance:                       Balance,
+		Debit:                         Debit,
+		Credit:                        Credit,
 	}
 
 	modelTransactionDetail := entities.TransactionDetailEntity{

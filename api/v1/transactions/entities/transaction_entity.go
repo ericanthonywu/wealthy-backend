@@ -20,6 +20,9 @@ type (
 		IDMasterReksanadaTypes        uuid.UUID `gorm:"column:id_master_reksadana_types"`
 		IDMasterTransactionPriorities uuid.UUID `gorm:"column:id_master_transaction_priorities"`
 		IDMasterTransactionTypes      uuid.UUID `gorm:"column:id_master_transaction_types"`
+		Balance                       float64   `gorm:"column:balance"`
+		Debit                         float64   `gorm:"column:debit"`
+		Credit                        float64   `gorm:"column:credit"`
 	}
 
 	TransactionDetailEntity struct {
@@ -196,6 +199,26 @@ type (
 	CountExpenseTrxMonthly struct {
 		CountExpense int64 `gorm:"column:count_expense"`
 	}
+
+	LastBalance struct {
+		ID                            uuid.UUID `gorm:"column:id"`
+		Date                          string    `gorm:"column:date_time_transaction"`
+		Fees                          float64   `gorm:"column:fees"`
+		Amount                        float64   `gorm:"column:amount"`
+		IDPersonalAccount             uuid.UUID `gorm:"column:id_personal_account"`
+		IDWallet                      uuid.UUID `gorm:"column:id_wallets"`
+		IDMasterIncomeCategories      uuid.UUID `gorm:"column:id_master_income_categories"`
+		IDMasterExpenseCategories     uuid.UUID `gorm:"column:id_master_expense_categories"`
+		IDMasterExpenseSubCategories  uuid.UUID `gorm:"column:id_master_expense_subcategories"`
+		IDMasterInvest                uuid.UUID `gorm:"column:id_master_invest"`
+		IDMasterBroker                uuid.UUID `gorm:"column:id_master_broker"`
+		IDMasterReksanadaTypes        uuid.UUID `gorm:"column:id_master_reksadana_types"`
+		IDMasterTransactionPriorities uuid.UUID `gorm:"column:id_master_transaction_priorities"`
+		IDMasterTransactionTypes      uuid.UUID `gorm:"column:id_master_transaction_types"`
+		Credit                        float64   `gorm:"column:credit"`
+		Debit                         float64   `gorm:"column:debit"`
+		Balance                       float64   `gorm:"column:balance"`
+	}
 )
 
 func (TransactionEntity) TableName() string {
@@ -212,4 +235,8 @@ func (TransactionInvestmentEntity) TableName() string {
 
 func (BrokerInfo) TableName() string {
 	return "tbl_master_broker"
+}
+
+func (LastBalance) TableName() string {
+	return "tbl_transactions"
 }
