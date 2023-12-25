@@ -22,6 +22,7 @@ type (
 		InitTransaction(trx *entities.WalletInitTransaction, trxDetail *entities.WalletInitTransactionDetail) (err error)
 		LatestAmountWalletInTransaction(IDWallet uuid.UUID) (data entities.WalletInitTransaction, err error)
 		TotalWallet(IDPersonal uuid.UUID) (totalWallet int64, err error)
+		UpdateWalletInfo(UUIDWallet uuid.UUID, request map[string]interface{}) (err error)
 	}
 )
 
@@ -98,4 +99,15 @@ func (r *WalletRepository) TotalWallet(IDPersonal uuid.UUID) (totalWallet int64,
 		return totalWallet, err
 	}
 	return totalWallet, nil
+}
+
+func (r *WalletRepository) UpdateWalletInfo(UUIDWallet uuid.UUID, request map[string]interface{}) (err error) {
+	var model entities.WalletEntity
+	// set ID
+	model.ID = UUIDWallet
+
+	if err := r.db.Model(&model).Updates(request).Error; err != nil {
+		return err
+	}
+	return nil
 }
