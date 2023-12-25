@@ -210,7 +210,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 		walletGroup := v1group.Group("/wallets", tokenSignature(), accountType(), betaVersion())
 		{
-			walletGroup.POST("/", wallet.Add)
+			walletGroup.POST("", wallet.Add)
 			walletGroup.GET("/", wallet.List)
 			walletGroup.PATCH("/amount/:id-wallet", wallet.UpdateAmount)
 		}
