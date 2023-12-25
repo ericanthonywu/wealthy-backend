@@ -412,9 +412,9 @@ func (s *StatisticUseCase) Priority(ctx *gin.Context, month, year string) (respo
 	}
 
 	if s.isDataPriorityNotEmpty(dataPriority) {
-		percentageMust = fmt.Sprintf("%.f", (float64(dataPriority.PriorityMust)/float64(dataPriority.TotalTransaction))*100) + "%"
-		percentageWant = fmt.Sprintf("%.f", (float64(dataPriority.PriorityWant)/float64(dataPriority.TotalTransaction))*100) + "%"
-		percentageNeed = fmt.Sprintf("%.f", (float64(dataPriority.PriorityNeed)/float64(dataPriority.TotalTransaction))*100) + "%"
+		percentageMust = fmt.Sprintf("%.2f", (float64(dataPriority.PriorityMust)/float64(dataPriority.TotalTransaction))*100) + "%"
+		percentageWant = fmt.Sprintf("%.2f", (float64(dataPriority.PriorityWant)/float64(dataPriority.TotalTransaction))*100) + "%"
+		percentageNeed = fmt.Sprintf("%.2f", (float64(dataPriority.PriorityNeed)/float64(dataPriority.TotalTransaction))*100) + "%"
 	} else {
 		percentageMust = "0%"
 		percentageWant = percentageMust

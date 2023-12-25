@@ -308,7 +308,7 @@ func (r *TransactionRepository) TransferMoneyOutTotalHistoryWithData(IDPersonal 
 func (r *TransactionRepository) TransferDetailWithData(IDPersonal uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailTransfer) {
 	if err := r.db.Raw(`SELECT tt.date_time_transaction::text                        as transaction_date,
        COALESCE(SUM(tt.amount), 0)::numeric                  as transaction_amount,
-       'https://wealthy.sirv.com/wealthy-icons/transfer.svg' as transaction_category_icon,
+       'https://wealthy.sirv.com/icons/Transfer.png' as transaction_category_icon,
        CASE
            WHEN td.note IS NOT NULL then td.note
            WHEN td.note IS NULL then ''
@@ -331,7 +331,7 @@ ORDER BY transaction_date DESC`, IDPersonal, startDate, endDate).Scan(&data).Err
 
 func (r *TransactionRepository) TransferDetailWithoutData(IDPersonal uuid.UUID) (data []entities.TransactionDetailTransfer) {
 	if err := r.db.Raw(`SELECT tt.date_time_transaction::text    as transaction_date,
-		'https://wealthy.sirv.com/wealthy-icons/transfer.svg' as transaction_category_icon,
+		'https://wealthy.sirv.com/icons/Transfer.png' as transaction_category_icon,
        COALESCE(SUM(tt.amount), 0)::numeric as transaction_amount,
        CASE
            WHEN td.note IS NOT NULL then td.note
@@ -358,7 +358,7 @@ func (r *TransactionRepository) InvestDetailWithoutData(IDPersonal uuid.UUID) (d
 	if err := r.db.Raw(`SELECT tt.date_time_transaction::text as transaction_date,
        td.lot * tt.amount::numeric    as transaction_amount_total,
        tt.amount::numeric             as price,
-       'https://wealthy.sirv.com/wealthy-icons/invest.svg' as transaction_category_icon,
+       'https://wealthy.sirv.com/icons/Investment.png' as transaction_category_icon,
        CASE
            WHEN td.note IS NULL THEN ''
            ELSE td.note
@@ -385,7 +385,7 @@ func (r *TransactionRepository) InvestDetailWithData(IDPersonal uuid.UUID, start
 	if err := r.db.Raw(`SELECT tt.date_time_transaction as transaction_date,
        td.lot * tt.amount       as transaction_amount_total,
        tt.amount                as price,
-       'https://wealthy.sirv.com/wealthy-icons/invest.svg' as transaction_category_icon,
+       'https://wealthy.sirv.com/icons/Investment.png' as transaction_category_icon,
        CASE
            WHEN td.note IS NULL THEN ''
            ELSE td.note
