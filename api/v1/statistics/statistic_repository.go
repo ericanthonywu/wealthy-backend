@@ -47,7 +47,7 @@ func (r *StatisticRepository) Priority(IDPersonal uuid.UUID, month, year string)
 	if err := r.db.Raw(`SELECT count(tt.id) FILTER ( WHERE  tmtp.priority = 'NEED' OR tmtp.priority = 'WANT' OR tmtp.priority = 'MUST')::numeric as total_transaction,
        count(tt.id)  FILTER (WHERE tmtp.priority = 'NEED')::numeric as priority_need,
        count(tt.id) FILTER (WHERE tmtp.priority = 'WANT')::numeric as priority_want,
-       count(tt.id) FILTER (WHERE tmtp.priority = 'MUST')::numeric as priorityl_must
+       count(tt.id) FILTER (WHERE tmtp.priority = 'MUST')::numeric as priority_must
 FROM tbl_transactions tt LEFT JOIN tbl_master_transaction_priorities tmtp ON tt.id_master_transaction_priorities = tmtp.id
 WHERE tt.id_personal_account = ? AND to_char(tt.date_time_transaction::DATE, 'MM') = ? AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?`, IDPersonal, month, year).Scan(&data).Error; err != nil {
 		return entities.StatisticPriority{}
