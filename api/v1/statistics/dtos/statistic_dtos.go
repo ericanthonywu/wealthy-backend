@@ -88,9 +88,10 @@ type (
 	}
 
 	ExpDetail struct {
-		ID       uuid.UUID            `json:"category_id"`
-		Category string               `json:"category_name"`
-		Amount   ExpDetailTransaction `json:"transaction_amount"`
+		ID           uuid.UUID            `json:"category_id"`
+		Category     string               `json:"category_name"`
+		CategoryIcon string               `json:"category_icon"`
+		Amount       ExpDetailTransaction `json:"transaction_amount"`
 	}
 
 	ExpDetailTransaction struct {
