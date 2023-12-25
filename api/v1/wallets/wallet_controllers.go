@@ -64,30 +64,6 @@ func (c *WalletController) Add(ctx *gin.Context) {
 		return
 	}
 
-	//isTypeMatch := strings.ToUpper(dtoRequest.WalletType) == constants.Cash || strings.ToUpper(dtoRequest.WalletType) == constants.CreditCard ||
-	//	strings.ToUpper(dtoRequest.WalletType) == constants.DebitCard || strings.ToUpper(dtoRequest.WalletType) == constants.Investment ||
-	//	strings.ToUpper(dtoRequest.WalletType) == constants.Saving
-
-	//if !isTypeMatch {
-	//	var builder strings.Builder
-	//	builder.WriteString("wallet type must contain one of values ")
-	//	builder.WriteString("[")
-	//	builder.WriteString(constants.Cash)
-	//	builder.WriteString(",")
-	//	builder.WriteString(constants.CreditCard)
-	//	builder.WriteString(",")
-	//	builder.WriteString(constants.DebitCard)
-	//	builder.WriteString(",")
-	//	builder.WriteString(constants.Investment)
-	//	builder.WriteString(",")
-	//	builder.WriteString(constants.Saving)
-	//	builder.WriteString("]")
-	//
-	//	errInfo = errorsinfo.ErrorWrapper(errInfo, "", builder.String())
-	//	response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
-	//	return
-	//}
-
 	if dtoRequest.FeeInvestBuy == 0 {
 		dtoRequest.FeeInvestSell = 0.15
 	}
@@ -114,7 +90,7 @@ func (c *WalletController) List(ctx *gin.Context) {
 
 func (c *WalletController) UpdateAmount(ctx *gin.Context) {
 	var (
-		dtoRequest dtos.WalletUpdateAmountRequest
+		dtoRequest map[string]interface{}
 		httpCode   int
 		errInfo    []errorsinfo.Errors
 		data       interface{}
@@ -138,7 +114,7 @@ func (c *WalletController) UpdateAmount(ctx *gin.Context) {
 		return
 	}
 
-	data, httpCode, errInfo = c.useCase.UpdateAmount(walletID, &dtoRequest)
+	data, httpCode, errInfo = c.useCase.UpdateAmount(ctx, walletID, dtoRequest)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }

@@ -23,7 +23,7 @@ type (
 	IWalletUseCase interface {
 		Add(ctx *gin.Context, request *dtos.WalletAddRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		List(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		UpdateAmount(IDWallet string, request *dtos.WalletUpdateAmountRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		UpdateAmount(ctx *gin.Context, IDWallet string, request map[string]interface{}) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		writeInitialTransaction(request *dtos.WalletAddRequest, walletEntity *entities.WalletEntity, IDPersonal uuid.UUID) (err error)
 	}
 )
@@ -229,10 +229,12 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
 
-func (s *WalletUseCase) UpdateAmount(IDWallet string, request *dtos.WalletUpdateAmountRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *WalletUseCase) UpdateAmount(ctx *gin.Context, IDWallet string, request map[string]interface{}) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		err        error
+		walletName string
+		amount     float64
 		UUIDWallet uuid.UUID
+		err        error
 	)
 
 	UUIDWallet, err = uuid.Parse(IDWallet)
@@ -240,25 +242,62 @@ func (s *WalletUseCase) UpdateAmount(IDWallet string, request *dtos.WalletUpdate
 		logrus.Error(err.Error())
 	}
 
-	// update amount
-	if request.Amount != 0 {
-		data, httpCode, err = s.repo.UpdateAmount(UUIDWallet, request.Amount)
-		if err != nil {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-			return data, http.StatusInternalServerError, errInfo
+	// check wallet name exist from payload
+	value, exists := request["wallet_name"]
+	if exists {
+		walletName = fmt.Sprintf("%v", value)
+
+		if walletName == "" {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "wallet name empty value")
+			return struct{}{}, http.StatusBadRequest, errInfo
 		}
 	}
 
-	// update wallet name
-	if request.WalletName != "" {
-		err = s.repo.UpdateWalletName(UUIDWallet, request.WalletName)
-		if err != nil {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-			return data, http.StatusInternalServerError, errInfo
+	// check amount exist from payload
+	value, exists = request["amount"]
+	if exists {
+		amount = value.(float64)
+
+		if amount <= 0 {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "amount must greater than 0")
+			return struct{}{}, http.StatusBadRequest, errInfo
 		}
 	}
 
-	// if e
+	// set for last balance
+	if amount > 0 {
+
+		// get account
+		accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+		request := dtos.WalletAddRequest{
+			IDMasterWallet: UUIDWallet.String(),
+			TotalAsset:     int64(amount),
+		}
+
+		walletEntity := entities.WalletEntity{
+			ID:          UUIDWallet,
+			IDAccount:   accountUUID,
+			TotalAssets: int64(amount),
+		}
+
+		// save for latest balance
+		err = s.writeInitialTransaction(&request, &walletEntity, accountUUID)
+		if err != nil {
+			logrus.Error(err.Error())
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
+		}
+	}
+
+	// update data
+	err = s.repo.UpdateWalletInfo(UUIDWallet, request)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
