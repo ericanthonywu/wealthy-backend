@@ -12,24 +12,12 @@ type (
 	}
 
 	ISubscriptionController interface {
-		Plan(ctx *gin.Context)
 		FAQ(ctx *gin.Context)
 	}
 )
 
 func NewSubscriptionController(useCase ISubscriptionUseCase) *SubscriptionController {
 	return &SubscriptionController{useCase: useCase}
-}
-
-func (c *SubscriptionController) Plan(ctx *gin.Context) {
-	data, httpCode, errInfo := c.useCase.Plan(ctx)
-
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
-	}
-
-	response.SendBack(ctx, data, errInfo, httpCode)
-	return
 }
 
 func (c *SubscriptionController) FAQ(ctx *gin.Context) {
