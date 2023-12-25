@@ -11,11 +11,13 @@ type (
 	IncomeType struct {
 		ID         uuid.UUID `json:"id" gorm:"column:id"`
 		IncomeType string    `json:"income_type" gorm:"column:income_types"`
+		ImagePath  string    `json:"image_path" gorm:"column:image_path"`
 	}
 
 	ExpenseType struct {
 		ID          uuid.UUID `json:"id" gorm:"column:id"`
 		ExpenseType string    `json:"expense_type" gorm:"column:expense_types"`
+		ImagePath   string    `json:"image_path" gorm:"column:image_path"`
 	}
 
 	ReksadanaType struct {
@@ -49,8 +51,9 @@ type (
 	}
 
 	SubExpenseCategories struct {
-		ID         uuid.UUID `json:"id" gorm:"column:id"`
-		GenderName string    `json:"subcategories" gorm:"column:subcategories"`
+		ID            uuid.UUID `json:"id" gorm:"column:id"`
+		SubCategories string    `json:"sub_categories" gorm:"column:subcategories"`
+		ImagePath     string    `json:"image_path" gorm:"column:image_path"`
 	}
 
 	Exchange struct {
@@ -62,21 +65,18 @@ type (
 	ExpenseCategoryEditable struct {
 		ID          uuid.UUID `gorm:"column:id" json:"id"`
 		ExpenseType string    `gorm:"column:expense_types" json:"category"`
-		Filename    string    `gorm:"column:filename" json:"filename"`
 		ImagePath   string    `gorm:"column:image_path" json:"image_path"`
 	}
 
 	ExpenseSubCategoryEditable struct {
 		ID            uuid.UUID `gorm:"column:id" json:"id"`
 		Subcategories string    `gorm:"column:subcategories" json:"category"`
-		Filename      string    `gorm:"column:filename" json:"filename"`
 		ImagePath     string    `gorm:"column:image_path" json:"image_path"`
 	}
 
 	IncomeCategoryEditable struct {
 		ID         uuid.UUID `gorm:"column:id" json:"id"`
 		IncomeType string    `gorm:"column:category" json:"income_type"`
-		Filename   string    `gorm:"column:filename" json:"filename"`
 		ImagePath  string    `gorm:"column:image_path" json:"image_path"`
 	}
 
