@@ -568,8 +568,9 @@ func (s *StatisticUseCase) ExpenseDetail(ctx *gin.Context, month, year, email st
 
 	for _, v := range dataExpenseDetail {
 		dtoResponse.Expense = append(dtoResponse.Expense, dtos.ExpDetail{
-			ID:       v.ID,
-			Category: v.Category,
+			ID:           v.ID,
+			Category:     v.Category,
+			CategoryIcon: v.CategoryIcon,
 			Amount: dtos.ExpDetailTransaction{
 				CurrencyCode: "IDR",
 				Value:        int64(v.Amount),

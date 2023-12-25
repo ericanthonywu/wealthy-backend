@@ -148,10 +148,17 @@ FROM tbl_transactions tt LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id 
 }
 
 func (r *StatisticRepository) ExpenseDetail(IDPersonal uuid.UUID, month, year string) (data []entities.StatisticDetailExpense, err error) {
-	if err := r.db.Raw(`SELECT  tt.id_master_expense_categories as id, tmec.expense_types as category, COALESCE(SUM(tt.amount),0) as amount FROM tbl_transactions tt
-    INNER JOIN tbl_master_expense_categories tmec ON tmec.id = tt.id_master_expense_categories 
-    WHERE tt.id_personal_account=? AND to_char(tt.date_time_transaction::DATE, 'MM') = ? 
-    AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ? GROUP BY tmec.expense_types, tt.id_master_expense_categories `, IDPersonal, month, year).Scan(&data).Error; err != nil {
+	if err := r.db.Raw(`SELECT tt.id_master_expense_categories as id,
+       tmec.expense_types              as category,
+       COALESCE(SUM(tt.amount), 0)     as amount,
+       tmec.image_path                 as transaction_category_icon
+FROM tbl_transactions tt
+         INNER JOIN tbl_master_expense_categories_editable tmec ON tmec.id = tt.id_master_expense_categories
+WHERE tt.id_personal_account = ?
+  AND tmec.id_personal_accounts = ?
+  AND to_char(tt.date_time_transaction::DATE, 'MM') = ?
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
+GROUP BY tmec.expense_types, tt.id_master_expense_categories, tmec.image_path`, IDPersonal, IDPersonal, month, year).Scan(&data).Error; err != nil {
 		return []entities.StatisticDetailExpense{}, err
 	}
 	return data, nil
