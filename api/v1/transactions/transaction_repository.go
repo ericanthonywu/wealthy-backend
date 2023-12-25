@@ -135,21 +135,23 @@ func (r *TransactionRepository) RecordInvestTrx(trxInvestment *entities.Transact
 func (r *TransactionRepository) ExpenseDetailHistoryWithoutDate(IDPersonal uuid.UUID) (data []entities.TransactionDetailHistory) {
 	if err := r.db.Raw(`SELECT tt.date_time_transaction::text       as transaction_date,
        tmec.expense_types ::text            as transaction_category,
+       tmec.image_path                      as transaction_category_icon,
        COALESCE(SUM(tt.amount), 0)::numeric as transaction_amount,
        CASE
            WHEN td.note IS NOT NULL THEN td.note
            WHEN td.note IS NUll THEN ''
            END :: text                      as transaction_note
 FROM tbl_transactions tt
-         LEFT JOIN tbl_master_expense_categories tmec ON tmec.id = tt.id_master_expense_categories
+         INNER JOIN tbl_master_expense_categories_editable tmec ON tmec.id = tt.id_master_expense_categories
          INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
-         LEFT JOIN tbl_transaction_details td ON td.id_transactions = tt.id
+         INNER JOIN tbl_transaction_details td ON td.id_transactions = tt.id
 WHERE tmtt.type = 'EXPENSE'
   AND tt.id_personal_account = ?
+  AND tmec.id_personal_accounts = ?
   AND to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
         MONTH FROM current_timestamp)::text
-GROUP BY transaction_date, transaction_category, note
-ORDER BY transaction_date DESC`, IDPersonal).Scan(&data).Error; err != nil {
+GROUP BY transaction_date, transaction_category, note, tmec.image_path
+ORDER BY transaction_date DESC`, IDPersonal, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionDetailHistory{}
 	}
 	return data
@@ -157,21 +159,23 @@ ORDER BY transaction_date DESC`, IDPersonal).Scan(&data).Error; err != nil {
 
 func (r *TransactionRepository) ExpenseDetailHistoryWithDate(IDPersonal uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailHistory) {
 	if err := r.db.Raw(`SELECT tt.date_time_transaction    as transaction_date,
-             tmec.expense_types          as transaction_category,
-             COALESCE(SUM(tt.amount), 0) as transaction_amount,
-             CASE
-                 WHEN td.note IS NULL THEN ''
-                 WHEN td.note IS NOT NULL then td.note
-                 END                     as transaction_note
-      FROM tbl_transactions tt
-               LEFT JOIN tbl_master_expense_categories tmec ON tmec.id = tt.id_master_expense_categories
-               INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
-               LEFT JOIN tbl_transaction_details td ON td.id_transactions = tt.id
-      WHERE tmtt.type = 'EXPENSE'
-        AND tt.id_personal_account = ?
-        AND tt.date_time_transaction BETWEEN ? AND ?
-      GROUP BY transaction_date, transaction_category, note
-      ORDER BY transaction_date DESC`, IDPersonal, startDate, endDate).Scan(&data).Error; err != nil {
+       tmec.expense_types          as transaction_category,
+       tmec.image_path             as transaction_category_icon,
+       COALESCE(SUM(tt.amount), 0) as transaction_amount,
+       CASE
+           WHEN td.note IS NULL THEN ''
+           WHEN td.note IS NOT NULL then td.note
+           END                     as transaction_note
+FROM tbl_transactions tt
+         INNER JOIN tbl_master_expense_categories_editable tmec ON tmec.id = tt.id_master_expense_categories
+         INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
+         INNER JOIN tbl_transaction_details td ON td.id_transactions = tt.id
+WHERE tmtt.type = 'EXPENSE'
+  AND tt.id_personal_account = ?
+  AND tmec.id_personal_accounts = ?
+  AND tt.date_time_transaction BETWEEN ? AND ?
+GROUP BY transaction_date, transaction_category, note, tmec.image_path
+ORDER BY transaction_date DESC`, IDPersonal, IDPersonal, startDate, endDate).Scan(&data).Error; err != nil {
 		return []entities.TransactionDetailHistory{}
 	}
 	return data
@@ -201,45 +205,49 @@ func (r *TransactionRepository) ExpenseTotalHistoryWithDate(IDPersonal uuid.UUID
 }
 
 func (r *TransactionRepository) IncomeDetailHistoryWithoutData(IDPersonal uuid.UUID) (data []entities.TransactionDetailHistory) {
-	if err := r.db.Raw(`SELECT tt.date_time_transaction::text    as transaction_date,
-       tmic.income_types::text          as transaction_category,
+	if err := r.db.Raw(`SELECT tt.date_time_transaction::text       as transaction_date,
+       tmic.income_types::text              as transaction_category,
+       tmic.image_path                      as transaction_category_icon,
        COALESCE(SUM(tt.amount), 0)::numeric as transaction_amount,
        CASE
            WHEN td.note IS NOT NULL then td.note
            WHEN td.note IS NULL then ''
-           END::text                     as transaction_note
+           END::text                        as transaction_note
 FROM tbl_transactions tt
-         LEFT JOIN tbl_master_income_categories tmic ON tmic.id = tt.id_master_income_categories
+         INNER JOIN tbl_master_income_categories_editable tmic ON tmic.id = tt.id_master_income_categories
          INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
          LEFT JOIN tbl_transaction_details td ON td.id_transactions = tt.id
 WHERE tmtt.type = 'INCOME'
   AND tt.id_personal_account = ?
+  AND tmic.id_personal_accounts = ?
   AND to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
         MONTH FROM current_timestamp)::text
-GROUP BY transaction_date, transaction_category, transaction_note
-ORDER BY transaction_date DESC`, IDPersonal).Scan(&data).Error; err != nil {
+GROUP BY transaction_date, transaction_category, transaction_note, tmic.image_path
+ORDER BY transaction_date DESC`, IDPersonal, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionDetailHistory{}
 	}
 	return data
 }
 
 func (r *TransactionRepository) IncomeDetailHistoryWithData(IDPersonal uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailHistory) {
-	if err := r.db.Raw(`SELECT tt.date_time_transaction::text    as transaction_date,
-       tmic.income_types::text           as transaction_category,
+	if err := r.db.Raw(`SELECT tt.date_time_transaction::text       as transaction_date,
+       tmic.income_types::text              as transaction_category,
+       tmic.image_path                      as transaction_category_icon,
        COALESCE(SUM(tt.amount), 0)::numeric as transaction_amount,
        CASE
            WHEN td.note IS NOT NULL then td.note
            WHEN td.note IS NULL then ''
-           END::text                     as transaction_note
+           END::text                        as transaction_note
 FROM tbl_transactions tt
-         LEFT JOIN tbl_master_income_categories tmic ON tmic.id = tt.id_master_income_categories
+         INNER JOIN tbl_master_income_categories_editable tmic ON tmic.id = tt.id_master_income_categories
          INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
          LEFT JOIN tbl_transaction_details td ON td.id_transactions = tt.id
 WHERE tmtt.type = 'INCOME'
   AND tt.id_personal_account = ?
+  AND tmic.id_personal_accounts = ?
   AND tt.date_time_transaction BETWEEN ? AND ?
-GROUP BY transaction_date, transaction_category, transaction_note
-ORDER BY transaction_date DESC`, IDPersonal, startDate, endDate).Scan(&data).Error; err != nil {
+GROUP BY transaction_date, transaction_category, transaction_note, tmic.image_path
+ORDER BY transaction_date DESC`, IDPersonal, IDPersonal, startDate, endDate).Scan(&data).Error; err != nil {
 		return []entities.TransactionDetailHistory{}
 	}
 	return data
@@ -298,22 +306,23 @@ func (r *TransactionRepository) TransferMoneyOutTotalHistoryWithData(IDPersonal 
 }
 
 func (r *TransactionRepository) TransferDetailWithData(IDPersonal uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailTransfer) {
-	if err := r.db.Raw(`SELECT tt.date_time_transaction::text    as transaction_date,
-             COALESCE(SUM(tt.amount), 0)::numeric as transaction_amount,
-             CASE
-                 WHEN td.note IS NOT NULL then td.note
-                 WHEN td.note IS NULL then ''
-                 END ::text                    as transaction_note,
-             td.transfer_to ::text                     as transaction_destination,
-             td.transfer_from ::text                  as transaction_source
-      FROM tbl_transactions tt
-               INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
-               LEFT JOIN tbl_transaction_details td ON td.id_transactions = tt.id
-      WHERE tmtt.type = 'TRANSFER'
-        AND tt.id_personal_account = ?
-        AND tt.date_time_transaction BETWEEN ? AND ?
-      GROUP BY transaction_date, transaction_note, td.transfer_to, td.transfer_from
-      ORDER BY transaction_date DESC`, IDPersonal, startDate, endDate).Scan(&data).Error; err != nil {
+	if err := r.db.Raw(`SELECT tt.date_time_transaction::text                        as transaction_date,
+       COALESCE(SUM(tt.amount), 0)::numeric                  as transaction_amount,
+       'https://wealthy.sirv.com/wealthy-icons/transfer.svg' as transaction_category_icon,
+       CASE
+           WHEN td.note IS NOT NULL then td.note
+           WHEN td.note IS NULL then ''
+           END ::text                                        as transaction_note,
+       td.transfer_to ::text                                 as transaction_destination,
+       td.transfer_from ::text                               as transaction_source
+FROM tbl_transactions tt
+         INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
+         LEFT JOIN tbl_transaction_details td ON td.id_transactions = tt.id
+WHERE tmtt.type = 'TRANSFER'
+  AND tt.id_personal_account = ?
+  AND tt.date_time_transaction BETWEEN ? AND ?
+GROUP BY transaction_date, transaction_note, td.transfer_to, td.transfer_from
+ORDER BY transaction_date DESC`, IDPersonal, startDate, endDate).Scan(&data).Error; err != nil {
 		return []entities.TransactionDetailTransfer{}
 	}
 
@@ -322,6 +331,7 @@ func (r *TransactionRepository) TransferDetailWithData(IDPersonal uuid.UUID, sta
 
 func (r *TransactionRepository) TransferDetailWithoutData(IDPersonal uuid.UUID) (data []entities.TransactionDetailTransfer) {
 	if err := r.db.Raw(`SELECT tt.date_time_transaction::text    as transaction_date,
+		'https://wealthy.sirv.com/wealthy-icons/transfer.svg' as transaction_category_icon,
        COALESCE(SUM(tt.amount), 0)::numeric as transaction_amount,
        CASE
            WHEN td.note IS NOT NULL then td.note
@@ -348,6 +358,7 @@ func (r *TransactionRepository) InvestDetailWithoutData(IDPersonal uuid.UUID) (d
 	if err := r.db.Raw(`SELECT tt.date_time_transaction::text as transaction_date,
        td.lot * tt.amount::numeric    as transaction_amount_total,
        tt.amount::numeric             as price,
+       'https://wealthy.sirv.com/wealthy-icons/invest.svg' as transaction_category_icon,
        CASE
            WHEN td.note IS NULL THEN ''
            ELSE td.note
@@ -361,7 +372,7 @@ func (r *TransactionRepository) InvestDetailWithoutData(IDPersonal uuid.UUID) (d
            END ::text                 as sell_buy
 FROM tbl_transactions tt
          INNER JOIN tbl_transaction_details td ON td.id_transactions = tt.id
-WHERE tt.id_personal_account = '?'
+WHERE tt.id_personal_account = ?
 GROUP BY transaction_note, lot, stock_code, transaction_date, sell_buy, tt.amount
 ORDER BY transaction_date DESC`, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionDetailInvest{}
@@ -374,6 +385,7 @@ func (r *TransactionRepository) InvestDetailWithData(IDPersonal uuid.UUID, start
 	if err := r.db.Raw(`SELECT tt.date_time_transaction as transaction_date,
        td.lot * tt.amount       as transaction_amount_total,
        tt.amount                as price,
+       'https://wealthy.sirv.com/wealthy-icons/invest.svg' as transaction_category_icon,
        CASE
            WHEN td.note IS NULL THEN ''
            ELSE td.note
@@ -400,30 +412,42 @@ ORDER BY transaction_date DESC`, IDPersonal, startDate, endDate).Scan(&data).Err
 }
 
 func (r *TransactionRepository) TravelDetailWithoutData(IDPersonal, idTravel uuid.UUID) (data []entities.TransactionDetailTravel) {
-	if err := r.db.Raw(`SELECT tt.date_time_transaction, tt.id as id_transaction,tt.amount, tmec.expense_types as category,td.note
+	if err := r.db.Raw(`SELECT tt.date_time_transaction,
+       tt.id              as id_transaction,
+       tt.amount,
+       tmec.expense_types as category,
+       td.note,
+       tmec.image_path    as transaction_category_icon
 FROM tbl_transactions tt
-         INNER JOIN tbl_master_expense_categories tmec ON tmec.id = tt.id_master_expense_categories
+         INNER JOIN tbl_master_expense_categories_editable tmec ON tmec.id = tt.id_master_expense_categories
          INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
          INNER JOIN tbl_transaction_details td ON td.id_transactions = tt.id
 WHERE tmtt.type = 'TRAVEL'
   AND tt.id_personal_account = ?
+  AND tmec.id_personal_accounts = ?
   AND td.id_travel = ?
-ORDER BY tt.date_time_transaction::DATE ASC`, IDPersonal, idTravel).Scan(&data).Error; err != nil {
+ORDER BY tt.date_time_transaction::DATE ASC`, IDPersonal, IDPersonal, idTravel).Scan(&data).Error; err != nil {
 	}
 	return
 }
 
 func (r *TransactionRepository) TravelDetailWithData(IDPersonal uuid.UUID, idTravel uuid.UUID, startDate, endDate string) (data []entities.TransactionDetailTravel) {
-	if err := r.db.Raw(`SELECT tt.date_time_transaction, tt.id  as id_transaction, tt.amount,tmec.expense_types as category,td.note
+	if err := r.db.Raw(`SELECT tt.date_time_transaction,
+       tt.id              as id_transaction,
+       tt.amount,
+       tmec.expense_types as category,
+       td.note,
+       tmec.image_path    as transaction_category_icon
 FROM tbl_transactions tt
-         INNER JOIN tbl_master_expense_categories tmec ON tmec.id = tt.id_master_expense_categories
+         INNER JOIN tbl_master_expense_categories_editable tmec ON tmec.id = tt.id_master_expense_categories
          INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
          INNER JOIN tbl_transaction_details td ON td.id_transactions = tt.id
 WHERE tmtt.type = 'TRAVEL'
   AND tt.id_personal_account = ?
+  AND tmec.id_personal_accounts = ?
   AND td.id_travel = ?
   AND tt.date_time_transaction BETWEEN ? AND ?
-ORDER BY tt.date_time_transaction::DATE ASC`, IDPersonal, idTravel, startDate, endDate).Scan(&data).Error; err != nil {
+ORDER BY tt.date_time_transaction::DATE ASC`, IDPersonal, IDPersonal, idTravel, startDate, endDate).Scan(&data).Error; err != nil {
 
 	}
 	return

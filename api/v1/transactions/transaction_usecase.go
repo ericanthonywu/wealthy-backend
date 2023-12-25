@@ -271,21 +271,14 @@ func (s *TransactionUseCase) ExpenseTransactionHistory(ctx *gin.Context) (respon
 	startDate := ctx.Query("startDate")
 	endDate := ctx.Query("endDate")
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	if startDate == "" || endDate == "" {
-		responseExpenseTotalHistory = s.repo.ExpenseTotalHistoryWithoutDate(personalAccount.ID)
-		responseExpenseDetailHistory = s.repo.ExpenseDetailHistoryWithoutDate(personalAccount.ID)
+		responseExpenseTotalHistory = s.repo.ExpenseTotalHistoryWithoutDate(accountUUID)
+		responseExpenseDetailHistory = s.repo.ExpenseDetailHistoryWithoutDate(accountUUID)
 	} else {
-		responseExpenseTotalHistory = s.repo.ExpenseTotalHistoryWithDate(personalAccount.ID, startDate, endDate)
-		responseExpenseDetailHistory = s.repo.ExpenseDetailHistoryWithDate(personalAccount.ID, startDate, endDate)
+		responseExpenseTotalHistory = s.repo.ExpenseTotalHistoryWithDate(accountUUID, startDate, endDate)
+		responseExpenseDetailHistory = s.repo.ExpenseDetailHistoryWithDate(accountUUID, startDate, endDate)
 	}
 
 	if responseExpenseTotalHistory.TotalExpense == 0 || responseExpenseDetailHistory == nil {
@@ -357,19 +350,21 @@ func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context, IDTravel
 	startDate := ctx.Query("startDate")
 	endDate := ctx.Query("endDate")
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	if startDate == "" || endDate == "" {
-		responseTravelDetailHistory = s.repo.TravelDetailWithoutData(personalAccount.ID, IDTravel)
+		responseTravelDetailHistory = s.repo.TravelDetailWithoutData(accountUUID, IDTravel)
 	} else {
-		responseTravelDetailHistory = s.repo.TravelDetailWithData(personalAccount.ID, IDTravel, startDate, endDate)
+		responseTravelDetailHistory = s.repo.TravelDetailWithData(accountUUID, IDTravel, startDate, endDate)
+	}
+
+	if len(responseTravelDetailHistory) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no data for travel transaction",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
 	if len(responseTravelDetailHistory) > 0 {
@@ -381,8 +376,9 @@ func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context, IDTravel
 					CurrencyCode: "IDR",
 					Value:        float64(v.Amount),
 				},
-				Category: v.Category,
-				Note:     v.Note,
+				Category:     v.Category,
+				CategoryIcon: v.TransactionCatIcon,
+				Note:         v.Note,
 			})
 		}
 	}

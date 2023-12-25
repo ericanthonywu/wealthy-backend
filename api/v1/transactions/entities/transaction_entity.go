@@ -66,36 +66,40 @@ type (
 	}
 
 	TransactionDetailHistory struct {
-		TransactionDate     string `gorm:"column:transaction_date" json:"transaction_date"`
-		TransactionCategory string `gorm:"column:transaction_category" json:"transaction_category"`
-		TransactionAmount   int    `gorm:"column:transaction_amount" json:"transaction_amount"`
-		TransactionNote     string `gorm:"column:transaction_note" json:"transaction_note"`
+		TransactionDate         string `gorm:"column:transaction_date" json:"transaction_date"`
+		TransactionCategory     string `gorm:"column:transaction_category" json:"transaction_category"`
+		TransactionCategoryIcon string `gorm:"column:transaction_category_icon" json:"transaction_category_icon"`
+		TransactionAmount       int    `gorm:"column:transaction_amount" json:"transaction_amount"`
+		TransactionNote         string `gorm:"column:transaction_note" json:"transaction_note"`
 	}
 
 	TransactionDetailTransfer struct {
-		TransactionDate        string `gorm:"column:transaction_date" json:"transaction_date"`
-		TransactionAmount      int    `gorm:"column:transaction_amount" json:"transaction_amount"`
-		TransactionNote        string `gorm:"column:transaction_note" json:"transaction_note"`
-		TransactionDestination string `gorm:"column:transaction_destination" json:"transaction_destination"`
-		TransactionSource      string `gorm:"column:transaction_source" json:"transaction_source"`
+		TransactionDate         string `gorm:"column:transaction_date" json:"transaction_date"`
+		TransactionCategoryIcon string `gorm:"column:transaction_category_icon" json:"transaction_category_icon"`
+		TransactionAmount       int    `gorm:"column:transaction_amount" json:"transaction_amount"`
+		TransactionNote         string `gorm:"column:transaction_note" json:"transaction_note"`
+		TransactionDestination  string `gorm:"column:transaction_destination" json:"transaction_destination"`
+		TransactionSource       string `gorm:"column:transaction_source" json:"transaction_source"`
 	}
 
 	TransactionDetailInvest struct {
-		TransactionDate        string  `gorm:"column:transaction_date" json:"transaction_date"`
-		TransactionAmountTotal float64 `gorm:"column:transaction_amount_total" json:"transaction_amount_total"`
-		TransactionNote        string  `gorm:"column:transaction_note" json:"transaction_note"`
-		Price                  float64 `gorm:"column:price" json:"price"`
-		Lot                    int     `gorm:"column:lot" json:"lot"`
-		StockCode              string  `gorm:"column:stock_code" json:"stock_code"`
-		SellBuy                string  `gorm:"column:sell_buy" json:"sell_buy"`
+		TransactionDate         string  `gorm:"column:transaction_date" json:"transaction_date"`
+		TransactionCategoryIcon string  `gorm:"column:transaction_category_icon" json:"transaction_category_icon"`
+		TransactionAmountTotal  float64 `gorm:"column:transaction_amount_total" json:"transaction_amount_total"`
+		TransactionNote         string  `gorm:"column:transaction_note" json:"transaction_note"`
+		Price                   float64 `gorm:"column:price" json:"price"`
+		Lot                     int     `gorm:"column:lot" json:"lot"`
+		StockCode               string  `gorm:"column:stock_code" json:"stock_code"`
+		SellBuy                 string  `gorm:"column:sell_buy" json:"sell_buy"`
 	}
 
 	TransactionDetailTravel struct {
-		DateTransaction string    `gorm:"column:date_time_transaction"`
-		IDTransaction   uuid.UUID `gorm:"column:id_transaction"`
-		Amount          int64     `gorm:"column:amount"`
-		Category        string    `gorm:"column:category"`
-		Note            string    `gorm:"column:note"`
+		DateTransaction    string    `gorm:"column:date_time_transaction"`
+		IDTransaction      uuid.UUID `gorm:"column:id_transaction"`
+		TransactionCatIcon string    `gorm:"column:transaction_category_icon"`
+		Amount             int64     `gorm:"column:amount"`
+		Category           string    `gorm:"column:category"`
+		Note               string    `gorm:"column:note"`
 	}
 
 	TransactionIncomeSpendingTotalMonthly struct {
