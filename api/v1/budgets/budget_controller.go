@@ -24,6 +24,7 @@ type (
 		Limit(ctx *gin.Context)
 		Trends(ctx *gin.Context)
 		Travels(ctx *gin.Context)
+		UpdateTravelInfo(ctx *gin.Context)
 	}
 )
 
@@ -204,6 +205,30 @@ func (c *BudgetController) Travels(ctx *gin.Context) {
 	}
 
 	dtoResponse, httpCode, errInfo := c.useCase.Travels(ctx)
+	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
+	return
+}
+
+func (c *BudgetController) UpdateTravelInfo(ctx *gin.Context) {
+	var (
+		dtoRequest map[string]interface{}
+		errInfo    []errorsinfo.Errors
+	)
+
+	// bind
+	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	IDTravel := ctx.Param("id-travel")
+
+	if IDTravel == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id travel required in query url")
+	}
+
+	dtoResponse, httpCode, errInfo := c.useCase.UpdateTravelInfo(ctx, IDTravel, dtoRequest)
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
 	return
 }

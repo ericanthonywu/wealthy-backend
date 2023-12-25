@@ -121,3 +121,7 @@ type (
 func (BudgetSetEntities) TableName() string {
 	return "tbl_budgets"
 }
+
+func (BudgetTravel) TableName() string {
+	return "tbl_budgets"
+}

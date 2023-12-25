@@ -134,6 +134,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			{
 				limitGroup.POST("", budget.Limit)
 				limitGroup.GET("", budget.AllLimit)
+				limitGroup.PATCH("/travels/:id-travel", budget.UpdateTravelInfo)
 			}
 
 			detailsGroup := budgetGroup.Group("/details")
