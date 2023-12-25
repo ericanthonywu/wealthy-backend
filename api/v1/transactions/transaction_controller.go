@@ -3,12 +3,12 @@ package transactions
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/dtos"
-	"github.com/semicolon-indonesia/wealthy-backend/constants"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/datecustoms"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
 	"github.com/sirupsen/logrus"
+	"github.com/wealthy-app/wealthy-backend/api/v1/transactions/dtos"
+	"github.com/wealthy-app/wealthy-backend/constants"
+	"github.com/wealthy-app/wealthy-backend/utils/datecustoms"
+	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
+	"github.com/wealthy-app/wealthy-backend/utils/response"
 	"net/http"
 )
 
@@ -32,7 +32,7 @@ type (
 		validateTravelTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
 		validateIncomeTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
 		validateExpenseTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
-		validateInvestTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
+		validateInvestTransactionPayload(request *dtos.TransactionRequestInvestment) (errInfo []errorsinfo.Errors)
 		validateTransferTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
 	}
 )

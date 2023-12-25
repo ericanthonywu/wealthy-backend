@@ -2,7 +2,7 @@ package internals
 
 import (
 	"github.com/google/uuid"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions/entities"
+	"github.com/wealthy-app/wealthy-backend/api/v1/internals/entities"
 	"gorm.io/gorm"
 )
 

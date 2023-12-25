@@ -2,7 +2,7 @@ package statistics
 
 import (
 	"github.com/google/uuid"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics/entities"
+	"github.com/wealthy-app/wealthy-backend/api/v1/statistics/entities"
 	"gorm.io/gorm"
 )
 

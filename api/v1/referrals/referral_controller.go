@@ -2,10 +2,10 @@ package referrals
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/referrals/dtos"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
 	"github.com/sirupsen/logrus"
+	"github.com/wealthy-app/wealthy-backend/api/v1/referrals/dtos"
+	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
+	"github.com/wealthy-app/wealthy-backend/utils/response"
 	"net/http"
 )
 

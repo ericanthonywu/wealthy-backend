@@ -1,11 +1,10 @@
 package routers
 
 import (
-	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
+	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
+	"github.com/wealthy-app/wealthy-backend/utils/response"
+	"net/http"
 )
 
 func NoRoute(ctx *gin.Context) {

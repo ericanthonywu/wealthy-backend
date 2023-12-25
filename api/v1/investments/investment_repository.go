@@ -2,8 +2,8 @@ package investments
 
 import (
 	"github.com/google/uuid"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/investments/entities"
 	"github.com/sirupsen/logrus"
+	"github.com/wealthy-app/wealthy-backend/api/v1/investments/entities"
 	"gorm.io/gorm"
 )
 

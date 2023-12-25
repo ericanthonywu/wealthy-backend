@@ -3,7 +3,7 @@ package wallets
 import (
 	"errors"
 	"github.com/google/uuid"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets/entities"
+	"github.com/wealthy-app/wealthy-backend/api/v1/wallets/entities"
 	"gorm.io/gorm"
 	"net/http"
 )

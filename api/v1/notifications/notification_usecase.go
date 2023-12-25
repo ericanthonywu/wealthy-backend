@@ -3,10 +3,10 @@ package notifications
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/notifications/dtos"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/datecustoms"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/sirupsen/logrus"
+	"github.com/wealthy-app/wealthy-backend/api/v1/notifications/dtos"
+	"github.com/wealthy-app/wealthy-backend/utils/datecustoms"
+	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
 	"net/http"
 	"os"
 )

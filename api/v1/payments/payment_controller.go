@@ -3,11 +3,11 @@ package payments
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/payments/dtos"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
 	"github.com/sirupsen/logrus"
+	"github.com/wealthy-app/wealthy-backend/api/v1/payments/dtos"
+	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
+	"github.com/wealthy-app/wealthy-backend/utils/response"
+	"github.com/wealthy-app/wealthy-backend/utils/utilities"
 	"net/http"
 	"os"
 )

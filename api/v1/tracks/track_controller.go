@@ -2,9 +2,9 @@ package tracks
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/tracks/dtos"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
+	"github.com/wealthy-app/wealthy-backend/api/v1/tracks/dtos"
+	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
+	"github.com/wealthy-app/wealthy-backend/utils/response"
 	"net/http"
 )
 

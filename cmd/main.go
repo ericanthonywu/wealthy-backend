@@ -2,10 +2,9 @@ package main
 
 import (
 	"context"
-	"github.com/semicolon-indonesia/wealthy-backend/constants"
-	"github.com/semicolon-indonesia/wealthy-backend/docs"
-	"github.com/semicolon-indonesia/wealthy-backend/infrastructures/databases"
-	"github.com/semicolon-indonesia/wealthy-backend/routers"
+	"github.com/wealthy-app/wealthy-backend/constants"
+	"github.com/wealthy-app/wealthy-backend/infrastructures/databases"
+	"github.com/wealthy-app/wealthy-backend/routers"
 	"log"
 	"net/http"
 	"os"
@@ -64,13 +63,6 @@ func main() {
 	route.NoRoute(routers.NoRoute)
 	routers.RouterConfig(route)
 	routers.API(&route.RouterGroup, dbConnection)
-
-	docs.SwaggerInfo.Title = "Example API"
-	docs.SwaggerInfo.Description = "This is a sample documentation"
-	docs.SwaggerInfo.Version = "1.0"
-	docs.SwaggerInfo.Host = "localhost"
-	docs.SwaggerInfo.BasePath = "/v1"
-	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 
 	portBuilder.WriteString(":")
 	portBuilder.WriteString(os.Getenv("APP_PORT"))
