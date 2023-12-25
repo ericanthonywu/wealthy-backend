@@ -6,7 +6,6 @@ import (
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/referrals/dtos"
 	"github.com/semicolon-indonesia/wealthy-backend/api/v1/referrals/entities"
 	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/personalaccounts"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )
@@ -19,7 +18,7 @@ type (
 	IReferralUseCase interface {
 		AccountProfile(personalID uuid.UUID) (data entities.ReferralAccountProfile, err error)
 		AccountProfileByRefCode(refCode string) (data entities.ReferralAccountProfileRefCode, err error)
-		Statistic(ctx *gin.Context) (response dtos.ReferralResponse, httpCode int, errInfo []errorsinfo.Errors)
+		Statistic(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		List(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		NormalTier(dataMember []entities.ReferralUserReward) (tier []dtos.TierDetail, tierCustomer []dtos.TierDetailWithCustomer)
 		UnusualTier(dataMember []entities.ReferralUserReward, currentLevel int) (tier []dtos.TierDetail, tierCustomer []dtos.TierDetailWithCustomer)
@@ -40,52 +39,139 @@ func (s *ReferralUseCase) AccountProfileByRefCode(refCode string) (data entities
 	return s.repo.AccountProfileByRefCode(refCode)
 }
 
-func (s *ReferralUseCase) Statistic(ctx *gin.Context) (response dtos.ReferralResponse, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *ReferralUseCase) Statistic(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		dataProfile   entities.ReferralAccountProfile
-		dataFirstNode entities.ReferralUserReward
-		dataMember    []entities.ReferralUserReward
-		dtoResponse   dtos.ReferralResponse
-		err           error
+		dataProfile entities.ReferralAccountProfile
+		dtoResponse dtos.ReferralResponse
+		tierData    []dtos.TierDetail
+		tierName    string
+		err         error
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return dtoResponse, http.StatusUnauthorized, errInfo
-	}
-
-	dataProfile, err = s.AccountProfile(personalAccount.ID)
+	dataProfile, err = s.AccountProfile(accountUUID)
 	if err != nil {
 		logrus.Error(err.Error())
 	}
 
 	referralCode := dataProfile.ReferType
 
-	// GETTING ROOT NODE INFORMATION
-	dataFirstNode, err = s.repo.FirstNode(referralCode)
+	dataTierOfRefCode, err := s.repo.GetTierReferralCode(referralCode)
 	if err != nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found data from referral code : "+referralCode)
-		return dtos.ReferralResponse{}, http.StatusNotFound, errInfo
+		logrus.Error(err.Error())
 	}
 
-	// GETTING MEMBER OF NODE
-	dataMember, err = s.repo.MemberNode(referralCode)
-	if err != nil || len(dataMember) == 0 {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found data from referral code : "+referralCode)
-		return dtos.ReferralResponse{}, http.StatusNotFound, errInfo
+	if len(dataTierOfRefCode) == 0 {
+		res := struct {
+			Message string `json:"message"`
+		}{
+			Message: " have not referral below referral code :" + referralCode,
+		}
+		return res, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
-	// MAPPING FOR TIERS
-	if dataFirstNode.Level == 0 {
-		dtoResponse.Tier, _ = s.NormalTier(dataMember)
+	// determine mapping
+	var titleCollection = map[int]string{
+		1: "1st tier",
+		2: "2nd tier",
+		3: "3nd tier",
+		4: "4nd tier",
+		5: "5nd tier",
 	}
 
-	if dataFirstNode.Level > 0 {
-		dtoResponse.Tier, _ = s.UnusualTier(dataMember, dataFirstNode.Level)
+	// response mapping
+	levelPrevious := 0
+	totalInTier := 0
+	maxData := len(dataTierOfRefCode) - 1
+
+	if len(dataTierOfRefCode) > 0 {
+		for k, v := range dataTierOfRefCode {
+
+			if v.Level == 0 {
+				continue
+			}
+
+			if levelPrevious == v.Level {
+
+				// continue increment
+				totalInTier++
+
+				if k == maxData {
+					// get tier name
+					if value, exist := titleCollection[levelPrevious]; exist {
+						tierName = value
+					}
+
+					tierData = append(tierData, dtos.TierDetail{
+						Name:  tierName,
+						Value: totalInTier,
+					})
+
+					totalInTier = 0
+				}
+			}
+
+			if levelPrevious == 0 {
+				levelPrevious = v.Level
+				totalInTier++
+
+				if k == maxData {
+					totalInTier++
+
+					// get tier name
+					if value, exist := titleCollection[levelPrevious]; exist {
+						tierName = value
+					}
+
+					tierData = append(tierData, dtos.TierDetail{
+						Name:  tierName,
+						Value: totalInTier,
+					})
+
+					// clear
+					totalInTier = 0
+				}
+			}
+
+			if levelPrevious != v.Level {
+				// save previous
+				if value, exist := titleCollection[levelPrevious]; exist {
+					tierName = value
+				}
+
+				tierData = append(tierData, dtos.TierDetail{
+					Name:  tierName,
+					Value: totalInTier,
+				})
+
+				// reset
+				totalInTier = 0
+
+				// renew
+				totalInTier++
+				levelPrevious = v.Level
+
+				if k == maxData {
+					// get tier name
+					if value, exist := titleCollection[levelPrevious]; exist {
+						tierName = value
+					}
+
+					tierData = append(tierData, dtos.TierDetail{
+						Name:  tierName,
+						Value: totalInTier,
+					})
+
+					// clear
+					totalInTier = 0
+				}
+
+			}
+		}
 	}
+
+	dtoResponse.Tier = tierData
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
