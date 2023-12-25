@@ -28,6 +28,7 @@ type (
 		Travels(IDPersonal uuid.UUID) (data []entities.BudgetTravel, err error)
 		GetXchangeCurrency(IDMasterExchange uuid.UUID) (data entities.BudgetExistsExchangeExist, err error)
 		GetXchangeCurrencyValue(IDMasterExchange uuid.UUID) (data entities.BudgetExistsExchangeValue, err error)
+		UpdateAmountTravel(IDWalletUUID uuid.UUID, request map[string]interface{}) (err error)
 	}
 )
 
@@ -227,4 +228,15 @@ func (r *BudgetRepository) GetXchangeCurrencyValue(IDMasterExchange uuid.UUID) (
 		return entities.BudgetExistsExchangeValue{}, err
 	}
 	return data, nil
+}
+
+func (r *BudgetRepository) UpdateAmountTravel(IDWalletUUID uuid.UUID, request map[string]interface{}) (err error) {
+	var model entities.BudgetTravel
+	// set ID
+	model.ID = IDWalletUUID
+
+	if err := r.db.Model(&model).Updates(request).Error; err != nil {
+		return err
+	}
+	return nil
 }

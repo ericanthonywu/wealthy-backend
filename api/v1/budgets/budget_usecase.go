@@ -32,6 +32,7 @@ type (
 		Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest, purpose string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Trends(ctx *gin.Context, IDCategory uuid.UUID, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Travels(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		UpdateTravelInfo(ctx *gin.Context, IDTravel string, request map[string]interface{}) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -613,4 +614,47 @@ func (s *BudgetUseCase) Travels(ctx *gin.Context) (response interface{}, httpCod
 	}
 
 	return dtoResponse, http.StatusOK, errInfo
+}
+
+func (s *BudgetUseCase) UpdateTravelInfo(ctx *gin.Context, IDWallet string, request map[string]interface{}) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		amount float64
+	)
+
+	// check amount exist from payload
+	value, exists := request["amount"]
+	if exists {
+		amount = value.(float64)
+
+		if amount <= 0 {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "amount must greater than 0")
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
+	}
+
+	// convert IDWwallet to UUID
+	IDWalletUUID, err := uuid.Parse(IDWallet)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	// update amount
+	err = s.repo.UpdateAmountTravel(IDWalletUUID, request)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	resp := struct {
+		Message string `json:"message"`
+	}{
+		Message: "change amount travel successfully",
+	}
+
+	return resp, http.StatusOK, errInfo
 }
