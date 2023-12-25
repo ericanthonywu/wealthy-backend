@@ -2,9 +2,9 @@ package investments
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/semicolon-indonesia/wealthy-backend/constants"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
+	"github.com/wealthy-app/wealthy-backend/constants"
+	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
+	"github.com/wealthy-app/wealthy-backend/utils/response"
 	"net/http"
 )
 

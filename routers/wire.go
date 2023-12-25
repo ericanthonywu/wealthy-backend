@@ -5,20 +5,20 @@ package routers
 
 import (
 	"github.com/google/wire"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/images"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/internals"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/investments"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/masters"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/notifications"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/payments"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/referrals"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/statistics"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/tracks"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/transactions"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/wallets"
-	subsriptions2 "github.com/semicolon-indonesia/wealthy-backend/infrastructures/subsriptions"
+	"github.com/wealthy-app/wealthy-backend/api/v1/accounts"
+	"github.com/wealthy-app/wealthy-backend/api/v1/budgets"
+	"github.com/wealthy-app/wealthy-backend/api/v1/images"
+	"github.com/wealthy-app/wealthy-backend/api/v1/internals"
+	"github.com/wealthy-app/wealthy-backend/api/v1/investments"
+	"github.com/wealthy-app/wealthy-backend/api/v1/masters"
+	"github.com/wealthy-app/wealthy-backend/api/v1/notifications"
+	"github.com/wealthy-app/wealthy-backend/api/v1/payments"
+	"github.com/wealthy-app/wealthy-backend/api/v1/referrals"
+	"github.com/wealthy-app/wealthy-backend/api/v1/statistics"
+	"github.com/wealthy-app/wealthy-backend/api/v1/subsriptions"
+	"github.com/wealthy-app/wealthy-backend/api/v1/tracks"
+	"github.com/wealthy-app/wealthy-backend/api/v1/transactions"
+	"github.com/wealthy-app/wealthy-backend/api/v1/wallets"
 	"gorm.io/gorm"
 )
 
@@ -118,16 +118,16 @@ func Internals(db *gorm.DB) *internals.InternalController {
 	return &internals.InternalController{}
 }
 
-func Subscriptions(db *gorm.DB) *subsriptions2.SubscriptionController {
+func Subscriptions(db *gorm.DB) *subsriptions.SubscriptionController {
 	panic(wire.Build(wire.NewSet(
-		subsriptions2.NewSubscriptionController,
-		subsriptions2.NewSubscriptionUseCase,
-		subsriptions2.NewSubscriptionRepository,
-		wire.Bind(new(subsriptions2.ISubscriptionController), new(*subsriptions2.SubscriptionController)),
-		wire.Bind(new(subsriptions2.ISubscriptionUseCase), new(*subsriptions2.SubscriptionUseCase)),
-		wire.Bind(new(subsriptions2.ISubscriptionRepository), new(*subsriptions2.SubscriptionRepository)),
+		subsriptions.NewSubscriptionController,
+		subsriptions.NewSubscriptionUseCase,
+		subsriptions.NewSubscriptionRepository,
+		wire.Bind(new(subsriptions.ISubscriptionController), new(*subsriptions.SubscriptionController)),
+		wire.Bind(new(subsriptions.ISubscriptionUseCase), new(*subsriptions.SubscriptionUseCase)),
+		wire.Bind(new(subsriptions.ISubscriptionRepository), new(*subsriptions.SubscriptionRepository)),
 	)))
-	return &subsriptions2.SubscriptionController{}
+	return &subsriptions.SubscriptionController{}
 }
 
 func Referrals(db *gorm.DB) *referrals.ReferralController {

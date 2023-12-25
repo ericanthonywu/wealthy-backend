@@ -2,8 +2,8 @@ package internals
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/response"
+	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
+	"github.com/wealthy-app/wealthy-backend/utils/response"
 )
 
 type (

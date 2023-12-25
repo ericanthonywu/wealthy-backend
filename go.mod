@@ -1,4 +1,4 @@
-module github.com/semicolon-indonesia/wealthy-backend
+module github.com/wealthy-app/wealthy-backend
 
 go 1.20
 

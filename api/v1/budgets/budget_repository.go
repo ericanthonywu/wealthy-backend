@@ -2,8 +2,8 @@ package budgets
 
 import (
 	"github.com/google/uuid"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/budgets/entities"
 	"github.com/sirupsen/logrus"
+	"github.com/wealthy-app/wealthy-backend/api/v1/budgets/entities"
 	"gorm.io/gorm"
 )
 

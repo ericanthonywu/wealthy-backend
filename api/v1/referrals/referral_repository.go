@@ -2,8 +2,8 @@ package referrals
 
 import (
 	"github.com/google/uuid"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/referrals/entities"
 	"github.com/sirupsen/logrus"
+	"github.com/wealthy-app/wealthy-backend/api/v1/referrals/entities"
 	"gorm.io/gorm"
 )
 

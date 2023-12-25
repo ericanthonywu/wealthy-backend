@@ -2,8 +2,8 @@ package payments
 
 import (
 	"github.com/google/uuid"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/payments/entities"
 	"github.com/sirupsen/logrus"
+	"github.com/wealthy-app/wealthy-backend/api/v1/payments/entities"
 	"gorm.io/gorm"
 )
 

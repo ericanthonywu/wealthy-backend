@@ -2,7 +2,7 @@ package notifications
 
 import (
 	"github.com/google/uuid"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/notifications/entities"
+	"github.com/wealthy-app/wealthy-backend/api/v1/notifications/entities"
 	"gorm.io/gorm"
 )
 

@@ -3,9 +3,9 @@ package accounts
 import (
 	"errors"
 	"github.com/google/uuid"
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/accounts/entities"
-	"github.com/semicolon-indonesia/wealthy-backend/utils/errorsinfo"
 	"github.com/sirupsen/logrus"
+	"github.com/wealthy-app/wealthy-backend/api/v1/accounts/entities"
+	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
 	"gorm.io/gorm"
 	"net/http"
 )

@@ -1,8 +1,8 @@
 package tracks
 
 import (
-	"github.com/semicolon-indonesia/wealthy-backend/api/v1/tracks/entities"
 	"github.com/sirupsen/logrus"
+	"github.com/wealthy-app/wealthy-backend/api/v1/tracks/entities"
 	"gorm.io/gorm"
 )
 
