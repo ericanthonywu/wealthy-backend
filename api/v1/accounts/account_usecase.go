@@ -50,6 +50,7 @@ type (
 		GroupSharingPending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		VerifyOTP(ctx *gin.Context, request *dtos.AccountOTPVerify) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ChangePasswordForgot(ctx *gin.Context, request *dtos.AccountChangeForgotPassword) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		DeleteAccount(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 	}
 )
 
@@ -1370,6 +1371,56 @@ func (s *AccountUseCase) ChangePasswordForgot(ctx *gin.Context, request *dtos.Ac
 	// if empty
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
+	}
+
+	return resp, http.StatusOK, errInfo
+}
+
+func (s *AccountUseCase) DeleteAccount(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	// delete wallet
+	go s.repo.DeleteAccountWallet(accountUUID)
+
+	// delete transaction
+	go s.repo.DeleteAccountTransaction(accountUUID)
+
+	// delete master category editable
+	go s.repo.DeleteAccountMasterExpenseCategory(accountUUID)
+
+	// delete master sub category editable
+	go s.repo.DeleteAccountMasterSubExpenseCategory(accountUUID)
+
+	// delete master income editable
+	go s.repo.DeleteAccountMasterIncomeCategory(accountUUID)
+
+	// delete budget
+	go s.repo.DeleteAccountBudget(accountUUID)
+
+	// delete group sharing
+	go s.repo.DeleteAccountGroupSharing(accountUUID)
+
+	// delete account subscription
+	go s.repo.DeleteAccountSubscription(accountUUID)
+
+	// delete account withdraw
+	go s.repo.DeleteAccountWithdraw(accountUUID)
+
+	// delete account authorization
+	go s.repo.DeleteAccountAuthorization(accountUUID)
+
+	// delete account for personal account
+	go s.repo.DeleteAccountPersonalAccount(accountUUID)
+
+	// if no error
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	resp := struct {
+		Message string `json:"message"`
+	}{
+		Message: "delete account successfully",
 	}
 
 	return resp, http.StatusOK, errInfo

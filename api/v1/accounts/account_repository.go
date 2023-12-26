@@ -51,9 +51,19 @@ type (
 		GenderData(ID uuid.UUID) bool
 		IsAlreadySharing(idSender, idRecipient uuid.UUID) bool
 		ChangePassword(IDPersonal uuid.UUID, hashPassword string) (err error)
-		GetNotificationPending(personalAccount uuid.UUID) (data []entities.AccountNotificationEntities, err error)
 		GroupSharingListPending(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error)
 		GroupSharingListPendingReverse(IDPersonalAccount uuid.UUID) (data []entities.AccountGroupSharingWithProfileInfo, err error)
+		DeleteAccountWallet(IDPersonal uuid.UUID)
+		DeleteAccountTransaction(accountUUID uuid.UUID)
+		DeleteAccountMasterExpenseCategory(accountUUID uuid.UUID)
+		DeleteAccountMasterSubExpenseCategory(accountUUID uuid.UUID)
+		DeleteAccountMasterIncomeCategory(accountUUID uuid.UUID)
+		DeleteAccountBudget(accountUUID uuid.UUID)
+		DeleteAccountGroupSharing(accountUUID uuid.UUID)
+		DeleteAccountSubscription(accountUUID uuid.UUID)
+		DeleteAccountWithdraw(accountUUID uuid.UUID)
+		DeleteAccountAuthorization(accountUUID uuid.UUID)
+		DeleteAccountPersonalAccount(accountUUID uuid.UUID)
 	}
 )
 
@@ -515,26 +525,109 @@ func (r *AccountRepository) GroupSharingInfoByID(IDGroupSharing uuid.UUID) (data
 	return data, nil
 }
 
-// todo : ntar buang
-func (r *AccountRepository) GetNotificationPending(personalAccount uuid.UUID) (data []entities.AccountNotificationEntities, err error) {
-	if err := r.db.Raw(`SELECT tn.id,
-       tpa.name,
-       tn.notification_title,
-       tn.notification_description,
-       tn.id_personal_accounts,
-       tn.is_read,
-       tn.id_group_sender,
-       tn.id_group_recipient,
-       tpa.image_path,
-       tmat.account_type as type,
-       tn.created_at
-FROM tbl_notifications tn
-         INNER JOIN tbl_personal_accounts tpa ON tpa.id = tn.id_personal_accounts
-         INNER JOIN tbl_master_account_types tmat ON tmat.id = tpa.id_master_account_types
-WHERE tn.id_personal_accounts = ?
-  AND tn.is_read = false
-ORDER BY created_at DESC`, personalAccount).Scan(&data).Error; err != nil {
-		return []entities.AccountNotificationEntities{}, err
+func (r *AccountRepository) DeleteAccountWallet(IDPersonal uuid.UUID) {
+	var model entities.AccountWallet
+
+	model.ID = IDPersonal
+	if err := r.db.Delete(&model).Error; err != nil {
+		logrus.Error(err.Error())
 	}
-	return data, nil
+}
+
+func (r *AccountRepository) DeleteAccountTransaction(accountUUID uuid.UUID) {
+	var model interface{}
+
+	if err := r.db.Raw(`DELETE FROM tbl_transactions USING tbl_transaction_details WHERE tbl_transactions.id = tbl_transaction_details.id_transactions
+AND tbl_transactions.id=?`, accountUUID).Scan(&model).Error; err != nil {
+		logrus.Error(err.Error())
+	}
+}
+
+func (r *AccountRepository) DeleteAccountMasterExpenseCategory(accountUUID uuid.UUID) {
+	var model entities.AccountMasterExpenseCategory
+
+	model.IDPersonalAccounts = accountUUID
+	if err := r.db.Where("id_personal_accounts=?", accountUUID).
+		Delete(&model).Error; err != nil {
+		logrus.Error(err.Error())
+	}
+}
+
+func (r *AccountRepository) DeleteAccountMasterSubExpenseCategory(accountUUID uuid.UUID) {
+	var model entities.AccountMasterSubExpenseCategory
+
+	if err := r.db.Where("id_personal_accounts=?", accountUUID).
+		Delete(&model).Error; err != nil {
+		logrus.Error(err.Error())
+	}
+}
+
+func (r *AccountRepository) DeleteAccountMasterIncomeCategory(accountUUID uuid.UUID) {
+	var model entities.AccountMasterIncomeCategory
+
+	if err := r.db.Where("id_personal_accounts=?", accountUUID).
+		Delete(&model).
+		Error; err != nil {
+		logrus.Error(err.Error())
+	}
+}
+
+func (r *AccountRepository) DeleteAccountBudget(accountUUID uuid.UUID) {
+	var model entities.AccountBudget
+
+	if err := r.db.Where("id_personal_accounts=?", accountUUID).
+		Delete(&model).
+		Error; err != nil {
+		logrus.Error(err.Error())
+	}
+}
+
+func (r *AccountRepository) DeleteAccountGroupSharing(accountUUID uuid.UUID) {
+	var model entities.AccountGroupSharings
+
+	if err := r.db.Where("id_personal_accounts_share_from=?", accountUUID).
+		Delete(&model).
+		Error; err != nil {
+		logrus.Error(err.Error())
+	}
+}
+
+func (r *AccountRepository) DeleteAccountSubscription(accountUUID uuid.UUID) {
+	var model entities.AccountSubscriptions
+
+	if err := r.db.Where("id_personal_accounts=?", accountUUID).
+		Delete(&model).
+		Error; err != nil {
+		logrus.Error(err.Error())
+	}
+}
+
+func (r *AccountRepository) DeleteAccountWithdraw(accountUUID uuid.UUID) {
+	var model entities.AccountWithdraw
+
+	if err := r.db.Where("id_personal_accounts=?", accountUUID).
+		Delete(&model).
+		Error; err != nil {
+		logrus.Error(err.Error())
+	}
+}
+
+func (r *AccountRepository) DeleteAccountAuthorization(accountUUID uuid.UUID) {
+	var model entities.AccountAuthorizations
+
+	if err := r.db.Where("id_personal_accounts=?", accountUUID).
+		Delete(&model).
+		Error; err != nil {
+		logrus.Error(err.Error())
+	}
+}
+
+func (r *AccountRepository) DeleteAccountPersonalAccount(accountUUID uuid.UUID) {
+	var model entities.AccountPersonal
+
+	if err := r.db.Where("id=?", accountUUID).
+		Delete(&model).
+		Error; err != nil {
+		logrus.Error(err.Error())
+	}
 }

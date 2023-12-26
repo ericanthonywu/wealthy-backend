@@ -153,6 +153,55 @@ type (
 		Type                    string    `gorm:"column:type"`
 		CreatedAt               time.Time `gorm:"column:created_at"`
 	}
+
+	AccountWallet struct {
+		ID uuid.UUID `gorm:"column:id"`
+	}
+
+	AccountTransaction struct {
+		ID uuid.UUID `gorm:"primaryKey;column:id"`
+	}
+
+	AccountTransactionDetail struct {
+		ID            uuid.UUID `gorm:"primaryKey;column:id"`
+		IDTransaction uuid.UUID `gorm:"foreignKey:ID;column:id_transactions"`
+	}
+
+	AccountMasterExpenseCategory struct {
+		IDPersonalAccounts uuid.UUID `gorm:"column:id_personal_accounts"`
+	}
+
+	AccountMasterSubExpenseCategory struct {
+		IDPersonalAccounts uuid.UUID `gorm:"column:id_personal_accounts"`
+	}
+
+	AccountMasterIncomeCategory struct {
+		IDPersonalAccounts uuid.UUID `gorm:"column:id_personal_accounts"`
+	}
+
+	AccountBudget struct {
+		IDPersonalAccounts uuid.UUID `gorm:"column:id_personal_accounts"`
+	}
+
+	AccountGroupSharings struct {
+		IDPersonalAccounts uuid.UUID `gorm:"column:id_personal_accounts_share_from"`
+	}
+
+	AccountSubscriptions struct {
+		IDPersonalAccounts uuid.UUID `gorm:"column:id_personal_accounts"`
+	}
+
+	AccountWithdraw struct {
+		IDPersonalAccounts uuid.UUID `gorm:"column:id_personal_accounts"`
+	}
+
+	AccountAuthorizations struct {
+		IDPersonalAccounts uuid.UUID `gorm:"column:id_personal_accounts"`
+	}
+
+	AccountPersonal struct {
+		ID uuid.UUID `gorm:"column:id"`
+	}
 )
 
 func (AccountAuthorization) TableName() string {
@@ -190,4 +239,44 @@ func (AccountGroupSharing) TableName() string {
 
 func (AccountForgotPassword) TableName() string {
 	return "tbl_forgot_password"
+}
+
+func (AccountWallet) TableName() string {
+	return "tbl_wallets"
+}
+
+func (AccountMasterExpenseCategory) TableName() string {
+	return "tbl_master_expense_categories_editable"
+}
+
+func (AccountMasterSubExpenseCategory) TableName() string {
+	return "tbl_master_expense_subcategories_editable"
+}
+
+func (AccountMasterIncomeCategory) TableName() string {
+	return "tbl_master_income_categories_editable"
+}
+
+func (AccountBudget) TableName() string {
+	return "tbl_budgets"
+}
+
+func (AccountGroupSharings) TableName() string {
+	return "tbl_group_sharing"
+}
+
+func (AccountSubscriptions) TableName() string {
+	return "tbl_user_subscription"
+}
+
+func (AccountWithdraw) TableName() string {
+	return "tbl_withdraw_request_transaction"
+}
+
+func (AccountAuthorizations) TableName() string {
+	return "tbl_authentications"
+}
+
+func (AccountPersonal) TableName() string {
+	return "tbl_personal_accounts"
 }
