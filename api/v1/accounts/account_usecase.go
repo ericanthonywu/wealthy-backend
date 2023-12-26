@@ -614,7 +614,7 @@ func (s *AccountUseCase) ForgotPassword(ctx *gin.Context, request *dtos.AccountF
 
 	// store into db with preparation model
 	currentTime := time.Now()
-	expiredTime := currentTime.Add(30 * time.Minute)
+	expiredTime := currentTime.Add(3 * time.Minute)
 
 	model := entities.AccountForgotPassword{
 		ID:                uuid.New(),
