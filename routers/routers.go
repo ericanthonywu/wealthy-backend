@@ -88,7 +88,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			accountGroup.POST("/signup", account.SignUp)
 			accountGroup.POST("/signin", account.SignIn)
 			accountGroup.PATCH("/profiles", tokenSignature(), accountType(), account.UpdateProfile)
-			accountGroup.GET("/profiles", tokenSignature(), accountType(), account.GetProfile)
+			accountGroup.GET("/profiles", tokenSignature(), accountType(), betaVersion(), account.GetProfile)
 
 			accountProfileGroup := accountGroup.Group("/profiles", tokenSignature(), accountType())
 			{
