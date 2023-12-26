@@ -62,6 +62,8 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 		WalletType = constants.Investment
 	case constants.IDSaving:
 		WalletType = constants.Saving
+	case constants.IDEWallet:
+		WalletType = constants.EWallet
 	}
 
 	UUIDIDMasterWalletType, err := uuid.Parse(request.IDMasterWallet)
