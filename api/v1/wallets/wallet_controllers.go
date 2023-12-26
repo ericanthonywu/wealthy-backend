@@ -56,7 +56,8 @@ func (c *WalletController) Add(ctx *gin.Context) {
 		dtoRequest.IDMasterWallet == constants.IDCreditCard ||
 		dtoRequest.IDMasterWallet == constants.IDDebitCard ||
 		dtoRequest.IDMasterWallet == constants.IDInvestment ||
-		dtoRequest.IDMasterWallet == constants.IDSaving
+		dtoRequest.IDMasterWallet == constants.IDSaving ||
+		dtoRequest.IDMasterWallet == constants.IDEWallet
 
 	if !isValid {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master wallet unregistered")

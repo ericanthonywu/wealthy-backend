@@ -6,6 +6,7 @@ const (
 	DebitCard  = "DEBIT_CARD"
 	Cash       = "CASH"
 	Saving     = "SAVING"
+	EWallet    = "E-WALLET"
 )
 
 const (
@@ -14,6 +15,7 @@ const (
 	IDDebitCard  = "b3d84c53-de72-4094-bbd1-3bbd934128b1"
 	IDCash       = "538d3ec5-a41c-44b1-82f5-4b22f1df6388"
 	IDSaving     = "0ef3cace-c2fe-4d1a-ba6b-93e33e94f97a"
+	IDEWallet    = "8eb961a5-c8ce-4dd5-8028-c89995d8f857"
 )
 
 const (
