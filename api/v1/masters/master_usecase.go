@@ -6,7 +6,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/wealthy-app/wealthy-backend/api/v1/masters/dtos"
 	"github.com/wealthy-app/wealthy-backend/api/v1/masters/entities"
-	"github.com/wealthy-app/wealthy-backend/constants"
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
 	"github.com/wealthy-app/wealthy-backend/utils/personalaccounts"
 	"github.com/wealthy-app/wealthy-backend/utils/utilities"
@@ -205,27 +204,59 @@ func (s *MasterUseCase) PersonalExpenseSubCategory(ctx *gin.Context, expenseIDUU
 }
 
 func (s *MasterUseCase) RenameIncomeCategory(ctx *gin.Context, id uuid.UUID, request *dtos.RenameCatRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	var (
+		err         error
+		collections = make(map[string]string)
+	)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return data, httpCode, errInfo
+	// account id uuid format
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	// get all income categories
+	dataAllCategories, err := s.repo.GetAllIncomeCategories(accountUUID)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
-	err := s.repo.RenameIncomeCategory(request.NewCategoryName, id, personalAccount.ID)
+	// if data empty
+	if len(dataAllCategories) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no data for rename category name base category id : " + id.String(),
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
+
+	// if data not empty
+	if len(dataAllCategories) > 0 {
+		// mapping collections
+		for _, v := range dataAllCategories {
+			collections[v] = v
+		}
+	}
+
+	// check request with collections
+	_, exist := collections[request.NewCategoryName]
+	if exist {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "category name is identically with another category in same group. please another one",
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
+
+	// rename category
+	err = s.repo.RenameIncomeCategory(request.NewCategoryName, id, accountUUID)
 	if err != nil {
 		logrus.Error()
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		response := struct {
-			Message string `json:"message"`
-		}{
-			Message: "rename income category failed. reason : " + err.Error(),
-		}
-		return response, http.StatusInternalServerError, errInfo
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
+	// if no error
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
@@ -239,21 +270,48 @@ func (s *MasterUseCase) RenameIncomeCategory(ctx *gin.Context, id uuid.UUID, req
 }
 
 func (s *MasterUseCase) RenameExpenseCategory(ctx *gin.Context, id uuid.UUID, request *dtos.RenameCatRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	// account uuid format
+	var (
+		collections = make(map[string]string)
+	)
+
+	// account id uuid format
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	err := s.repo.RenameExpenseCategory(request.NewCategoryName, id, accountUUID)
+	// get all expense categories
+	dataAllCategories, err := s.repo.GetAllIExpenseCategories(accountUUID)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// if data not empty
+	if len(dataAllCategories) > 0 {
+		// mapping collections
+		for _, v := range dataAllCategories {
+			collections[v] = v
+		}
+	}
+
+	// check request with collections
+	_, exist := collections[request.NewCategoryName]
+	if exist {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "category name is identically with another category in same group. please another one",
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
+
+	// rename expense category
+	err = s.repo.RenameExpenseCategory(request.NewCategoryName, id, accountUUID)
 	if err != nil {
 		logrus.Error()
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		response := struct {
-			Message string `json:"message"`
-		}{
-			Message: "rename expense category failed. reason : " + err.Error(),
-		}
-		return response, http.StatusInternalServerError, errInfo
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
+	// if no error
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
@@ -267,22 +325,48 @@ func (s *MasterUseCase) RenameExpenseCategory(ctx *gin.Context, id uuid.UUID, re
 }
 
 func (s *MasterUseCase) RenameSubExpenseCategory(ctx *gin.Context, id uuid.UUID, request *dtos.RenameCatRequest) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var (
+		collections = make(map[string]string)
+	)
 
 	// account uuid format
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	err := s.repo.RenameSubExpenseCategory(request.NewCategoryName, id, accountUUID)
+	// get all sub expense categories
+	dataAllCategories, err := s.repo.GetAllISubExpenseCategories(accountUUID)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// if data not empty
+	if len(dataAllCategories) > 0 {
+		// mapping collections
+		for _, v := range dataAllCategories {
+			collections[v] = v
+		}
+	}
+
+	// check request with collections
+	_, exist := collections[request.NewCategoryName]
+	if exist {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "category name is identically with another category in same group. please another one",
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
+
+	// save sub expense category name
+	err = s.repo.RenameSubExpenseCategory(request.NewCategoryName, id, accountUUID)
 	if err != nil {
 		logrus.Error()
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		response := struct {
-			Message string `json:"message"`
-		}{
-			Message: "rename sub-expense category failed. reason : " + err.Error(),
-		}
-		return response, http.StatusInternalServerError, errInfo
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
+	// if no error
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
@@ -296,69 +380,181 @@ func (s *MasterUseCase) RenameSubExpenseCategory(ctx *gin.Context, id uuid.UUID,
 }
 
 func (s *MasterUseCase) AddIncomeCategory(ctx *gin.Context, request *dtos.AddCategory) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	var (
+		dataID      entities.AddEntities
+		err         error
+		collections = make(map[string]string)
+	)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return data, httpCode, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	data, err := s.repo.AddIncomeCategory(request.CategoryName, personalAccount.ID)
+	// get all income categories
+	dataAllCategories, err := s.repo.GetAllIncomeCategories(accountUUID)
 	if err != nil {
-		return data, http.StatusInternalServerError, errInfo
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
+	// if data empty
+	if len(dataAllCategories) == 0 {
+		// save new income category
+		dataID, err = s.repo.AddIncomeCategory(request.CategoryName, accountUUID)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
+		}
+	}
+
+	// if data not empty
+	if len(dataAllCategories) > 0 {
+		// mapping collections
+		for _, v := range dataAllCategories {
+			collections[v] = v
+		}
+	}
+
+	// check request with collections
+	_, exist := collections[request.CategoryName]
+	if exist {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "new category name already existed. try another one",
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
+
+	// save new income category
+	dataID, err = s.repo.AddIncomeCategory(request.CategoryName, accountUUID)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// if no error
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
 
-	return data, http.StatusOK, errInfo
+	return dataID, http.StatusOK, errInfo
 }
 
 func (s *MasterUseCase) AddExpenseCategory(ctx *gin.Context, request *dtos.AddCategory) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	var (
+		dataID      entities.AddEntities
+		err         error
+		collections = make(map[string]string)
+	)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return data, httpCode, errInfo
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	// get all income categories
+	dataAllCategories, err := s.repo.GetAllIExpenseCategories(accountUUID)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
-	data, err := s.repo.AddExpenseCategory(request.CategoryName, personalAccount.ID)
+	// if data empty
+	if len(dataAllCategories) == 0 {
+		// save new expense category
+		dataID, err = s.repo.AddExpenseCategory(request.CategoryName, accountUUID)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
+		}
+	}
+
+	// if data not empty
+	if len(dataAllCategories) > 0 {
+		// mapping collections
+		for _, v := range dataAllCategories {
+			collections[v] = v
+		}
+	}
+
+	// check request with collections
+	_, exist := collections[request.CategoryName]
+	if exist {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "new category name already existed. try another one",
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
+
+	// save new outcome category
+	dataID, err = s.repo.AddExpenseCategory(request.CategoryName, accountUUID)
 	if err != nil {
 		return data, http.StatusInternalServerError, errInfo
 	}
 
+	// if no error
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
 
-	return data, http.StatusOK, errInfo
+	return dataID, http.StatusOK, errInfo
 }
 
 func (s *MasterUseCase) AddSubExpenseCategory(ctx *gin.Context, request *dtos.AddCategory) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	var (
+		dataID      entities.AddEntities
+		err         error
+		collections = make(map[string]string)
+	)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
-		return data, httpCode, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	data, err := s.repo.AddSubExpenseCategory(request.CategoryName, request.ExpenseID, personalAccount.ID)
+	// get all income categories
+	dataAllCategories, err := s.repo.GetAllISubExpenseCategories(accountUUID)
 	if err != nil {
-		return data, http.StatusInternalServerError, errInfo
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
+	// if data empty
+	if len(dataAllCategories) == 0 {
+		// save new sub expense category
+		dataID, err = s.repo.AddSubExpenseCategory(request.CategoryName, request.ExpenseID, accountUUID)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
+		}
+	}
+
+	// if data not empty
+	if len(dataAllCategories) > 0 {
+		// mapping collections
+		for _, v := range dataAllCategories {
+			collections[v] = v
+		}
+	}
+
+	// check request with collections
+	_, exist := collections[request.CategoryName]
+	if exist {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "new category name already existed. try another one",
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
+
+	// save sub category expense category
+	dataID, err = s.repo.AddSubExpenseCategory(request.CategoryName, request.ExpenseID, accountUUID)
+	if err != nil {
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// if no error
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
 
-	return data, http.StatusOK, errInfo
+	return dataID, http.StatusOK, errInfo
 }
 
 func (s *MasterUseCase) Price(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {

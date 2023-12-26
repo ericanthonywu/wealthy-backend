@@ -484,7 +484,7 @@ func (s *StatisticUseCase) Trend(ctx *gin.Context, month, year string) (response
 		}{
 			Message: "no data for trends statistic",
 		}
-		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
 	looping = 1
