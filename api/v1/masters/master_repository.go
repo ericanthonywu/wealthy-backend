@@ -36,6 +36,9 @@ type (
 		AddSubExpenseCategory(newCategory string, ExpenseID uuid.UUID, IDPersonal uuid.UUID) (data entities.AddEntities, err error)
 		Price() (data []entities.Price)
 		UserSubscriptionInfo(IDAccount uuid.UUID) (data entities.SubscriptionInfo, err error)
+		GetAllIncomeCategories(accountUUID uuid.UUID) (data []string, err error)
+		GetAllIExpenseCategories(accountUUID uuid.UUID) (data []string, err error)
+		GetAllISubExpenseCategories(accountUUID uuid.UUID) (data []string, err error)
 	}
 )
 
@@ -220,6 +223,42 @@ INNER JOIN tbl_subscriptions_transaction tst ON tst.id = tus.id_subscriptions_tr
 WHERE tus.id_personal_accounts = ?
 ORDER BY tus.period_expired DESC LIMIT 1`, IDAccount).Scan(&data).Error; err != nil {
 		return entities.SubscriptionInfo{}, err
+	}
+	return data, nil
+}
+
+func (r *MasterRepository) GetAllIncomeCategories(accountUUID uuid.UUID) (data []string, err error) {
+	if err := r.db.Table("tbl_master_income_categories_editable").
+		Distinct("income_types").
+		Where("id_personal_accounts=?", accountUUID).
+		Where("active=?", true).
+		Pluck("income_types", &data).Error; err != nil {
+		logrus.Error(err.Error())
+		return []string{}, err
+	}
+	return data, nil
+}
+
+func (r *MasterRepository) GetAllIExpenseCategories(accountUUID uuid.UUID) (data []string, err error) {
+	if err := r.db.Table("tbl_master_expense_categories_editable").
+		Distinct("expense_types").
+		Where("id_personal_accounts=?", accountUUID).
+		Where("active=?", true).
+		Pluck("expense_types", &data).Error; err != nil {
+		logrus.Error(err.Error())
+		return []string{}, err
+	}
+	return data, nil
+}
+
+func (r *MasterRepository) GetAllISubExpenseCategories(accountUUID uuid.UUID) (data []string, err error) {
+	if err := r.db.Table("tbl_master_expense_subcategories_editable").
+		Distinct("subcategories").
+		Where("id_personal_accounts=?", accountUUID).
+		Where("active=?", true).
+		Pluck("subcategories", &data).Error; err != nil {
+		logrus.Error(err.Error())
+		return []string{}, err
 	}
 	return data, nil
 }

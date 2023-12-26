@@ -96,6 +96,18 @@ type (
 	SubscriptionInfo struct {
 		ID uuid.UUID `gorm:"column:subscription_id"`
 	}
+
+	IncomeCategory struct {
+		CategoryName string `gorm:"income_types"`
+	}
+
+	ExpenseCategory struct {
+		CategoryName string `gorm:"expense_types"`
+	}
+
+	SubExpenseCategory struct {
+		CategoryName string `gorm:"expense_types"`
+	}
 )
 
 func (TransactionType) TableName() string {
@@ -140,4 +152,16 @@ func (SubExpenseCategories) TableName() string {
 
 func (Price) TableName() string {
 	return "tbl_master_price"
+}
+
+func (IncomeCategory) TableName() string {
+	return "tbl_master_income_categories_editable"
+}
+
+func (ExpenseCategory) TableName() string {
+	return "tbl_master_income_categories_editable"
+}
+
+func (SubExpenseCategory) TableName() string {
+	return "tbl_master_expense_subcategories_editable"
 }
