@@ -264,6 +264,9 @@ func (s *AccountUseCase) GetProfile(ctx *gin.Context) (response interface{}, htt
 	dtoResponse.AccountCustomer.Username = dataProfile.Username
 	dtoResponse.AccountCustomer.Email = dataProfile.Email
 
+	// account type, override in beta promotion session
+	accountType := ctx.MustGet("accountType").(string)
+
 	if dataProfile.IDGender == uuid.Nil {
 		dtoResponse.AccountGender.ID = ""
 	} else {
@@ -271,7 +274,7 @@ func (s *AccountUseCase) GetProfile(ctx *gin.Context) (response interface{}, htt
 	}
 	dtoResponse.AccountGender.Value = dataProfile.Gender
 
-	dtoResponse.AccountDetail.AccountType = dataProfile.AccountType
+	dtoResponse.AccountDetail.AccountType = accountType
 	dtoResponse.AccountDetail.UserRoles = dataProfile.UserRoles
 
 	if dataProfile.ImagePath == "" {
