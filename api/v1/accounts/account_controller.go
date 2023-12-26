@@ -35,6 +35,7 @@ type (
 		ChangePasswordForgot(ctx *gin.Context)
 		GroupSharingAccepted(ctx *gin.Context)
 		GroupSharingPending(ctx *gin.Context)
+		DeleteAccount(ctx *gin.Context)
 	}
 )
 
@@ -565,6 +566,12 @@ func (c *AccountController) GroupSharingPending(ctx *gin.Context) {
 	}
 
 	data, httpCode, errInfo := c.useCase.GroupSharingPending(ctx)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *AccountController) DeleteAccount(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.DeleteAccount(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
