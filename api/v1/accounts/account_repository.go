@@ -145,7 +145,7 @@ INNER JOIN tbl_master_roles mr ON mr.id = a.id_master_roles WHERE email= ? AND a
 }
 
 func (r *AccountRepository) GetProfile(IDPersonal uuid.UUID) (data entities.AccountProfile) {
-	if err := r.db.Raw(`SELECT tmg.id as id_gender, pa.file_name ,pa.image_path, pa.id,pa.username, pa.name, pa.dob as date_of_birth, pa.refer_code, pa.email, tmat.account_type, tmg.gender_name as gender, tmr.roles as user_roles, pa.lat, pa.long
+	if err := r.db.Raw(`SELECT tmg.id as id_gender, pa.file_name ,pa.image_path, pa.id,pa.username, pa.name, pa.dob as date_of_birth, pa.refer_code, pa.email, tmat.account_type, tmg.gender_name as gender, tmr.roles as user_roles, pa.latitude, pa.longitude
 FROM tbl_personal_accounts pa
 INNER JOIN tbl_master_account_types tmat ON tmat.id = pa.id_master_account_types
 LEFT JOIN tbl_master_genders tmg ON tmg.id = pa.id_master_gender
