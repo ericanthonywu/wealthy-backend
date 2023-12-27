@@ -546,6 +546,15 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 					},
 					TransactionNote: v.TransactionNote,
 				})
+
+				if k == length-1 {
+					detailsMonthly = append(detailsMonthly, dtos.TransactionIncomeSpendingInvestmentDetail{
+						TransactionDate:    dateTempPrev,
+						TransactionDetails: deepDetailsMonthly,
+					})
+
+					dtoResponse.Detail = append(dtoResponse.Detail, detailsMonthly...)
+				}
 			}
 
 			// if previous is different current
