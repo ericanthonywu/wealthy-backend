@@ -59,6 +59,10 @@ type (
 		Name string `gorm:"column:name"`
 		Type string `gorm:"column:account_type"`
 	}
+
+	Commission struct {
+		Commission float64 `gorm:"column:total_comission"`
+	}
 )
 
 func (WithdrawEntities) TableName() string {

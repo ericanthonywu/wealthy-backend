@@ -7,4 +7,5 @@ type PersonalAccountEntities struct {
 	IDMasterAccountTypes uuid.UUID `gorm:"column:id_master_account_types"`
 	AccountTypes         string    `gorm:"column:account_type"`
 	TotalWallets         int64     `gorm:"column:total_wallet"`
+	ReferCode            string    `gorm:"column:refer_code"`
 }

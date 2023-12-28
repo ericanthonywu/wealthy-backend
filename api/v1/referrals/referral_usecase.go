@@ -697,6 +697,27 @@ func (s *ReferralUseCase) Withdraw(ctx *gin.Context, request dtos.WithdrawReques
 	// get id personal account from token
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
+	// get referral code
+	refCode := ctx.MustGet("refCode").(string)
+
+	// get commision
+	dataCommission, err := s.repo.GetCommission(refCode)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// check amount
+	if float64(request.WithdrawAmount) > dataCommission.Commission {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "withdraw amount must less than or equal with total commission",
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
+
 	// determine trx id
 	trxID := uuid.New()
 
@@ -712,7 +733,7 @@ func (s *ReferralUseCase) Withdraw(ctx *gin.Context, request dtos.WithdrawReques
 	}
 
 	// save withdraw request
-	_, err := s.repo.SaveWithdraws(&model)
+	_, err = s.repo.SaveWithdraws(&model)
 	if err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		return struct{}{}, http.StatusInternalServerError, errInfo

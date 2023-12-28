@@ -21,6 +21,7 @@ type (
 		SaveWithdraws(model *entities.WithdrawEntities) (id uuid.UUID, err error)
 		GetTierReferralCode(referralCode string) (data []entities.GetReferralInfo, err error)
 		GetAccountInfoFromRefCode(referralCode string) (data entities.GetAccountInfo, err error)
+		GetCommission(refCode string) (data entities.Commission, err error)
 	}
 )
 
@@ -111,6 +112,14 @@ func (r *ReferralRepository) GetAccountInfoFromRefCode(referralCode string) (dat
 		Find(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.GetAccountInfo{}, err
+	}
+	return data, nil
+}
+
+func (r *ReferralRepository) GetCommission(refCode string) (data entities.Commission, err error) {
+	if err := r.db.Raw(`SELECT total_comission FROM tbl_user_rewards WHERE ref_code=?`).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.Commission{}, err
 	}
 	return data, nil
 }
