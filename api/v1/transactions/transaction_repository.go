@@ -70,6 +70,9 @@ type (
 		CountExpenseTransaction(accountUUID uuid.UUID) (data entities.CountExpenseTrxMonthly, err error)
 
 		LastBalance(accountUUID, IDWalletUUID uuid.UUID) (data entities.LastBalance, err error)
+
+		DataTotalIncome(accountUUID uuid.UUID) (data entities.TotalIncomeCashflow, err error)
+		DataTotalExpense(accountUUID uuid.UUID) (data entities.TotalExpenseCashflow, err error)
 	}
 )
 
@@ -809,6 +812,32 @@ func (r *TransactionRepository) LastBalance(accountUUID, IDWallet uuid.UUID) (da
 		Order("created_at desc").
 		First(&data).Error; err != nil {
 		return entities.LastBalance{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) DataTotalIncome(accountUUID uuid.UUID) (data entities.TotalIncomeCashflow, err error) {
+	if err := r.db.Raw(`SELECT sum(amount) as total_income
+FROM tbl_transactions tt
+WHERE to_char(tt.date_time_transaction::DATE, 'MM')::numeric = EXTRACT(MONTH FROM CURRENT_DATE)
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY')::numeric = EXTRACT(YEAR FROM CURRENT_DATE)
+  AND tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000'
+  AND tt.id_personal_account = ?`, accountUUID).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.TotalIncomeCashflow{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) DataTotalExpense(accountUUID uuid.UUID) (data entities.TotalExpenseCashflow, err error) {
+	if err := r.db.Raw(`SELECT sum(amount)  as total_expense
+FROM tbl_transactions tt
+WHERE to_char(tt.date_time_transaction::DATE, 'MM')::numeric = EXTRACT(MONTH FROM CURRENT_DATE)
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY')::numeric = EXTRACT(YEAR FROM CURRENT_DATE)
+  AND tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'
+  AND tt.id_personal_account = ?`, accountUUID).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.TotalExpenseCashflow{}, err
 	}
 	return data, nil
 }

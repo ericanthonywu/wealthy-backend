@@ -142,8 +142,8 @@ type (
 		CountIncome         int64   `json:"count_income"`
 		CountExpense        int64   `json:"count_expense"`
 		CashFlow            float64 `json:"cashflow"`
-		TotalAverageIncome  float64 `json:"total_average_income"`
-		TotalAverageExpense float64 `json:"total_average_expense"`
+		TotalAverageIncome  float64 `json:"total_income"`
+		TotalAverageExpense float64 `json:"total_average"`
 		AverageDay          struct {
 			Income  float64 `json:"income"`
 			Expense float64 `json:"expense"`

@@ -204,6 +204,14 @@ type (
 		CountExpense int64 `gorm:"column:count_expense"`
 	}
 
+	TotalIncomeCashflow struct {
+		TotalIncome float64 `gorm:"column:total_income"`
+	}
+
+	TotalExpenseCashflow struct {
+		TotalExpense float64 `gorm:"column:total_expense"`
+	}
+
 	LastBalance struct {
 		ID                            uuid.UUID `gorm:"column:id"`
 		Date                          string    `gorm:"column:date_time_transaction"`
