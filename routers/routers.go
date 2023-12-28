@@ -108,7 +108,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				accountPasswordGroup.POST("/change", tokenSignature(), accountType(), account.ChangePassword)
 			}
 
-			accountReferral := accountGroup.Group("/referrals", tokenSignature(), accountType())
+			accountReferral := accountGroup.Group("/referrals", accountType())
 			{
 				accountReferral.POST("/validate", account.ValidateRefCode)
 			}
