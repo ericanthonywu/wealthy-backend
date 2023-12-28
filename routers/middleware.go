@@ -92,6 +92,7 @@ func accountType() gin.HandlerFunc {
 
 		c.Set("accountType", personalAccount.AccountTypes)
 		c.Set("accountID", personalAccount.ID)
+		c.Set("refCode", personalAccount.ReferCode)
 		c.Next()
 	}
 }
