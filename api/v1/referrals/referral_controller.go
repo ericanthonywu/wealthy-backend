@@ -67,11 +67,11 @@ func (c *ReferralController) Withdraw(ctx *gin.Context) {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "account name empty value")
 	}
 
-	if request.AccountNumber <= 0 {
+	if request.AccountNumber == "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "account number must greater than 0")
 	}
 
-	if request.WithdrawAmount <= 0 {
+	if request.WithdrawAmount == "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "withdraw amount must greater than 0")
 	}
 

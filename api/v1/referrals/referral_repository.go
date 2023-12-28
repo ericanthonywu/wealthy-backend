@@ -117,7 +117,7 @@ func (r *ReferralRepository) GetAccountInfoFromRefCode(referralCode string) (dat
 }
 
 func (r *ReferralRepository) GetCommission(refCode string) (data entities.Commission, err error) {
-	if err := r.db.Raw(`SELECT total_comission FROM tbl_user_rewards WHERE ref_code=?`).Scan(&data).Error; err != nil {
+	if err := r.db.Raw(`SELECT total_comission FROM tbl_user_rewards WHERE ref_code=?`, refCode).Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.Commission{}, err
 	}
