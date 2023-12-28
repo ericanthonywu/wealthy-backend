@@ -50,7 +50,7 @@ func TotalDaysBetweenDate(dateOrigin string) int {
 	}
 
 	// Get the current date
-	now := time.Now().UTC()
+	now := time.Now()
 
 	truncatedNow := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	truncatedDate := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
