@@ -26,9 +26,9 @@ type (
 	}
 
 	WithdrawRequest struct {
-		WithdrawAmount int    `json:"withdraw_amount"`
+		WithdrawAmount string `json:"withdraw_amount"`
 		BankIssue      string `json:"bank_issue"`
-		AccountNumber  int    `json:"account_number"`
+		AccountNumber  string `json:"account_number"`
 		AccountName    string `json:"account_name"`
 	}
 )
