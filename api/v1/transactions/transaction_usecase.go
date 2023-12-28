@@ -1058,14 +1058,28 @@ func (s *TransactionUseCase) CashFlow(ctx *gin.Context) (response interface{}, h
 		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
+	dataTotalIncome, err := s.repo.DataTotalIncome(accountUUID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	dataTotalExpense, err := s.repo.DataTotalExpense(accountUUID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
 	dtoResponse.CountIncome = dataCountExpense.CountExpense
 	dtoResponse.CountExpense = dataCountIncome.CountIncome
 	dtoResponse.AverageDay.Income = dataIncomeEachDay.IncomeAverage
 	dtoResponse.AverageDay.Expense = dataExpenseEachDay.ExpenseAverage
 	dtoResponse.AverageMonth.Income = dataIncomeMonthly.IncomeAverage
 	dtoResponse.AverageMonth.Expense = dataExpenseMonthly.ExpenseAverage
-	dtoResponse.TotalAverageIncome = dataIncomeEachDay.IncomeAverage + dataIncomeMonthly.IncomeAverage
-	dtoResponse.TotalAverageExpense = dataExpenseEachDay.ExpenseAverage + dataExpenseMonthly.ExpenseAverage
+	dtoResponse.TotalAverageIncome = dataTotalIncome.TotalIncome
+	dtoResponse.TotalAverageExpense = dataTotalExpense.TotalExpense
 	dtoResponse.CashFlow = dtoResponse.TotalAverageIncome - dtoResponse.TotalAverageExpense
 
 	if len(errInfo) == 0 {
