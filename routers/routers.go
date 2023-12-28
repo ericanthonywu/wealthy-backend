@@ -32,6 +32,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 				typeGroup.GET("/wallet", master.WalletType)
 				typeGroup.GET("/invest", master.Invest)
 				typeGroup.GET("/broker", master.Broker)
+				typeGroup.GET("/stock-code", master.StockCode)
 			}
 
 			categoriesGroup := masterGroup.Group("/categories")
