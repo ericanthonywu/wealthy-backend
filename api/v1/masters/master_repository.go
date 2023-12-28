@@ -20,6 +20,7 @@ type (
 		WalletType() (data []entities.WalletType)
 		InvestType() (data []entities.InvestType)
 		Broker() (data []entities.Broker)
+		StockCode() (data []entities.StockCode)
 		TransactionPriority() (data []entities.TransactionPriority)
 		Gender() (data []entities.Gender)
 		SubExpenseCategory(expenseID uuid.UUID) (data []entities.SubExpenseCategories)
@@ -78,6 +79,13 @@ func (r *MasterRepository) InvestType() (data []entities.InvestType) {
 
 func (r *MasterRepository) Broker() (data []entities.Broker) {
 	r.db.Where("active=?", true).Find(&data)
+	return data
+}
+
+func (r *MasterRepository) StockCode() (data []entities.StockCode) {
+	if err := r.db.Find(&data).Error; err != nil {
+		logrus.Error(err.Error())
+	}
 	return data
 }
 

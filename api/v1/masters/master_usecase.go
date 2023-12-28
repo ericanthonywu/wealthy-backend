@@ -26,6 +26,7 @@ type (
 		WalletType() (data interface{})
 		InvestType() (data interface{})
 		Broker() (data interface{})
+		StockCode() (data interface{})
 		TransactionPriority() (data interface{})
 		Gender() (data interface{})
 		Price(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
@@ -95,6 +96,10 @@ func (s *MasterUseCase) InvestType() (data interface{}) {
 
 func (s *MasterUseCase) Broker() (data interface{}) {
 	return s.repo.Broker()
+}
+
+func (s *MasterUseCase) StockCode() (data interface{}) {
+	return s.repo.StockCode()
 }
 
 func (s *MasterUseCase) TransactionPriority() (data interface{}) {
