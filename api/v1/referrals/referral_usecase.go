@@ -340,12 +340,21 @@ func (s *ReferralUseCase) List(ctx *gin.Context) (response interface{}, httpCode
 		}
 	}
 
-	dtoResponse.Tier = tierInfo
+	if len(tierInfo) == 0 {
+		dtoResponse.Tier = []dtos.TierDetailWithCustomer{}
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no child for referral",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+	}
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
 
+	dtoResponse.Tier = tierInfo
 	return dtoResponse, http.StatusOK, errInfo
 }
 
