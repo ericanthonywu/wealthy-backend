@@ -73,6 +73,9 @@ type (
 
 		DataTotalIncome(accountUUID uuid.UUID) (data entities.TotalIncomeCashflow, err error)
 		DataTotalExpense(accountUUID uuid.UUID) (data entities.TotalExpenseCashflow, err error)
+
+		WalletNonInvestment(accountUUID uuid.UUID) (data []entities.WalletEntity, err error)
+		WalletInvestment(accountUUID uuid.UUID) (data []entities.WalletEntity, err error)
 	}
 )
 
@@ -838,6 +841,23 @@ WHERE to_char(tt.date_time_transaction::DATE, 'MM')::numeric = EXTRACT(MONTH FRO
   AND tt.id_personal_account = ?`, accountUUID).Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.TotalExpenseCashflow{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) WalletNonInvestment(accountUUID uuid.UUID) (data []entities.WalletEntity, err error) {
+	if err := r.db.Raw(`SELECT tw.id, tmwt.wallet_type, tw.wallet_name, tw.id_master_wallet_types FROM tbl_wallets tw INNER JOIN tbl_master_wallet_types tmwt ON tmwt.id = tw.id_master_wallet_types
+WHERE tw.id_account = ? AND tmwt.wallet_type<>'INVESTMENT'`, accountUUID).Scan(&data).Error; err != nil {
+		return []entities.WalletEntity{}, err
+	}
+
+	return data, nil
+}
+
+func (r *TransactionRepository) WalletInvestment(accountUUID uuid.UUID) (data []entities.WalletEntity, err error) {
+	if err := r.db.Raw(`SELECT tw.id, tmwt.wallet_type, tw.wallet_name, tw.id_master_wallet_types FROM tbl_wallets tw INNER JOIN tbl_master_wallet_types tmwt ON tmwt.id = tw.id_master_wallet_types
+WHERE tw.id_account = ? AND tmwt.wallet_type = 'INVESTMENT'`, accountUUID).Scan(&data).Error; err != nil {
+		return []entities.WalletEntity{}, err
 	}
 	return data, nil
 }
