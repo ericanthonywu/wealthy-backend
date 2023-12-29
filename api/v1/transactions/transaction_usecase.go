@@ -228,12 +228,45 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 
 func (s *TransactionUseCase) AddInvestmentTransaction(ctx *gin.Context, request *dtos.TransactionRequestInvestment) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		trxID uuid.UUID
-		err   error
+		trxID             uuid.UUID
+		err               error
+		collectionsWallet = make(map[string]bool)
 	)
 
 	// account uuid
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	// validate wallet type
+	dataWalletType, err := s.repo.WalletInvestment(accountUUID)
+	if err != nil {
+		logrus.Error()
+	}
+
+	if len(dataWalletType) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no wallet type for investment. please create new one",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+	}
+
+	// if there is data , store to map
+	if len(dataWalletType) > 0 {
+		for _, v := range dataWalletType {
+			collectionsWallet[v.ID.String()] = true
+		}
+	}
+
+	_, exists := collectionsWallet[request.IDWallet]
+	if !exists {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no wallet type for investment. please create new one",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+	}
 
 	// save investment transaction
 	trxID, err = s.saveInvestTransaction(accountUUID, request)
