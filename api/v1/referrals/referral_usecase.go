@@ -347,7 +347,7 @@ func (s *ReferralUseCase) List(ctx *gin.Context) (response interface{}, httpCode
 		}{
 			Message: "no child for referral",
 		}
-		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+		return resp, http.StatusOK, []errorsinfo.Errors{}
 	}
 
 	if len(errInfo) == 0 {
