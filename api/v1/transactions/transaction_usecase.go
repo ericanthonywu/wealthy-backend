@@ -32,6 +32,8 @@ type (
 		ByNotes(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Suggestion(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		CashFlow(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		WalletNonInvestment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		WalletInvestment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		saveInvestTransaction(accountID uuid.UUID, request *dtos.TransactionRequestInvestment) (id uuid.UUID, err error)
 		investmentCalculation(accountID uuid.UUID) (err error)
 	}
@@ -1531,4 +1533,85 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 	}
 
 	return nil
+}
+
+func (s *TransactionUseCase) WalletNonInvestment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var dtoResponse []dtos.WalletListResponse
+
+	// accountUUID
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	// fetch data wallet
+	dataWallet, err := s.repo.WalletNonInvestment(accountUUID)
+	if err != nil {
+		logrus.Error()
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// if data wallet
+	if len(dataWallet) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no data for wallet non investment",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+	}
+
+	// if data wallet exist
+	if len(dataWallet) > 0 {
+		for _, v := range dataWallet {
+			dtoResponse = append(dtoResponse, dtos.WalletListResponse{
+				IDAccount: accountUUID,
+				WalletDetails: dtos.WalletDetails{
+					WalletID:           v.ID,
+					WalletType:         v.WalletType,
+					WalletName:         v.WalletName,
+					IDMasterWalletType: v.IDMasterWalletType,
+				},
+			})
+		}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
+}
+
+func (s *TransactionUseCase) WalletInvestment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var dtoResponse []dtos.WalletListResponse
+
+	// accountUUID
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	dataWallet, err := s.repo.WalletInvestment(accountUUID)
+	if err != nil {
+		logrus.Error(err)
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	if len(dataWallet) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no data for wallet investment",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+	}
+
+	if len(dataWallet) > 0 {
+		for _, v := range dataWallet {
+			dtoResponse = append(dtoResponse, dtos.WalletListResponse{
+				IDAccount: accountUUID,
+				WalletDetails: dtos.WalletDetails{
+					WalletID:           v.ID,
+					WalletType:         v.WalletType,
+					WalletName:         v.WalletName,
+					IDMasterWalletType: v.IDMasterWalletType,
+				},
+			})
+		}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
 }

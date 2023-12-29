@@ -202,6 +202,12 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			{
 				suggestionGroup.GET("/notes", transaction.Suggestion)
 			}
+
+			walletGroup := transactionGroup.Group("/wallets")
+			{
+				walletGroup.GET("/non-investment", transaction.WalletNonInvestment)
+				walletGroup.GET("/investment", transaction.WalletInvestment)
+			}
 		}
 
 		investmentGroup := v1group.Group("/investments", tokenSignature(), accountType(), betaVersion())

@@ -153,4 +153,16 @@ type (
 			Expense float64 `json:"expense"`
 		} `json:"average_month"`
 	}
+
+	WalletListResponse struct {
+		IDAccount     uuid.UUID     `json:"id_personal_accounts"`
+		WalletDetails WalletDetails `json:"details"`
+	}
+
+	WalletDetails struct {
+		WalletID           uuid.UUID `json:"wallet_id"`
+		WalletType         string    `json:"wallet_type"`
+		WalletName         string    `json:"wallet_name"`
+		IDMasterWalletType uuid.UUID `json:"id_master_wallet_types"`
+	}
 )
