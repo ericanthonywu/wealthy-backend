@@ -563,7 +563,7 @@ func (s *StatisticUseCase) ExpenseDetail(ctx *gin.Context, month, year, email st
 		}{
 			Message: "no data for expense detail statistic",
 		}
-		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+		return resp, http.StatusOK, []errorsinfo.Errors{}
 	}
 
 	for _, v := range dataExpenseDetail {
