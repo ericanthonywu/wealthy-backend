@@ -1,7 +1,7 @@
 package referralcode
 
 import (
-	"github.com/semicolon-indonesia/wealthy-backend/utils/utilities"
+	"github.com/wealthy-app/wealthy-backend/utils/utilities"
 	"math/rand"
 	"time"
 )
