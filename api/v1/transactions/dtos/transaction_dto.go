@@ -30,7 +30,6 @@ type (
 		SellBuy                       int    `json:"sellbuy,omitempty"`
 		IDWallet                      string `json:"id_wallets,omitempty"`
 		IDMasterInvest                string `json:"id_master_invest,omitempty"`
-		IDMasterBroker                string `json:"id_master_broker,omitempty"`
 		IDMasterTransactionPriorities string `json:"id_master_transaction_priorities,omitempty"`
 		IDMasterTransactionTypes      string `json:"id_master_transaction_types,omitempty"`
 	}

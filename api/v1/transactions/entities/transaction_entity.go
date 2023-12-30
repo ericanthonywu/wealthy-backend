@@ -16,7 +16,6 @@ type (
 		IDMasterExpenseCategories     uuid.UUID `gorm:"column:id_master_expense_categories"`
 		IDMasterExpenseSubCategories  uuid.UUID `gorm:"column:id_master_expense_subcategories"`
 		IDMasterInvest                uuid.UUID `gorm:"column:id_master_invest"`
-		IDMasterBroker                uuid.UUID `gorm:"column:id_master_broker"`
 		IDMasterReksanadaTypes        uuid.UUID `gorm:"column:id_master_reksadana_types"`
 		IDMasterTransactionPriorities uuid.UUID `gorm:"column:id_master_transaction_priorities"`
 		IDMasterTransactionTypes      uuid.UUID `gorm:"column:id_master_transaction_types"`

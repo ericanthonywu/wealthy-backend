@@ -1208,11 +1208,6 @@ func (s *TransactionUseCase) saveInvestTransaction(accountID uuid.UUID, request 
 		logrus.Error(err.Error())
 	}
 
-	IDMasterBrokerUUID, err := uuid.Parse(request.IDMasterBroker)
-	if err != nil {
-		logrus.Error(err.Error())
-	}
-
 	IDMasterInvestUUID, err := uuid.Parse(request.IDMasterInvest)
 	if err != nil {
 		logrus.Error(err.Error())
@@ -1231,7 +1226,6 @@ func (s *TransactionUseCase) saveInvestTransaction(accountID uuid.UUID, request 
 		Amount:                   float64(request.Price),
 		IDPersonalAccount:        accountID,
 		IDWallet:                 IDWalletUUID,
-		IDMasterBroker:           IDMasterBrokerUUID,
 		IDMasterInvest:           IDMasterInvestUUID,
 		IDMasterTransactionTypes: IDMasterTrxTypesUUID,
 	}
