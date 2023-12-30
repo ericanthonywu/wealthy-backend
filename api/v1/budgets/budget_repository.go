@@ -41,7 +41,7 @@ func (r *BudgetRepository) SubCategoryBudget(IDPersonal uuid.UUID, month, year s
        tmec.expense_types as category_name,
        tmes.id            as sub_category_id,
        tmes.subcategories as sub_category_name,
-       (SELECT b.amount
+       (SELECT ROUND(b.amount)::INT
         FROM tbl_budgets b
         WHERE b.id_master_subcategories = tmes.id
           AND b.id_personal_accounts = ?
