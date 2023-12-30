@@ -15,6 +15,7 @@ type (
 		FeeBuy          float64 `gorm:"column:fee_buy"`
 		FeeSell         float64 `gorm:"column:fee_sell"`
 		DateTransaction string  `gorm:"column:date_transaction"`
+		WalletName      string  `gorm:"column:wallet_name"`
 	}
 
 	InvestmentDataHelper struct {
@@ -46,6 +47,8 @@ type (
 		FeeBuy            float64   `gorm:"column:fee_buy"`
 		NetBuy            float64   `gorm:"column:net_buy"`
 		BrokerName        string    `gorm:"column:broker_name"`
+		WalletID          uuid.UUID `gorm:"column:wallet_id"`
+		WalletName        string    `gorm:"column:wallet_name"`
 	}
 
 	BrokerInfo struct {

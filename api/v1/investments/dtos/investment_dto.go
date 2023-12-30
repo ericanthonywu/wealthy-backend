@@ -9,7 +9,7 @@ type (
 	}
 
 	InvestmentDetails struct {
-		BrokerName          string           `json:"broker_name"`
+		BrokerName          string           `json:"wallet_name"`
 		UnrealizedPotential float64          `json:"unrealized_potential"`
 		Info                []InvestmentInfo `json:"info"`
 	}
