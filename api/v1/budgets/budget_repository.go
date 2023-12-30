@@ -157,9 +157,16 @@ AND to_char(b.created_at, 'YYYY') = EXTRACT(YEAR FROM current_timestamp)::text`,
 }
 
 func (r *BudgetRepository) PersonalBudget(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalBudget, err error) {
-	if err := r.db.Raw(`SELECT tmec.id, tmec.expense_types as category, (SELECT b.amount FROM tbl_budgets b
-                        WHERE b.id_master_categories = tmec.id AND b.id_personal_accounts=?
-                          AND to_char(b.created_at, 'MM') = ? AND to_char(b.created_at, 'YYYY') = ?) as budget FROM tbl_master_expense_categories tmec WHERE tmec.active=true`, IDPersonal, month, year).Scan(&data).Error; err != nil {
+	if err := r.db.Raw(`SELECT tmec.id,
+       tmec.expense_types                             as category,
+       (SELECT b.amount
+        FROM tbl_budgets b
+        WHERE b.id_master_categories = tmec.id
+          AND b.id_personal_accounts = ?
+          AND to_char(b.created_at, 'MM') = ?
+          AND to_char(b.created_at, 'YYYY') = ?) as budget
+FROM tbl_master_expense_categories_editable tmec
+WHERE tmec.active = true AND tmec.id_personal_accounts=?`, IDPersonal, month, year, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.PersonalBudget{}, err
 	}
 	return data, nil

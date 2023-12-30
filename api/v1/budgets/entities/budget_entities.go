@@ -87,7 +87,7 @@ type (
 	PersonalBudget struct {
 		ID          uuid.UUID `gorm:"column:id"`
 		Category    string    `gorm:"column:category"`
-		BudgetLimit int       `gorm:"column:budget"`
+		BudgetLimit float64   `gorm:"column:budget"`
 	}
 
 	PersonalTransaction struct {
