@@ -504,7 +504,7 @@ FROM tbl_transactions tt
                    ON tt.id_master_expense_categories = tmec.id
          LEFT JOIN tbl_master_income_categories tmic
                    ON tt.id_master_income_categories = tmic.id
-         LEFT JOIN tbl_transaction_details td ON tt.id = td.id_transactions
+         INNER JOIN tbl_transaction_details td ON tt.id = td.id_transactions
          INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
 WHERE to_char(tt.date_time_transaction::DATE, 'MM') = ?
   AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
