@@ -190,7 +190,8 @@ func (r *MasterRepository) RenameSubExpenseCategory(newName string, id, IDPerson
 func (r *MasterRepository) AddIncomeCategory(newCategory string, IDPersonal uuid.UUID) (data entities.AddEntities, err error) {
 	id, _ := uuid.NewUUID()
 
-	if err = r.db.Raw(`INSERT INTO tbl_master_income_categories_editable (id, income_types, active, id_personal_accounts) VALUES (?,?, ?, ?) RETURNING id`, id, newCategory, true, IDPersonal).Scan(&data).Error; err != nil {
+	icon := "https://wealthy.sirv.com/icons/other_income.png"
+	if err = r.db.Raw(`INSERT INTO tbl_master_income_categories_editable (id, income_types, active, id_personal_accounts, image_path) VALUES (?,?, ?, ?,?) RETURNING id`, id, newCategory, true, IDPersonal, icon).Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.AddEntities{}, err
 	}
@@ -200,7 +201,8 @@ func (r *MasterRepository) AddIncomeCategory(newCategory string, IDPersonal uuid
 func (r *MasterRepository) AddExpenseCategory(newCategory string, IDPersonal uuid.UUID) (data entities.AddEntities, err error) {
 	id, _ := uuid.NewUUID()
 
-	if err = r.db.Raw(`INSERT INTO tbl_master_expense_categories_editable (id,expense_types,active, id_personal_accounts) VALUES (?,?, ?, ?) RETURNING id`, id, newCategory, true, IDPersonal).Scan(&data).Error; err != nil {
+	icon := "https://wealthy.sirv.com/icons/other_income.png"
+	if err = r.db.Raw(`INSERT INTO tbl_master_expense_categories_editable (id,expense_types,active, id_personal_accounts, image_path) VALUES (?,?, ?, ?,?) RETURNING id`, id, newCategory, true, IDPersonal, icon).Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.AddEntities{}, err
 	}
