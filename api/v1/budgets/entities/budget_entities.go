@@ -13,6 +13,7 @@ type (
 	SubCategoryBudget struct {
 		CategoryID      uuid.UUID `gorm:"column:category_id"`
 		CategoryName    string    `gorm:"column:category_name"`
+		ImagePath       string    `gorm:"column:image_path"`
 		SubCategoryID   uuid.UUID `gorm:"column:sub_category_id"`
 		SubCategoryName string    `gorm:"column:sub_category_name"`
 		BudgetLimit     float64   `gorm:"column:budget_limit"`

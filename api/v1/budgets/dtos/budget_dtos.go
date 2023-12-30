@@ -11,6 +11,7 @@ type (
 	AllBudgetDetail struct {
 		CategoryID   uuid.UUID         `json:"category_id"`
 		CategoryName string            `json:"category_name"`
+		CategoryIcon string            `json:"transaction_category_icon"`
 		BudgetInfo   Limit             `json:"budget_info"`
 		SubCategory  []SubCategoryInfo `json:"sub_category_info"`
 	}

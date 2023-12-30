@@ -115,6 +115,7 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 						budgetDetail = append(budgetDetail, dtos.AllBudgetDetail{
 							CategoryID:   categoryIDPrevious,
 							CategoryName: categoryNamePrevious,
+							CategoryIcon: v.ImagePath,
 							SubCategory:  subCategoryInfo,
 							BudgetInfo: dtos.Limit{
 								CurrencyCode: "IDR",
@@ -126,6 +127,7 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 						budgetDetail = append(budgetDetail, dtos.AllBudgetDetail{
 							CategoryID:   categoryIDPrevious,
 							CategoryName: categoryNamePrevious,
+							CategoryIcon: v.ImagePath,
 							SubCategory:  []dtos.SubCategoryInfo{},
 							BudgetInfo: dtos.Limit{
 								CurrencyCode: "IDR",
@@ -161,6 +163,7 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 						budgetDetail = append(budgetDetail, dtos.AllBudgetDetail{
 							CategoryID:   categoryIDPrevious,
 							CategoryName: categoryNamePrevious,
+							CategoryIcon: v.ImagePath,
 							SubCategory:  []dtos.SubCategoryInfo{},
 							BudgetInfo: dtos.Limit{
 								CurrencyCode: "IDR",
