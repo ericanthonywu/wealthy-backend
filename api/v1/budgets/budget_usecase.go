@@ -245,7 +245,7 @@ func (s *BudgetUseCase) Overview(ctx *gin.Context, month, year string) (response
 				CategoryName: v.Category,
 				BudgetLimit: dtos.Limit{
 					CurrencyCode: "IDR",
-					Value:        v.BudgetLimit,
+					Value:        int(v.BudgetLimit),
 				},
 				TransactionSpending: dtos.Transaction{
 					CurrencyCode: "IDR",
