@@ -477,8 +477,13 @@ func (s *StatisticUseCase) Trend(ctx *gin.Context, month, year string) (response
 
 	dataExpenseWeekly := s.expenseWeekly(personalAccount.ID, month, year)
 
-	isData := dataExpenseWeekly[0].Amount.Value
-	if isData == 0 {
+	isData := dataExpenseWeekly[0].Amount.Value > 0 ||
+		dataExpenseWeekly[1].Amount.Value > 0 ||
+		dataExpenseWeekly[2].Amount.Value > 0 ||
+		dataExpenseWeekly[3].Amount.Value > 0 ||
+		dataExpenseWeekly[4].Amount.Value > 0
+
+	if !isData {
 		resp := struct {
 			Message string `json:"message"`
 		}{

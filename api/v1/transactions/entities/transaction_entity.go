@@ -243,6 +243,10 @@ type (
 		FeeInvestSell      float64   `gorm:"column:fee_invest_sell"`
 		TotalAssets        int64     `gorm:"column:amount"`
 	}
+
+	Budget struct {
+		IDPersonalAccount uuid.UUID `gorm:"column:id_personal_accounts"`
+	}
 )
 
 func (TransactionEntity) TableName() string {

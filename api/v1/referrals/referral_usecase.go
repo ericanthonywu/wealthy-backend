@@ -72,6 +72,16 @@ func (s *ReferralUseCase) Statistic(ctx *gin.Context) (response interface{}, htt
 		return res, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
+	lengthOfData := len(dataTierOfRefCode)
+	if lengthOfData == 1 {
+		res := struct {
+			Message string `json:"message"`
+		}{
+			Message: " have not referral below referral code :" + referralCode,
+		}
+		return res, http.StatusNotFound, []errorsinfo.Errors{}
+	}
+
 	// determine mapping
 	var titleCollection = map[int]string{
 		1: "1st tier",
