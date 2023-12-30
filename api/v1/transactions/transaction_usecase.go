@@ -69,6 +69,21 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 			logrus.Error(err.Error())
 		}
 
+		dataTravel, err := s.repo.CheckIDTravelBelongsTo(IDTravelUUID)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
+		}
+
+		if accountUUID != dataTravel.IDPersonalAccount {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: "id travel not belongs to this token",
+			}
+			return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+		}
+
 		dataCurrency, err := s.repo.BudgetWithCurrency(IDTravelUUID)
 		if err != nil {
 			logrus.Error(err.Error())
@@ -360,13 +375,23 @@ func (s *TransactionUseCase) IncomeTransactionHistory(ctx *gin.Context) (respons
 	}
 
 	if responseIncomeTotalHistory.TotalIncome == 0 || responseIncomeDetailHistory == nil {
-		httpCode = http.StatusNotFound
-		response := struct {
-			Message string `json:"message"`
-		}{
-			Message: "there is not income transaction between periods : " + startDate + " until " + endDate,
+		if startDate != "" && endDate != "" {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: "there is not income transaction between periods : " + startDate + " until " + endDate,
+			}
+			return resp, http.StatusNotFound, errInfo
 		}
-		return response, httpCode, errInfo
+
+		if startDate == "" || endDate == "" {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: "there is not income transaction",
+			}
+			return resp, http.StatusNotFound, errInfo
+		}
 	}
 
 	dtoResponse.Total = responseIncomeTotalHistory.TotalIncome
@@ -382,10 +407,26 @@ func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context, IDTravel
 		responseTravelDetailHistory []entities.TransactionDetailTravel
 	)
 
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	// check id travel
+	dataTravel, err := s.repo.CheckIDTravelBelongsTo(IDTravel)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return response, http.StatusInternalServerError, errInfo
+	}
+
+	if accountUUID != dataTravel.IDPersonalAccount {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "id travel not belongs to this token",
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
+
 	startDate := ctx.Query("startDate")
 	endDate := ctx.Query("endDate")
-
-	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	if startDate == "" || endDate == "" {
 		responseTravelDetailHistory = s.repo.TravelDetailWithoutData(accountUUID, IDTravel)
@@ -417,6 +458,7 @@ func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context, IDTravel
 			})
 		}
 	}
+
 	dtoResponse.Detail = details
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
