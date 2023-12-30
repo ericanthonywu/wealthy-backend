@@ -378,7 +378,7 @@ func (r *TransactionRepository) InvestDetailWithoutData(IDPersonal uuid.UUID) (d
            END ::text                 as sell_buy
 FROM tbl_transactions tt
          INNER JOIN tbl_transaction_details td ON td.id_transactions = tt.id
-WHERE tt.id_personal_account = ?
+WHERE tt.id_personal_account = ? AND tt.id_master_invest <> '00000000-0000-0000-0000-000000000000'
 GROUP BY transaction_note, lot, stock_code, transaction_date, sell_buy, tt.amount
 ORDER BY transaction_date DESC`, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionDetailInvest{}
