@@ -727,7 +727,13 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 		errInfo = []errorsinfo.Errors{}
 	}
 
-	return response, http.StatusPreconditionFailed, errInfo
+	resp := struct {
+		Message string `json:"message"`
+	}{
+		Message: "no data for income-spending statistic",
+	}
+
+	return resp, http.StatusPreconditionFailed, errInfo
 }
 
 func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
