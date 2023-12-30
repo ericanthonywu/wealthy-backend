@@ -78,6 +78,8 @@ type (
 		WalletInvestment(accountUUID uuid.UUID) (data []entities.WalletEntity, err error)
 
 		CheckIDTravelBelongsTo(IDTravel uuid.UUID) (data entities.Budget, err error)
+
+		WalletInfo(IDWallet uuid.UUID) (data entities.WalletEntity, err error)
 	}
 )
 
@@ -698,6 +700,7 @@ func (r *TransactionRepository) AllInvestmentsTrx(accountUUID uuid.UUID) (data m
        tbl_transaction_details.lot,
        tbl_transaction_details.sellbuy,
        tbl_transaction_details.stock_code,
+       tbl_wallets.id AS wallet_id,
        tbl_wallets.fee_invest_buy as fee_buy,
        tbl_wallets.fee_invest_sell as fee_sell
 FROM tbl_transaction_details
@@ -873,5 +876,13 @@ func (r *TransactionRepository) CheckIDTravelBelongsTo(IDTravel uuid.UUID) (data
 		return entities.Budget{}, err
 	}
 
+	return data, nil
+}
+
+func (r *TransactionRepository) WalletInfo(IDWallet uuid.UUID) (data entities.WalletEntity, err error) {
+	if err := r.db.Raw(`SELECT * FROM tbl_wallets WHERE id=?`, IDWallet).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.WalletEntity{}, err
+	}
 	return data, nil
 }

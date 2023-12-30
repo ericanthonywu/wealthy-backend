@@ -13,6 +13,7 @@ type (
 		StockCode      string    `gorm:"column:stock_code"`
 		FeeBuy         float64   `gorm:"column:fee_buy"`
 		FeeSell        float64   `gorm:"column:fee_sell"`
+		IDWallet       uuid.UUID `gorm:"column:wallet_id"`
 	}
 
 	TrxInvest []AllPreviousTrxInvestment

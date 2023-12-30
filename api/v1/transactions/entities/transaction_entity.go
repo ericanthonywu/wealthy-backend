@@ -50,6 +50,7 @@ type (
 		GainLoss          float64   `gorm:"column:gain_loss"`
 		PotentialReturn   float64   `gorm:"column:potential_return"`
 		PercentageReturn  float64   `gorm:"column:percentage_return"`
+		WalletID          uuid.UUID `gorm:"column:wallet_id"`
 	}
 
 	TransactionExpenseTotalHistory struct {

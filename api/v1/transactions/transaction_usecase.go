@@ -1256,7 +1256,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 		averageBuy        float64
 		gainloss          float64
 		potentialReturn   float64
-		brokerName        string
+		walletName        string
 		stockCode         string
 		maxData           int
 		IDMasterBroker    uuid.UUID
@@ -1284,7 +1284,12 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 	for k, v := range dataTrxDetail {
 
 		// get broker info
-		brokerInfo, err := s.repo.GetBrokerInfo(v.IDMasterBroker)
+		//brokerInfo, err := s.repo.GetBrokerInfo(v.IDMasterBroker)
+		//if err != nil {
+		//	logrus.Error(err.Error())
+		//}
+
+		walletInfo, err := s.repo.WalletInfo(v.IDWallet)
 		if err != nil {
 			logrus.Error(err.Error())
 		}
@@ -1296,8 +1301,8 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 			}
 		}
 
-		// if broker name is same as previous
-		if brokerName == brokerInfo.Name {
+		// if wallet name is same as previous
+		if walletName == walletInfo.WalletName {
 
 			// if stock code same as previous
 			if stockCode == v.StockCode {
@@ -1365,6 +1370,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 						GainLoss:          gainloss,
 						PotentialReturn:   potentialReturn,
 						PercentageReturn:  percentageReturn,
+						WalletID:          v.IDWallet,
 					}
 
 					// save data into investment table
@@ -1423,6 +1429,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					GainLoss:          0,
 					PotentialReturn:   potentialReturn,
 					PercentageReturn:  percentageReturn,
+					WalletID:          v.IDWallet,
 				}
 
 				// save previous data into investment table
@@ -1476,6 +1483,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 						GainLoss:          0,
 						PotentialReturn:   potentialReturn,
 						PercentageReturn:  percentageReturn,
+						WalletID:          v.IDWallet,
 					}
 
 					// save data into investment table
@@ -1487,10 +1495,10 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 			}
 		}
 
-		// if first time, set broker name, set stock code
-		if brokerName == "" {
+		// if first time, set wallet name, set stock code
+		if walletName == "" {
 			// set
-			brokerName = brokerInfo.Name
+			walletName = walletInfo.WalletName
 			stockCode = v.StockCode
 			lotBuy += v.Lot
 			IDMasterBroker = v.IDMasterBroker
@@ -1530,6 +1538,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					GainLoss:          0,
 					PotentialReturn:   potentialReturn,
 					PercentageReturn:  percentageReturn,
+					WalletID:          v.IDWallet,
 				}
 
 				// save data into investment table
@@ -1541,7 +1550,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 		}
 
 		// if broker name different than previous
-		if brokerName != brokerInfo.Name {
+		if walletName != walletInfo.WalletName {
 			// average buy
 			averageBuy = (initialInvestment / float64(lotBuy)) * 100
 
@@ -1569,6 +1578,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				GainLoss:          0,
 				PotentialReturn:   potentialReturn,
 				PercentageReturn:  percentageReturn,
+				WalletID:          v.IDWallet,
 			}
 
 			// save previous data into investment table
@@ -1584,7 +1594,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 			potentialReturn = 0
 
 			// renew value
-			brokerName = brokerInfo.Name
+			walletName = walletInfo.WalletName
 			stockCode = v.StockCode
 			IDMasterBroker = v.IDMasterBroker
 
@@ -1624,6 +1634,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					GainLoss:          0,
 					PotentialReturn:   potentialReturn,
 					PercentageReturn:  percentageReturn,
+					WalletID:          v.IDWallet,
 				}
 
 				// save data into investment table
