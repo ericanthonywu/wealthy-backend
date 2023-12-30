@@ -15,7 +15,7 @@ type (
 		CategoryName    string    `gorm:"column:category_name"`
 		SubCategoryID   uuid.UUID `gorm:"column:sub_category_id"`
 		SubCategoryName string    `gorm:"column:sub_category_name"`
-		BudgetLimit     int       `gorm:"column:budget_limit"`
+		BudgetLimit     float64   `gorm:"column:budget_limit"`
 	}
 
 	TrendsWeekly struct {
