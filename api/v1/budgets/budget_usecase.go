@@ -200,21 +200,14 @@ func (s *BudgetUseCase) Overview(ctx *gin.Context, month, year string) (response
 	personalDataForSpending := make(map[uuid.UUID]int)
 	personalDataForCount := make(map[uuid.UUID]int)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
-	}
-
-	personalBudgetData, err := s.repo.PersonalBudget(personalAccount.ID, month, year)
+	personalBudgetData, err := s.repo.PersonalBudget(accountUUID, month, year)
 	if err != nil {
 		logrus.Error(err.Error())
 	}
 
-	personalTransactionData, err := s.repo.PersonalTransaction(personalAccount.ID, month, year)
+	personalTransactionData, err := s.repo.PersonalTransaction(accountUUID, month, year)
 	if err != nil {
 		logrus.Error(err.Error())
 	}
@@ -241,8 +234,9 @@ func (s *BudgetUseCase) Overview(ctx *gin.Context, month, year string) (response
 			}
 
 			dataDetails = append(dataDetails, dtos.OverviewDetail{
-				CategoryID:   v.ID,
-				CategoryName: v.Category,
+				CategoryID:      v.ID,
+				CategoryName:    v.Category,
+				TransactionIcon: v.ImagePath,
 				BudgetLimit: dtos.Limit{
 					CurrencyCode: "IDR",
 					Value:        int(v.BudgetLimit),

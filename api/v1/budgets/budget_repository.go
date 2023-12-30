@@ -159,6 +159,7 @@ AND to_char(b.created_at, 'YYYY') = EXTRACT(YEAR FROM current_timestamp)::text`,
 func (r *BudgetRepository) PersonalBudget(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalBudget, err error) {
 	if err := r.db.Raw(`SELECT tmec.id,
        tmec.expense_types                             as category,
+       tmec.image_path,
        (SELECT b.amount
         FROM tbl_budgets b
         WHERE b.id_master_categories = tmec.id

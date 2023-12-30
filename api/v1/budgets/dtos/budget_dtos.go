@@ -47,6 +47,7 @@ type (
 	OverviewDetail struct {
 		CategoryName        string      `json:"category_name"`
 		CategoryID          uuid.UUID   `json:"category_id"`
+		TransactionIcon     string      `json:"transaction_category_icon"`
 		BudgetLimit         Limit       `json:"budget_limit"`
 		TransactionSpending Transaction `json:"transaction_spending"`
 		NumberOfCategories  int         `json:"number_of_categories"`
