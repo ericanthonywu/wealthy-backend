@@ -610,6 +610,28 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 
 		for k, v := range responseIncomeSpendingDetailMonthly {
 
+			// if same as previous
+			if dateTempPrev == v.TransactionDate {
+				deepDetailsMonthly = append(deepDetailsMonthly, dtos.TransactionDetails{
+					TransactionCategory: v.TransactionCategory,
+					TransactionType:     v.TransactionType,
+					TransactionAmount: dtos.Amount{
+						CurrencyCode: "IDR",
+						Value:        float64(v.TransactionAmount),
+					},
+					TransactionNote: v.TransactionNote,
+				})
+
+				if k == length-1 {
+					detailsMonthly = append(detailsMonthly, dtos.TransactionIncomeSpendingInvestmentDetail{
+						TransactionDate:    dateTempPrev,
+						TransactionDetails: deepDetailsMonthly,
+					})
+
+					dtoResponse.Detail = append(dtoResponse.Detail, detailsMonthly...)
+				}
+			}
+
 			// for first time
 			if dateTempPrev == "" {
 				dateTempPrev = v.TransactionDate
@@ -659,21 +681,23 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 
 				dateTempPrev = v.TransactionDate
 
-				if k == (length - 1) {
-					deepDetailsMonthly = append(deepDetailsMonthly, dtos.TransactionDetails{
-						TransactionCategory: v.TransactionCategory,
-						TransactionType:     v.TransactionType,
-						TransactionAmount: dtos.Amount{
-							CurrencyCode: "IDR",
-							Value:        float64(v.TransactionAmount),
-						},
-						TransactionNote: v.TransactionNote,
-					})
+				deepDetailsMonthly = append(deepDetailsMonthly, dtos.TransactionDetails{
+					TransactionCategory: v.TransactionCategory,
+					TransactionType:     v.TransactionType,
+					TransactionAmount: dtos.Amount{
+						CurrencyCode: "IDR",
+						Value:        float64(v.TransactionAmount),
+					},
+					TransactionNote: v.TransactionNote,
+				})
 
+				if k == length-1 {
 					detailsMonthly = append(detailsMonthly, dtos.TransactionIncomeSpendingInvestmentDetail{
 						TransactionDate:    dateTempPrev,
 						TransactionDetails: deepDetailsMonthly,
 					})
+
+					dtoResponse.Detail = append(dtoResponse.Detail, detailsMonthly...)
 				}
 			}
 		}
