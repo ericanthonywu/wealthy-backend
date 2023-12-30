@@ -80,14 +80,14 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 
 				// CHECK IF SUB CATEGORY NOT NIL
 				if v.SubCategoryID != uuid.Nil {
-					totalBudgetAmount = totalBudgetAmount + v.BudgetLimit
+					totalBudgetAmount = totalBudgetAmount + int(v.BudgetLimit)
 
 					subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
 						SubCategoryID:   v.SubCategoryID,
 						SubCategoryName: v.SubCategoryName,
 						BudgetLimit: dtos.Limit{
 							CurrencyCode: "IDR",
-							Value:        v.BudgetLimit,
+							Value:        int(v.BudgetLimit),
 						},
 					})
 				}
@@ -96,14 +96,14 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 
 				// CHECK IF PREVIOUS IS SAME AS CURRENT
 				if categoryIDPrevious == v.CategoryID {
-					totalBudgetAmount = totalBudgetAmount + v.BudgetLimit
+					totalBudgetAmount = totalBudgetAmount + int(v.BudgetLimit)
 
 					subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
 						SubCategoryID:   v.SubCategoryID,
 						SubCategoryName: v.SubCategoryName,
 						BudgetLimit: dtos.Limit{
 							CurrencyCode: "IDR",
-							Value:        v.BudgetLimit,
+							Value:        int(v.BudgetLimit),
 						},
 					})
 
@@ -144,14 +144,14 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 
 					// IF SUB CATEGORY NOT EMPTY
 					if v.SubCategoryID != uuid.Nil {
-						totalBudgetAmount = totalBudgetAmount + v.BudgetLimit
+						totalBudgetAmount = totalBudgetAmount + int(v.BudgetLimit)
 
 						subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
 							SubCategoryID:   v.SubCategoryID,
 							SubCategoryName: v.SubCategoryName,
 							BudgetLimit: dtos.Limit{
 								CurrencyCode: "IDR",
-								Value:        v.BudgetLimit,
+								Value:        int(v.BudgetLimit),
 							},
 						})
 
