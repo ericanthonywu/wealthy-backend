@@ -85,6 +85,7 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 					subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
 						SubCategoryID:   v.SubCategoryID,
 						SubCategoryName: v.SubCategoryName,
+						SubCategoryIcon: v.SubCategoryIcon,
 						BudgetLimit: dtos.Limit{
 							CurrencyCode: "IDR",
 							Value:        int(v.BudgetLimit),
@@ -101,6 +102,7 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 					subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
 						SubCategoryID:   v.SubCategoryID,
 						SubCategoryName: v.SubCategoryName,
+						SubCategoryIcon: v.SubCategoryIcon,
 						BudgetLimit: dtos.Limit{
 							CurrencyCode: "IDR",
 							Value:        int(v.BudgetLimit),
@@ -151,6 +153,7 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 						subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
 							SubCategoryID:   v.SubCategoryID,
 							SubCategoryName: v.SubCategoryName,
+							SubCategoryIcon: v.SubCategoryIcon,
 							BudgetLimit: dtos.Limit{
 								CurrencyCode: "IDR",
 								Value:        int(v.BudgetLimit),

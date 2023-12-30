@@ -37,25 +37,25 @@ func NewBudgetRepository(db *gorm.DB) *BudgetRepository {
 }
 
 func (r *BudgetRepository) SubCategoryBudget(IDPersonal uuid.UUID, month, year string) (data []entities.SubCategoryBudget, err error) {
-	if err := r.db.Raw(`SELECT
-    tmece.id AS category_id,
-    tmece.expense_types AS category_name,
-    tmece.image_path,
-    tmese.subcategories,
-    (
-        SELECT b.amount
+	if err := r.db.Raw(`SELECT tmece.id            AS category_id,
+       tmece.expense_types AS category_name,
+       tmece.image_path,
+       tmese.id            AS sub_category_id,
+       tmese.subcategories AS sub_category_name,
+       tmese.image_path AS sub_category_icon,
+       (SELECT b.amount
         FROM tbl_budgets b
-        WHERE b.id_master_categories = tmese.id
-            AND b.id_personal_accounts = ?
-            AND to_char(b.created_at, 'MM') = ?
-            AND to_char(b.created_at, 'YYYY') = ?
-        LIMIT 1
-    ) AS budget
+        WHERE b.id_master_subcategories = tmese.id
+          AND b.id_personal_accounts = ?
+          AND to_char(b.created_at, 'MM') = ?
+          AND to_char(b.created_at, 'YYYY') = ?
+        LIMIT 1)           AS budget_limit
 FROM tbl_master_expense_categories_editable tmece
-LEFT JOIN tbl_master_expense_subcategories_editable tmese
-    ON tmece.id = tmese.id_master_expense_categories
+         LEFT JOIN tbl_master_expense_subcategories_editable tmese
+                   ON tmece.id = tmese.id_master_expense_categories
 WHERE tmece.id_personal_accounts = ?
-GROUP BY tmece.id, tmece.expense_types, tmese.subcategories, tmese.id, tmece.image_path
+  AND tmece.active = true
+GROUP BY tmece.id, tmece.expense_types, tmese.subcategories, tmese.id, tmece.image_path,tmese.image_path
 ORDER BY tmece.expense_types`, IDPersonal, month, year, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.SubCategoryBudget{}, err
 	}

@@ -19,6 +19,7 @@ type (
 	SubCategoryInfo struct {
 		SubCategoryID   uuid.UUID `json:"sub_category_id"`
 		SubCategoryName string    `json:"sub_category_name"`
+		SubCategoryIcon string    `json:"transaction_category_icon"`
 		BudgetLimit     Limit     `json:"budget_limit"`
 	}
 

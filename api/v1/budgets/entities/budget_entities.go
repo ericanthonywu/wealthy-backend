@@ -16,6 +16,7 @@ type (
 		ImagePath       string    `gorm:"column:image_path"`
 		SubCategoryID   uuid.UUID `gorm:"column:sub_category_id"`
 		SubCategoryName string    `gorm:"column:sub_category_name"`
+		SubCategoryIcon string    `gorm:"column:sub_category_icon"`
 		BudgetLimit     float64   `gorm:"column:budget_limit"`
 	}
 
