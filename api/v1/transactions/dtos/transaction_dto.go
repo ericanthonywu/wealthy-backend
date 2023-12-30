@@ -53,7 +53,7 @@ type (
 		IDTransaction   uuid.UUID `json:"transaction_id"`
 		Amount          Amount    `json:"amount"`
 		Category        string    `json:"transaction_category"`
-		CategoryIcon    string    `json:"transaction_icon_category"`
+		CategoryIcon    string    `json:"transaction_category_icon"`
 		Note            string    `json:"transaction_note"`
 	}
 
