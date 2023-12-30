@@ -204,6 +204,14 @@ type (
 		CountExpense int64 `gorm:"column:count_expense"`
 	}
 
+	TotalIncomeCashflow struct {
+		TotalIncome float64 `gorm:"column:total_income"`
+	}
+
+	TotalExpenseCashflow struct {
+		TotalExpense float64 `gorm:"column:total_expense"`
+	}
+
 	LastBalance struct {
 		ID                            uuid.UUID `gorm:"column:id"`
 		Date                          string    `gorm:"column:date_time_transaction"`
@@ -222,6 +230,22 @@ type (
 		Credit                        float64   `gorm:"column:credit"`
 		Debit                         float64   `gorm:"column:debit"`
 		Balance                       float64   `gorm:"column:balance"`
+	}
+
+	WalletEntity struct {
+		ID                 uuid.UUID `gorm:"column:id"`
+		IDAccount          uuid.UUID `gorm:"column:id_account"`
+		WalletType         string    `gorm:"column:wallet_type"`
+		WalletName         string    `gorm:"column:wallet_name"`
+		IDMasterWalletType uuid.UUID `gorm:"column:id_master_wallet_types"`
+		Active             bool      `gorm:"column:active"`
+		FeeInvestBuy       float64   `gorm:"column:fee_invest_buy"`
+		FeeInvestSell      float64   `gorm:"column:fee_invest_sell"`
+		TotalAssets        int64     `gorm:"column:amount"`
+	}
+
+	Budget struct {
+		IDPersonalAccount uuid.UUID `gorm:"column:id_personal_accounts"`
 	}
 )
 

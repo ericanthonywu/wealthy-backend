@@ -142,8 +142,8 @@ type (
 		CountIncome         int64   `json:"count_income"`
 		CountExpense        int64   `json:"count_expense"`
 		CashFlow            float64 `json:"cashflow"`
-		TotalAverageIncome  float64 `json:"total_average_income"`
-		TotalAverageExpense float64 `json:"total_average_expense"`
+		TotalAverageIncome  float64 `json:"total_income"`
+		TotalAverageExpense float64 `json:"total_expense"`
 		AverageDay          struct {
 			Income  float64 `json:"income"`
 			Expense float64 `json:"expense"`
@@ -152,5 +152,17 @@ type (
 			Income  float64 `json:"income"`
 			Expense float64 `json:"expense"`
 		} `json:"average_month"`
+	}
+
+	WalletListResponse struct {
+		IDAccount     uuid.UUID     `json:"id_personal_accounts"`
+		WalletDetails WalletDetails `json:"details"`
+	}
+
+	WalletDetails struct {
+		WalletID           uuid.UUID `json:"wallet_id"`
+		WalletType         string    `json:"wallet_type"`
+		WalletName         string    `json:"wallet_name"`
+		IDMasterWalletType uuid.UUID `json:"id_master_wallet_types"`
 	}
 )

@@ -32,6 +32,8 @@ type (
 		ByNotes(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Suggestion(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		CashFlow(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		WalletNonInvestment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		WalletInvestment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		saveInvestTransaction(accountID uuid.UUID, request *dtos.TransactionRequestInvestment) (id uuid.UUID, err error)
 		investmentCalculation(accountID uuid.UUID) (err error)
 	}
@@ -65,6 +67,21 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		IDTravelUUID, err = uuid.Parse(request.IDTravel)
 		if err != nil {
 			logrus.Error(err.Error())
+		}
+
+		dataTravel, err := s.repo.CheckIDTravelBelongsTo(IDTravelUUID)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
+		}
+
+		if accountUUID != dataTravel.IDPersonalAccount {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: "id travel not belongs to this token",
+			}
+			return resp, http.StatusBadRequest, []errorsinfo.Errors{}
 		}
 
 		dataCurrency, err := s.repo.BudgetWithCurrency(IDTravelUUID)
@@ -226,12 +243,45 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 
 func (s *TransactionUseCase) AddInvestmentTransaction(ctx *gin.Context, request *dtos.TransactionRequestInvestment) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		trxID uuid.UUID
-		err   error
+		trxID             uuid.UUID
+		err               error
+		collectionsWallet = make(map[string]bool)
 	)
 
 	// account uuid
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	// validate wallet type
+	dataWalletType, err := s.repo.WalletInvestment(accountUUID)
+	if err != nil {
+		logrus.Error()
+	}
+
+	if len(dataWalletType) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no wallet type for investment. please create new one",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+	}
+
+	// if there is data , store to map
+	if len(dataWalletType) > 0 {
+		for _, v := range dataWalletType {
+			collectionsWallet[v.ID.String()] = true
+		}
+	}
+
+	_, exists := collectionsWallet[request.IDWallet]
+	if !exists {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no wallet type for investment. please create new one",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+	}
 
 	// save investment transaction
 	trxID, err = s.saveInvestTransaction(accountUUID, request)
@@ -325,13 +375,23 @@ func (s *TransactionUseCase) IncomeTransactionHistory(ctx *gin.Context) (respons
 	}
 
 	if responseIncomeTotalHistory.TotalIncome == 0 || responseIncomeDetailHistory == nil {
-		httpCode = http.StatusNotFound
-		response := struct {
-			Message string `json:"message"`
-		}{
-			Message: "there is not income transaction between periods : " + startDate + " until " + endDate,
+		if startDate != "" && endDate != "" {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: "there is not income transaction between periods : " + startDate + " until " + endDate,
+			}
+			return resp, http.StatusNotFound, errInfo
 		}
-		return response, httpCode, errInfo
+
+		if startDate == "" || endDate == "" {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: "there is not income transaction",
+			}
+			return resp, http.StatusNotFound, errInfo
+		}
 	}
 
 	dtoResponse.Total = responseIncomeTotalHistory.TotalIncome
@@ -347,10 +407,26 @@ func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context, IDTravel
 		responseTravelDetailHistory []entities.TransactionDetailTravel
 	)
 
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	// check id travel
+	dataTravel, err := s.repo.CheckIDTravelBelongsTo(IDTravel)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		return response, http.StatusInternalServerError, errInfo
+	}
+
+	if accountUUID != dataTravel.IDPersonalAccount {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "id travel not belongs to this token",
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+	}
+
 	startDate := ctx.Query("startDate")
 	endDate := ctx.Query("endDate")
-
-	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	if startDate == "" || endDate == "" {
 		responseTravelDetailHistory = s.repo.TravelDetailWithoutData(accountUUID, IDTravel)
@@ -382,6 +458,7 @@ func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context, IDTravel
 			})
 		}
 	}
+
 	dtoResponse.Detail = details
 	return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 }
@@ -533,6 +610,28 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 
 		for k, v := range responseIncomeSpendingDetailMonthly {
 
+			// if same as previous
+			if dateTempPrev == v.TransactionDate {
+				deepDetailsMonthly = append(deepDetailsMonthly, dtos.TransactionDetails{
+					TransactionCategory: v.TransactionCategory,
+					TransactionType:     v.TransactionType,
+					TransactionAmount: dtos.Amount{
+						CurrencyCode: "IDR",
+						Value:        float64(v.TransactionAmount),
+					},
+					TransactionNote: v.TransactionNote,
+				})
+
+				if k == length-1 {
+					detailsMonthly = append(detailsMonthly, dtos.TransactionIncomeSpendingInvestmentDetail{
+						TransactionDate:    dateTempPrev,
+						TransactionDetails: deepDetailsMonthly,
+					})
+
+					dtoResponse.Detail = append(dtoResponse.Detail, detailsMonthly...)
+				}
+			}
+
 			// for first time
 			if dateTempPrev == "" {
 				dateTempPrev = v.TransactionDate
@@ -582,21 +681,23 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 
 				dateTempPrev = v.TransactionDate
 
-				if k == (length - 1) {
-					deepDetailsMonthly = append(deepDetailsMonthly, dtos.TransactionDetails{
-						TransactionCategory: v.TransactionCategory,
-						TransactionType:     v.TransactionType,
-						TransactionAmount: dtos.Amount{
-							CurrencyCode: "IDR",
-							Value:        float64(v.TransactionAmount),
-						},
-						TransactionNote: v.TransactionNote,
-					})
+				deepDetailsMonthly = append(deepDetailsMonthly, dtos.TransactionDetails{
+					TransactionCategory: v.TransactionCategory,
+					TransactionType:     v.TransactionType,
+					TransactionAmount: dtos.Amount{
+						CurrencyCode: "IDR",
+						Value:        float64(v.TransactionAmount),
+					},
+					TransactionNote: v.TransactionNote,
+				})
 
+				if k == length-1 {
 					detailsMonthly = append(detailsMonthly, dtos.TransactionIncomeSpendingInvestmentDetail{
 						TransactionDate:    dateTempPrev,
 						TransactionDetails: deepDetailsMonthly,
 					})
+
+					dtoResponse.Detail = append(dtoResponse.Detail, detailsMonthly...)
 				}
 			}
 		}
@@ -626,7 +727,13 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 		errInfo = []errorsinfo.Errors{}
 	}
 
-	return response, http.StatusPreconditionFailed, errInfo
+	resp := struct {
+		Message string `json:"message"`
+	}{
+		Message: "no data for income-spending statistic",
+	}
+
+	return resp, http.StatusPreconditionFailed, errInfo
 }
 
 func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
@@ -1058,14 +1165,28 @@ func (s *TransactionUseCase) CashFlow(ctx *gin.Context) (response interface{}, h
 		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
+	dataTotalIncome, err := s.repo.DataTotalIncome(accountUUID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	dataTotalExpense, err := s.repo.DataTotalExpense(accountUUID)
+	if err != nil {
+		logrus.Error(err.Error())
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
 	dtoResponse.CountIncome = dataCountExpense.CountExpense
 	dtoResponse.CountExpense = dataCountIncome.CountIncome
 	dtoResponse.AverageDay.Income = dataIncomeEachDay.IncomeAverage
 	dtoResponse.AverageDay.Expense = dataExpenseEachDay.ExpenseAverage
 	dtoResponse.AverageMonth.Income = dataIncomeMonthly.IncomeAverage
 	dtoResponse.AverageMonth.Expense = dataExpenseMonthly.ExpenseAverage
-	dtoResponse.TotalAverageIncome = dataIncomeEachDay.IncomeAverage + dataIncomeMonthly.IncomeAverage
-	dtoResponse.TotalAverageExpense = dataExpenseEachDay.ExpenseAverage + dataExpenseMonthly.ExpenseAverage
+	dtoResponse.TotalAverageIncome = dataTotalIncome.TotalIncome
+	dtoResponse.TotalAverageExpense = dataTotalExpense.TotalExpense
 	dtoResponse.CashFlow = dtoResponse.TotalAverageIncome - dtoResponse.TotalAverageExpense
 
 	if len(errInfo) == 0 {
@@ -1517,4 +1638,85 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 	}
 
 	return nil
+}
+
+func (s *TransactionUseCase) WalletNonInvestment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var dtoResponse []dtos.WalletListResponse
+
+	// accountUUID
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	// fetch data wallet
+	dataWallet, err := s.repo.WalletNonInvestment(accountUUID)
+	if err != nil {
+		logrus.Error()
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// if data wallet
+	if len(dataWallet) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no data for wallet non investment",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+	}
+
+	// if data wallet exist
+	if len(dataWallet) > 0 {
+		for _, v := range dataWallet {
+			dtoResponse = append(dtoResponse, dtos.WalletListResponse{
+				IDAccount: accountUUID,
+				WalletDetails: dtos.WalletDetails{
+					WalletID:           v.ID,
+					WalletType:         v.WalletType,
+					WalletName:         v.WalletName,
+					IDMasterWalletType: v.IDMasterWalletType,
+				},
+			})
+		}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
+}
+
+func (s *TransactionUseCase) WalletInvestment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	var dtoResponse []dtos.WalletListResponse
+
+	// accountUUID
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	dataWallet, err := s.repo.WalletInvestment(accountUUID)
+	if err != nil {
+		logrus.Error(err)
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	if len(dataWallet) == 0 {
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no data for wallet investment",
+		}
+		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+	}
+
+	if len(dataWallet) > 0 {
+		for _, v := range dataWallet {
+			dtoResponse = append(dtoResponse, dtos.WalletListResponse{
+				IDAccount: accountUUID,
+				WalletDetails: dtos.WalletDetails{
+					WalletID:           v.ID,
+					WalletType:         v.WalletType,
+					WalletName:         v.WalletName,
+					IDMasterWalletType: v.IDMasterWalletType,
+				},
+			})
+		}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
 }

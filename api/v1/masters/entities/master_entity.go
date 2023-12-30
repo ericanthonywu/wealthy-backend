@@ -40,6 +40,11 @@ type (
 		BrokerName string    `json:"broker_name" gorm:"column:broker_name"`
 	}
 
+	StockCode struct {
+		StockCode string `json:"stock_code" gorm:"column:symbol"`
+		Name      string `json:"name" gorm:"column:name"`
+	}
+
 	TransactionPriority struct {
 		ID       uuid.UUID `json:"id" gorm:"column:id"`
 		Priority string    `json:"priority" gorm:"column:priority"`
@@ -164,4 +169,8 @@ func (ExpenseCategory) TableName() string {
 
 func (SubExpenseCategory) TableName() string {
 	return "tbl_master_expense_subcategories_editable"
+}
+
+func (StockCode) TableName() string {
+	return "tbl_master_trading"
 }

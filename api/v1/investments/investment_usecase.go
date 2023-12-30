@@ -134,6 +134,19 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 				PercentageReturn:  fmt.Sprintf("%.2f", percentagePotentialReturn) + "%",
 				TotalDays:         int64(dateTotal),
 			})
+
+			if k == maxData {
+				investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
+					BrokerName:          brokerName,
+					Info:                investmentInfo,
+					UnrealizedPotential: potentialReturn,
+				})
+
+				// clear
+				investmentInfo = nil
+				closePrice = 0
+				potentialReturn = 0
+			}
 		}
 
 		// if previous broker name different with new data

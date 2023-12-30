@@ -38,6 +38,7 @@ type (
 		AddExpenseCategory(ctx *gin.Context)
 		AddSubExpenseCategory(ctx *gin.Context)
 		Price(ctx *gin.Context)
+		StockCode(ctx *gin.Context)
 	}
 )
 
@@ -431,5 +432,11 @@ func (c *MasterController) AddSubExpenseCategory(ctx *gin.Context) {
 func (c *MasterController) Price(ctx *gin.Context) {
 	data, httpCode, errInfo := c.useCase.Price(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *MasterController) StockCode(ctx *gin.Context) {
+	data := c.useCase.StockCode()
+	response.SendBack(ctx, data, []errorsinfo.Errors{}, http.StatusOK)
 	return
 }

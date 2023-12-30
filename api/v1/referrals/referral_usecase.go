@@ -8,6 +8,7 @@ import (
 	"github.com/wealthy-app/wealthy-backend/api/v1/referrals/entities"
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
 	"net/http"
+	"strconv"
 )
 
 type (
@@ -63,6 +64,16 @@ func (s *ReferralUseCase) Statistic(ctx *gin.Context) (response interface{}, htt
 	}
 
 	if len(dataTierOfRefCode) == 0 {
+		res := struct {
+			Message string `json:"message"`
+		}{
+			Message: " have not referral below referral code :" + referralCode,
+		}
+		return res, http.StatusNotFound, []errorsinfo.Errors{}
+	}
+
+	lengthOfData := len(dataTierOfRefCode)
+	if lengthOfData == 1 {
 		res := struct {
 			Message string `json:"message"`
 		}{
@@ -339,12 +350,21 @@ func (s *ReferralUseCase) List(ctx *gin.Context) (response interface{}, httpCode
 		}
 	}
 
-	dtoResponse.Tier = tierInfo
+	if len(tierInfo) == 0 {
+		dtoResponse.Tier = []dtos.TierDetailWithCustomer{}
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no child for referral",
+		}
+		return resp, http.StatusOK, []errorsinfo.Errors{}
+	}
 
 	if len(errInfo) == 0 {
 		errInfo = []errorsinfo.Errors{}
 	}
 
+	dtoResponse.Tier = tierInfo
 	return dtoResponse, http.StatusOK, errInfo
 }
 
@@ -708,8 +728,18 @@ func (s *ReferralUseCase) Withdraw(ctx *gin.Context, request dtos.WithdrawReques
 		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
+	amount, err := strconv.Atoi(request.WithdrawAmount)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	accountNumber, err := strconv.Atoi(request.AccountNumber)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
 	// check amount
-	if float64(request.WithdrawAmount) > dataCommission.Commission {
+	if float64(amount) > dataCommission.Commission {
 		resp := struct {
 			Message string `json:"message"`
 		}{
@@ -725,10 +755,10 @@ func (s *ReferralUseCase) Withdraw(ctx *gin.Context, request dtos.WithdrawReques
 	model := entities.WithdrawEntities{
 		ID:                 trxID,
 		IDPersonalAccounts: accountUUID,
-		AccountNumber:      request.AccountNumber,
+		AccountNumber:      accountNumber,
 		AccountName:        request.AccountName,
 		BankIssue:          request.BankIssue,
-		Amount:             float64(request.WithdrawAmount),
+		Amount:             float64(amount),
 		Status:             0,
 	}
 

@@ -29,6 +29,8 @@ type (
 		TravelTransactionHistory(ctx *gin.Context)
 		Suggestion(ctx *gin.Context)
 		CashFlow(ctx *gin.Context)
+		WalletNonInvestment(ctx *gin.Context)
+		WalletInvestment(ctx *gin.Context)
 		validateTravelTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
 		validateIncomeTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
 		validateExpenseTransactionPayload(request *dtos.TransactionRequest) (errInfo []errorsinfo.Errors)
@@ -522,4 +524,16 @@ func (c *TransactionController) validateTransferTransactionPayload(request *dtos
 	}
 
 	return errInfo
+}
+
+func (c *TransactionController) WalletNonInvestment(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.WalletNonInvestment(ctx)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *TransactionController) WalletInvestment(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.WalletInvestment(ctx)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
 }
