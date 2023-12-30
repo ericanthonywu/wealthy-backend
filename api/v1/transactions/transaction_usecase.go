@@ -613,8 +613,9 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 			// if same as previous
 			if dateTempPrev == v.TransactionDate {
 				deepDetailsMonthly = append(deepDetailsMonthly, dtos.TransactionDetails{
-					TransactionCategory: v.TransactionCategory,
-					TransactionType:     v.TransactionType,
+					TransactionCategory:     v.TransactionCategory,
+					TransactionType:         v.TransactionType,
+					TransactionCategoryIcon: v.TransactionCategoryIcon,
 					TransactionAmount: dtos.Amount{
 						CurrencyCode: "IDR",
 						Value:        float64(v.TransactionAmount),
@@ -637,8 +638,9 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 				dateTempPrev = v.TransactionDate
 
 				deepDetailsMonthly = append(deepDetailsMonthly, dtos.TransactionDetails{
-					TransactionCategory: v.TransactionCategory,
-					TransactionType:     v.TransactionType,
+					TransactionCategory:     v.TransactionCategory,
+					TransactionType:         v.TransactionType,
+					TransactionCategoryIcon: v.TransactionCategoryIcon,
 					TransactionAmount: dtos.Amount{
 						CurrencyCode: "IDR",
 						Value:        float64(v.TransactionAmount),
@@ -659,8 +661,9 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 			// if previous is different current
 			if dateTempPrev != v.TransactionDate {
 				deepDetailsMonthly = append(deepDetailsMonthly, dtos.TransactionDetails{
-					TransactionCategory: v.TransactionCategory,
-					TransactionType:     v.TransactionType,
+					TransactionCategory:     v.TransactionCategory,
+					TransactionType:         v.TransactionType,
+					TransactionCategoryIcon: v.TransactionCategoryIcon,
 					TransactionAmount: dtos.Amount{
 						CurrencyCode: "IDR",
 						Value:        float64(v.TransactionAmount),
@@ -682,8 +685,9 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 				dateTempPrev = v.TransactionDate
 
 				deepDetailsMonthly = append(deepDetailsMonthly, dtos.TransactionDetails{
-					TransactionCategory: v.TransactionCategory,
-					TransactionType:     v.TransactionType,
+					TransactionCategory:     v.TransactionCategory,
+					TransactionType:         v.TransactionType,
+					TransactionCategoryIcon: v.TransactionCategoryIcon,
 					TransactionAmount: dtos.Amount{
 						CurrencyCode: "IDR",
 						Value:        float64(v.TransactionAmount),

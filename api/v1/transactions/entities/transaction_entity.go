@@ -111,11 +111,12 @@ type (
 	}
 
 	TransactionIncomeSpendingDetailMonthly struct {
-		TransactionDate     string `gorm:"column:date" json:"transaction_date"`
-		TransactionCategory string `gorm:"column:transaction_category" json:"transaction_category"`
-		TransactionType     string `gorm:"column:transaction_type" json:"transaction_type"`
-		TransactionAmount   int    `gorm:"column:transaction_amount" json:"transaction_amount"`
-		TransactionNote     string `gorm:"column:transaction_note" json:"transaction_note"`
+		TransactionDate         string `gorm:"column:date" json:"transaction_date"`
+		TransactionCategory     string `gorm:"column:transaction_category" json:"transaction_category"`
+		TransactionCategoryIcon string `gorm:"column:image_path" json:"transaction_category_icon"`
+		TransactionType         string `gorm:"column:transaction_type" json:"transaction_type"`
+		TransactionAmount       int    `gorm:"column:transaction_amount" json:"transaction_amount"`
+		TransactionNote         string `gorm:"column:transaction_note" json:"transaction_note"`
 	}
 
 	TransactionIncomeSpendingTotalAnnually struct {

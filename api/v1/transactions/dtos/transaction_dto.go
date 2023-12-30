@@ -116,10 +116,11 @@ type (
 	}
 
 	TransactionDetails struct {
-		TransactionCategory string `json:"transaction_category"`
-		TransactionType     string `json:"transaction_type"`
-		TransactionAmount   Amount `json:"transaction_amount"`
-		TransactionNote     string `json:"transaction_note"`
+		TransactionCategory     string `json:"transaction_category"`
+		TransactionType         string `json:"transaction_type"`
+		TransactionCategoryIcon string `json:"transaction_category_icon"`
+		TransactionAmount       Amount `json:"transaction_amount"`
+		TransactionNote         string `json:"transaction_note"`
 	}
 
 	TransactionNotes struct {
