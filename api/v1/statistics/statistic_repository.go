@@ -206,7 +206,7 @@ FROM tbl_transactions tt
 INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
 WHERE tmtt.type='` + typeName + `' AND tt.date_time_transaction::date > CURRENT_DATE - INTERVAL '` + periods + `'
   AND tt.id_personal_account=?
-GROUP BY tt.date_time_transaction`
+GROUP BY period`
 	if err := r.db.Raw(sql, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.StatisticAnalyticsTrends{}
 	}
