@@ -26,11 +26,7 @@ func NewInvestmentRepository(db *gorm.DB) *InvestmentRepository {
 }
 
 func (r *InvestmentRepository) TrxInfo(IDPersonal uuid.UUID) (data []entities.InvestmentDataHelperPortfolio, err error) {
-	if err := r.db.Raw(`SELECT *
-FROM tbl_investment ti
-INNER JOIN tbl_master_broker tmb ON tmb.id = ti.id_master_broker
-WHERE ti.id_personal_accounts = ?
-ORDER BY ti.id_master_broker ASC, ti.stock_code ASC`, IDPersonal).
+	if err := r.db.Raw(`SELECT * FROM tbl_investment ti INNER JOIN tbl_wallets tw ON tw.id = ti.wallet_id WHERE ti.id_personal_accounts=? ORDER BY ti.id_master_broker ASC, ti.stock_code ASC`, IDPersonal).
 		Scan(&data).Error; err != nil {
 		return []entities.InvestmentDataHelperPortfolio{}, err
 	}
@@ -46,13 +42,11 @@ func (r *InvestmentRepository) GetTradingInfo(stockCode string) (data entities.I
 }
 
 func (r *InvestmentRepository) InvestmentTrx(IDPersonal uuid.UUID) (data []entities.InvestmentTransaction, err error) {
-	if err := r.db.Raw(`SELECT tt.date_time_transaction as date_transaction, ttd.stock_code, tt.amount as price, ttd.lot, tmb.broker_name, tw.fee_invest_sell as fee_sell
+	if err := r.db.Raw(`SELECT tt.date_time_transaction as date_transaction, ttd.stock_code, tt.amount as price, ttd.lot, tw.fee_invest_sell as fee_sell, tw.wallet_name
 FROM tbl_transactions tt
          INNER JOIN tbl_transaction_details ttd ON tt.id = ttd.id_transactions
-         INNER JOIN tbl_master_broker tmb ON tt.id_master_broker = tmb.id
          INNER JOIN tbl_wallets tw ON tw.id = tt.id_wallets
 WHERE tt.id_personal_account = ?
-  AND tt.id_master_broker <> '00000000-0000-0000-0000-000000000000'
   AND tt.id_master_invest <> '00000000-0000-0000-0000-000000000000'
   AND ttd.sellbuy = 0
 ORDER BY tt.date_time_transaction::DATE DESC`, IDPersonal).

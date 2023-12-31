@@ -16,7 +16,6 @@ type (
 		IDMasterExpenseCategories     uuid.UUID `gorm:"column:id_master_expense_categories"`
 		IDMasterExpenseSubCategories  uuid.UUID `gorm:"column:id_master_expense_subcategories"`
 		IDMasterInvest                uuid.UUID `gorm:"column:id_master_invest"`
-		IDMasterBroker                uuid.UUID `gorm:"column:id_master_broker"`
 		IDMasterReksanadaTypes        uuid.UUID `gorm:"column:id_master_reksadana_types"`
 		IDMasterTransactionPriorities uuid.UUID `gorm:"column:id_master_transaction_priorities"`
 		IDMasterTransactionTypes      uuid.UUID `gorm:"column:id_master_transaction_types"`
@@ -51,6 +50,7 @@ type (
 		GainLoss          float64   `gorm:"column:gain_loss"`
 		PotentialReturn   float64   `gorm:"column:potential_return"`
 		PercentageReturn  float64   `gorm:"column:percentage_return"`
+		WalletID          uuid.UUID `gorm:"column:wallet_id"`
 	}
 
 	TransactionExpenseTotalHistory struct {
@@ -111,11 +111,12 @@ type (
 	}
 
 	TransactionIncomeSpendingDetailMonthly struct {
-		TransactionDate     string `gorm:"column:date" json:"transaction_date"`
-		TransactionCategory string `gorm:"column:transaction_category" json:"transaction_category"`
-		TransactionType     string `gorm:"column:transaction_type" json:"transaction_type"`
-		TransactionAmount   int    `gorm:"column:transaction_amount" json:"transaction_amount"`
-		TransactionNote     string `gorm:"column:transaction_note" json:"transaction_note"`
+		TransactionDate         string `gorm:"column:date" json:"transaction_date"`
+		TransactionCategory     string `gorm:"column:transaction_category" json:"transaction_category"`
+		TransactionCategoryIcon string `gorm:"column:image_path" json:"transaction_category_icon"`
+		TransactionType         string `gorm:"column:transaction_type" json:"transaction_type"`
+		TransactionAmount       int    `gorm:"column:transaction_amount" json:"transaction_amount"`
+		TransactionNote         string `gorm:"column:transaction_note" json:"transaction_note"`
 	}
 
 	TransactionIncomeSpendingTotalAnnually struct {

@@ -30,7 +30,6 @@ type (
 		SellBuy                       int    `json:"sellbuy,omitempty"`
 		IDWallet                      string `json:"id_wallets,omitempty"`
 		IDMasterInvest                string `json:"id_master_invest,omitempty"`
-		IDMasterBroker                string `json:"id_master_broker,omitempty"`
 		IDMasterTransactionPriorities string `json:"id_master_transaction_priorities,omitempty"`
 		IDMasterTransactionTypes      string `json:"id_master_transaction_types,omitempty"`
 	}
@@ -116,10 +115,11 @@ type (
 	}
 
 	TransactionDetails struct {
-		TransactionCategory string `json:"transaction_category"`
-		TransactionType     string `json:"transaction_type"`
-		TransactionAmount   Amount `json:"transaction_amount"`
-		TransactionNote     string `json:"transaction_note"`
+		TransactionCategory     string `json:"transaction_category"`
+		TransactionType         string `json:"transaction_type"`
+		TransactionCategoryIcon string `json:"transaction_category_icon"`
+		TransactionAmount       Amount `json:"transaction_amount"`
+		TransactionNote         string `json:"transaction_note"`
 	}
 
 	TransactionNotes struct {

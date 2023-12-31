@@ -57,7 +57,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 	}
 
 	// mapping response
-	brokerName := ""
+	walletName := ""
 	maxData := len(trxData) - 1
 	totalInvestment := 0.0
 	totalPotentialReturn := 0.0
@@ -77,8 +77,8 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 			logrus.Error(err.Error())
 		}
 
-		// if previous broker same with new data
-		if brokerName == v.BrokerName {
+		// if previous wallet same with new data
+		if walletName == v.WalletName {
 
 			// calculation for
 			closePrice := float64(dataTrading.Close)
@@ -100,7 +100,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 			// latest data
 			if k == maxData {
 				investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
-					BrokerName:          brokerName,
+					BrokerName:          walletName,
 					Info:                investmentInfo,
 					UnrealizedPotential: potentialReturn,
 				})
@@ -114,9 +114,9 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 		}
 
 		// if previous broker empty
-		if brokerName == "" {
+		if walletName == "" {
 			// set broker name
-			brokerName = v.BrokerName
+			walletName = v.WalletName
 
 			// calculation for
 			closePrice := float64(dataTrading.Close)
@@ -137,7 +137,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 
 			if k == maxData {
 				investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
-					BrokerName:          brokerName,
+					BrokerName:          walletName,
 					Info:                investmentInfo,
 					UnrealizedPotential: potentialReturn,
 				})
@@ -150,13 +150,13 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 		}
 
 		// if previous broker name different with new data
-		if brokerName != v.BrokerName {
+		if walletName != v.WalletName {
 			// potential return
 			closePrice := float64(dataTrading.Close)
 			potentialReturn := (closePrice - v.AverageBuy) * float64(v.TotalLot) * 100
 
 			investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
-				BrokerName:          brokerName,
+				BrokerName:          walletName,
 				Info:                investmentInfo,
 				UnrealizedPotential: potentialReturn,
 			})
@@ -167,7 +167,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 			potentialReturn = 0
 
 			// renew
-			brokerName = v.BrokerName
+			walletName = v.WalletName
 
 			// calculation for
 			closePrice = float64(dataTrading.Close)
@@ -189,7 +189,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 			// latest data
 			if k == maxData {
 				investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
-					BrokerName:          brokerName,
+					BrokerName:          walletName,
 					Info:                investmentInfo,
 					UnrealizedPotential: potentialReturn,
 				})
@@ -271,7 +271,7 @@ func (s *InvestmentUseCase) GainLoss(ctx *gin.Context) (response interface{}, ht
 
 		dtoResponse = append(dtoResponse, dtos.InvestmentGainLoss{
 			DataTransaction:   v.DateTransaction,
-			BrokerName:        v.BrokerName,
+			BrokerName:        v.WalletName,
 			StockCode:         v.StockCode,
 			Lot:               v.Lot,
 			Price:             float64(v.Price),

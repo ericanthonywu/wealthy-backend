@@ -78,6 +78,8 @@ type (
 		WalletInvestment(accountUUID uuid.UUID) (data []entities.WalletEntity, err error)
 
 		CheckIDTravelBelongsTo(IDTravel uuid.UUID) (data entities.Budget, err error)
+
+		WalletInfo(IDWallet uuid.UUID) (data entities.WalletEntity, err error)
 	}
 )
 
@@ -486,23 +488,24 @@ func (r *TransactionRepository) IncomeSpendingMonthlyDetail(IDPersonal uuid.UUID
 	if err := r.db.Raw(`SELECT concat(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-',
               to_char(tt.date_time_transaction::DATE, 'MM'), '-',
               to_char(tt.date_time_transaction::DATE, 'DD'))::text as date,
+       tmec.image_path,
        CASE
            WHEN tmec.expense_types IS NOT NULL THEN tmec.expense_types
            WHEN tmic.income_types IS NOT NULL THEN tmic.income_types
-           END ::text                                                as transaction_category,
+           END ::text                                              as transaction_category,
        CASE
            WHEN tmec.expense_types IS NOT NULL THEN 'EXPENSE'
            WHEN tmic.income_types IS NOT NULL THEN 'INCOME'
-           END :: text                                               as transaction_type,
-       coalesce(SUM(tt.amount), 0)::numeric                         as transaction_amount,
+           END :: text                                             as transaction_type,
+       coalesce(SUM(tt.amount), 0)::numeric                        as transaction_amount,
        CASE
            WHEN td.note IS NULL THEN ''
            WHEN td.note IS NOT NULL THEN td.note
-           END::text                                            as transaction_note
+           END::text                                               as transaction_note
 FROM tbl_transactions tt
-         LEFT JOIN tbl_master_expense_categories tmec
+         LEFT JOIN tbl_master_expense_categories_editable tmec
                    ON tt.id_master_expense_categories = tmec.id
-         LEFT JOIN tbl_master_income_categories tmic
+         LEFT JOIN tbl_master_income_categories_editable tmic
                    ON tt.id_master_income_categories = tmic.id
          INNER JOIN tbl_transaction_details td ON tt.id = td.id_transactions
          INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
@@ -510,7 +513,7 @@ WHERE to_char(tt.date_time_transaction::DATE, 'MM') = ?
   AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
   AND tt.id_personal_account = ?
   AND (tmtt.type = 'INCOME' OR tmtt.type = 'EXPENSE')
-GROUP BY date, transaction_category, tmec.expense_types, tmic.income_types, td.note
+GROUP BY date, transaction_category, tmec.expense_types, tmic.income_types, td.note, tmec.image_path
 ORDER BY date DESC`, month, year, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionIncomeSpendingDetailMonthly{}
 	}
@@ -697,6 +700,7 @@ func (r *TransactionRepository) AllInvestmentsTrx(accountUUID uuid.UUID) (data m
        tbl_transaction_details.lot,
        tbl_transaction_details.sellbuy,
        tbl_transaction_details.stock_code,
+       tbl_wallets.id AS wallet_id,
        tbl_wallets.fee_invest_buy as fee_buy,
        tbl_wallets.fee_invest_sell as fee_sell
 FROM tbl_transaction_details
@@ -872,5 +876,13 @@ func (r *TransactionRepository) CheckIDTravelBelongsTo(IDTravel uuid.UUID) (data
 		return entities.Budget{}, err
 	}
 
+	return data, nil
+}
+
+func (r *TransactionRepository) WalletInfo(IDWallet uuid.UUID) (data entities.WalletEntity, err error) {
+	if err := r.db.Raw(`SELECT * FROM tbl_wallets WHERE id=?`, IDWallet).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.WalletEntity{}, err
+	}
 	return data, nil
 }

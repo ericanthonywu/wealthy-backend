@@ -449,10 +449,6 @@ func (c *TransactionController) validateInvestTransactionPayload(request *dtos.T
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id wallet empty value")
 	}
 
-	if request.IDMasterBroker == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master broker empty value")
-	}
-
 	if request.IDMasterInvest == "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master invest empty value")
 	}
