@@ -154,7 +154,9 @@ func (r *StatisticRepository) ExpenseDetail(IDPersonal uuid.UUID, month, year st
        tmec.image_path                 as transaction_category_icon
 FROM tbl_transactions tt
          INNER JOIN tbl_master_expense_categories_editable tmec ON tmec.id = tt.id_master_expense_categories
+		 INNER JOIN tbl_master_transaction_types tmtt ON tt.id_master_transaction_types = tmtt.id
 WHERE tt.id_personal_account = ?
+  and tmtt.type != 'TRAVEL'
   AND tmec.id_personal_accounts = ?
   AND to_char(tt.date_time_transaction::DATE, 'MM') = ?
   AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
