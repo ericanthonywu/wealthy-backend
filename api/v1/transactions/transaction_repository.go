@@ -657,6 +657,7 @@ WHERE to_char(t.date_time_transaction::DATE, 'MM') = ?
   AND to_char(t.date_time_transaction::DATE, 'YYYY') = ?
   AND t.id_personal_account = ?
   AND tmtt.type = 'EXPENSE'
+  AND td.note != ''
 GROUP BY td.note, tmec.expense_types`, month, year, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.TransactionByNotes{}
 	}
