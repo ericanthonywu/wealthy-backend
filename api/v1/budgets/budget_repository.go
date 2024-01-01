@@ -57,9 +57,10 @@ FROM tbl_master_expense_categories_editable tmece
          LEFT JOIN tbl_master_expense_subcategories_editable tmese
                    ON tmece.id = tmese.id_master_expense_categories
 WHERE tmece.id_personal_accounts = ?
+  AND tmese.id_personal_accounts = ?  
   AND tmece.active = true
 GROUP BY tmece.id, tmece.expense_types, tmese.subcategories, tmese.id, tmece.image_path,tmese.image_path
-ORDER BY tmece.expense_types`, IDPersonal, month, year, IDPersonal).Scan(&data).Error; err != nil {
+ORDER BY tmece.expense_types`, IDPersonal, month, year, IDPersonal, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.SubCategoryBudget{}, err
 	}
 	return data, nil
