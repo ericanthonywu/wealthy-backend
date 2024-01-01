@@ -1,6 +1,7 @@
 package budgets
 
 import (
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/wealthy-app/wealthy-backend/api/v1/budgets/entities"
@@ -37,6 +38,7 @@ func NewBudgetRepository(db *gorm.DB) *BudgetRepository {
 }
 
 func (r *BudgetRepository) SubCategoryBudget(IDPersonal uuid.UUID, month, year string) (data []entities.SubCategoryBudget, err error) {
+	month = fmt.Sprintf("%02s", month)
 	if err := r.db.Raw(`SELECT tmece.id            AS category_id,
        tmece.expense_types AS category_name,
        tmece.image_path,
@@ -49,6 +51,7 @@ func (r *BudgetRepository) SubCategoryBudget(IDPersonal uuid.UUID, month, year s
           AND b.id_personal_accounts = ?
           AND to_char(b.created_at, 'MM') = ?
           AND to_char(b.created_at, 'YYYY') = ?
+        order by b.created_at desc
         LIMIT 1)           AS budget_limit
 FROM tbl_master_expense_categories_editable tmece
          LEFT JOIN tbl_master_expense_subcategories_editable tmese
