@@ -67,6 +67,7 @@ ORDER BY tmece.expense_types`, IDPersonal, month, year, IDPersonal, IDPersonal).
 }
 
 func (r *BudgetRepository) TotalSpendingAndNumberOfCategory(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetTotalSpendingAndNumberOfCategory) {
+	month = fmt.Sprintf("%02s", month)
 	if err := r.db.Raw(`SELECT tmec.id,tmec.expense_types as category, COALESCE(SUM(tt.amount),0) as spending, COUNT(tt.id_master_expense_categories) as number_of_category
 								FROM tbl_master_expense_categories tmec
     							LEFT JOIN tbl_transactions tt ON tt.id_master_expense_categories = tmec.id
@@ -78,6 +79,7 @@ func (r *BudgetRepository) TotalSpendingAndNumberOfCategory(IDPersonal uuid.UUID
 }
 
 func (r *BudgetRepository) BudgetLimit(IDPersonal uuid.UUID, month, year string) (data []entities.BudgetLimit) {
+	month = fmt.Sprintf("%02s", month)
 	if err := r.db.Raw(`SELECT tb.id_master_categories as id_master_expense ,COALESCE(SUM(tb.amount),0) as budget_limit, tmec.expense_types
 FROM tbl_budgets tb LEFT JOIN tbl_master_expense_categories tmec ON tb.id_master_categories = tmec.id
 WHERE tb.id_personal_accounts= ? AND to_char(tb.created_at, 'MM') = ? AND to_char(tb.created_at, 'YYYY') = ?
@@ -88,6 +90,7 @@ GROUP BY tmec.expense_types, tb.id_master_categories`, IDPersonal, month, year).
 }
 
 func (r *BudgetRepository) Category(IDPersonal uuid.UUID, month string, year string, category uuid.UUID) (data []entities.BudgetCategory) {
+	month = fmt.Sprintf("%02s", month)
 	if err := r.db.Raw(`SELECT tmec.expense_types::text                              as transaction_category,
        (SELECT COALESCE(SUM(b.amount), 0)
         FROM tbl_budgets b
@@ -163,6 +166,7 @@ AND to_char(b.created_at, 'YYYY') = EXTRACT(YEAR FROM current_timestamp)::text`,
 }
 
 func (r *BudgetRepository) PersonalBudget(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalBudget, err error) {
+	month = fmt.Sprintf("%02s", month)
 	if err := r.db.Raw(`SELECT tmec.id,
        tmec.expense_types                             as category,
        tmec.image_path,
@@ -180,6 +184,7 @@ WHERE tmec.active = true AND tmec.id_personal_accounts = ?`, IDPersonal, month, 
 }
 
 func (r *BudgetRepository) PersonalTransaction(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalTransaction, err error) {
+	month = fmt.Sprintf("%02s", month)
 	if err := r.db.Raw(`SELECT tmec.id, tmec.expense_types as category, coalesce(SUM(tt.amount),0) as amount, COUNT(tt.id_master_expense_categories)
 FROM tbl_transactions tt
 LEFT JOIN tbl_master_expense_categories tmec ON tmec.id = tt.id_master_expense_categories
@@ -193,6 +198,7 @@ group by tmec.id, tmec.expense_types`, IDPersonal, month, year).Scan(&data).Erro
 }
 
 func (r *BudgetRepository) Trends(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.TrendsWeekly, err error) {
+	month = fmt.Sprintf("%02s", month)
 	sql := `SELECT COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + ` ', '-01') AND  CONCAT('` + year + `', '-', '` + month + `', '-04')), 0)::numeric as date_range_01_04,
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-05') AND  CONCAT('` + year + `', '-', '` + month + `', '-11')), 0)::numeric as date_range_05_11,
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-12') AND  CONCAT('` + year + `', '-', '` + month + `', '-18')), 0)::numeric as date_range_12_18,
@@ -207,6 +213,7 @@ func (r *BudgetRepository) Trends(IDPersonal uuid.UUID, IDCategory uuid.UUID, mo
 }
 
 func (r *BudgetRepository) BudgetEachCategory(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.BudgetEachCategory, err error) {
+	month = fmt.Sprintf("%02s", month)
 	if err := r.db.Raw(`SELECT tmec.expense_types as category ,COALESCE(ROUNd(SUM(b.amount))::INT, 0) as budget_limit
 	FROM tbl_budgets b INNER JOIN tbl_master_expense_categories tmec ON tmec.id = b.id_master_categories
 	WHERE id_master_categories = ? AND b.id_personal_accounts = ? AND to_char(b.created_at, 'MM') = ? AND to_char(b.created_at, 'YYYY') = ? 
