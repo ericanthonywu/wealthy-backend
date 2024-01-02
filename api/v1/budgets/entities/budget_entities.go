@@ -119,6 +119,26 @@ type (
 	BudgetExistsExchangeValue struct {
 		Code string `gorm:"column:code"`
 	}
+
+	CategoryList struct {
+		CategoryID   uuid.UUID `gorm:"column:category_id"`
+		CategoryName string    `gorm:"column:category_name"`
+		CategoryIcon string    `gorm:"column:category_icon"`
+	}
+
+	SubCategoryList struct {
+		SubCategoryName string    `gorm:"column:sub_category_name"`
+		SubCategoryID   uuid.UUID `gorm:"column:sub_category_id"`
+		SubCategoryIcon string    `gorm:"column:sub_category_icon"`
+	}
+
+	SubCategoryBudgetInfo struct {
+		Amount float64 `gorm:"column:amount"`
+	}
+
+	CategoryBudgetInfo struct {
+		Amount float64 `gorm:"column:amount"`
+	}
 )
 
 func (BudgetSetEntities) TableName() string {

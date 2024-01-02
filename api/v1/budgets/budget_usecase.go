@@ -51,135 +51,79 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 	month := ctx.Query("month")
 	year := ctx.Query("year")
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	// accountUUID
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
-		return response, http.StatusUnauthorized, errInfo
-	}
-
-	dataSubCategoryBudget, err := s.repo.SubCategoryBudget(personalAccount.ID, month, year)
+	// get all category by accountID
+	dataCategory, err := s.repo.CategoryByAccountID(accountUUID)
 	if err != nil {
 		logrus.Error(err.Error())
 	}
 
-	categoryIDPrevious := uuid.Nil
-	categoryNamePrevious := ""
-	lengthOfData := len(dataSubCategoryBudget) - 1
-	totalBudgetAmount := 0
+	if len(dataCategory) > 0 {
+		for _, v := range dataCategory {
 
-	if len(dataSubCategoryBudget) > 0 {
-		for k, v := range dataSubCategoryBudget {
-			// CHECK IF FIRST TIME WITH VALUE NIL
-			if categoryIDPrevious == uuid.Nil {
+			// initial
+			totalBudgetCategory := 0.0
 
-				// MOVE VALUE INTO PREVIOUS
-				categoryIDPrevious = v.CategoryID
-				categoryNamePrevious = v.CategoryName
+			// get sub category by categoryID
+			dataSubCategory, err := s.repo.GetSubCategory(accountUUID, v.CategoryID)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
 
-				// CHECK IF SUB CATEGORY NOT NIL
-				if v.SubCategoryID != uuid.Nil {
-					totalBudgetAmount = totalBudgetAmount + int(v.BudgetLimit)
+			// if data sub category exist , get amount from tbl_budget by sub_category_ID
+			if len(dataSubCategory) > 0 {
+				for _, v := range dataSubCategory {
+					dataBudgetSubCat, err := s.repo.GetAmountBudgetSubCategory(accountUUID, v.SubCategoryID, month, year)
+					if err != nil {
+						logrus.Error(err.Error())
+					}
 
+					// mapping sub category
 					subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
 						SubCategoryID:   v.SubCategoryID,
 						SubCategoryName: v.SubCategoryName,
 						SubCategoryIcon: v.SubCategoryIcon,
 						BudgetLimit: dtos.Limit{
 							CurrencyCode: "IDR",
-							Value:        int(v.BudgetLimit),
-						},
-					})
-				}
-				// CHECK IF NOT FIRST TIME WITH VALUE NOT NIL
-			} else if categoryIDPrevious != uuid.Nil {
-
-				// CHECK IF PREVIOUS IS SAME AS CURRENT
-				if categoryIDPrevious == v.CategoryID {
-					totalBudgetAmount = totalBudgetAmount + int(v.BudgetLimit)
-
-					subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
-						SubCategoryID:   v.SubCategoryID,
-						SubCategoryName: v.SubCategoryName,
-						SubCategoryIcon: v.SubCategoryIcon,
-						BudgetLimit: dtos.Limit{
-							CurrencyCode: "IDR",
-							Value:        int(v.BudgetLimit),
+							Value:        int(dataBudgetSubCat.Amount),
 						},
 					})
 
-					// OTHERWISE DIFFERENT
-				} else {
-
-					// IF SUB CATEGORY NOT EMPTY
-					if len(subCategoryInfo) > 0 {
-						budgetDetail = append(budgetDetail, dtos.AllBudgetDetail{
-							CategoryID:   categoryIDPrevious,
-							CategoryName: categoryNamePrevious,
-							CategoryIcon: v.ImagePath,
-							SubCategory:  subCategoryInfo,
-							BudgetInfo: dtos.Limit{
-								CurrencyCode: "IDR",
-								Value:        totalBudgetAmount,
-							},
-						})
-						// OTHERWISE EMPTY
-					} else {
-						budgetDetail = append(budgetDetail, dtos.AllBudgetDetail{
-							CategoryID:   categoryIDPrevious,
-							CategoryName: categoryNamePrevious,
-							CategoryIcon: v.ImagePath,
-							SubCategory:  []dtos.SubCategoryInfo{},
-							BudgetInfo: dtos.Limit{
-								CurrencyCode: "IDR",
-								Value:        0,
-							},
-						})
-					}
-
-					// RESET SUB CATEGORY
-					subCategoryInfo = []dtos.SubCategoryInfo{}
-					totalBudgetAmount = 0
-
-					// RENEW VALUE ID AND NAME
-					categoryIDPrevious = v.CategoryID
-					categoryNamePrevious = v.CategoryName
-
-					// IF SUB CATEGORY NOT EMPTY
-					if v.SubCategoryID != uuid.Nil {
-						totalBudgetAmount = totalBudgetAmount + int(v.BudgetLimit)
-
-						subCategoryInfo = append(subCategoryInfo, dtos.SubCategoryInfo{
-							SubCategoryID:   v.SubCategoryID,
-							SubCategoryName: v.SubCategoryName,
-							SubCategoryIcon: v.SubCategoryIcon,
-							BudgetLimit: dtos.Limit{
-								CurrencyCode: "IDR",
-								Value:        int(v.BudgetLimit),
-							},
-						})
-
-					}
-
-					if k == lengthOfData {
-						budgetDetail = append(budgetDetail, dtos.AllBudgetDetail{
-							CategoryID:   categoryIDPrevious,
-							CategoryName: categoryNamePrevious,
-							CategoryIcon: v.ImagePath,
-							SubCategory:  []dtos.SubCategoryInfo{},
-							BudgetInfo: dtos.Limit{
-								CurrencyCode: "IDR",
-								Value:        totalBudgetAmount,
-							},
-						})
-					}
+					// override
+					totalBudgetCategory += dataBudgetSubCat.Amount
 				}
 			}
+
+			// if no data sub category exist, get amount from tbl_badget by category_ID
+			if len(dataSubCategory) == 0 {
+				dataBudgetCategory, err := s.repo.GetAmountBudgetCategory(accountUUID, v.CategoryID, month, year)
+				if err != nil {
+					logrus.Error(err.Error())
+				}
+
+				totalBudgetCategory = totalBudgetCategory + dataBudgetCategory.Amount
+
+				// mapping sub category
+				subCategoryInfo = []dtos.SubCategoryInfo{}
+			}
+
+			// integration mapping
+			budgetDetail = append(budgetDetail, dtos.AllBudgetDetail{
+				CategoryID:   v.CategoryID,
+				CategoryName: v.CategoryName,
+				CategoryIcon: v.CategoryIcon,
+				BudgetInfo: dtos.Limit{
+					CurrencyCode: "IDR",
+					Value:        int(totalBudgetCategory),
+				},
+				SubCategory: subCategoryInfo,
+			})
+
+			// reset
+			subCategoryInfo = nil
 		}
-	} else {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return dtoResponse, http.StatusNotFound, errInfo
 	}
 
 	monthINT, err := strconv.Atoi(month)
@@ -208,6 +152,7 @@ func (s *BudgetUseCase) Overview(ctx *gin.Context, month, year string) (response
 
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
+	// TODO : Remove These
 	personalBudgetData, err := s.repo.PersonalBudget(accountUUID, month, year)
 	if err != nil {
 		logrus.Error(err.Error())

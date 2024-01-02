@@ -39,24 +39,25 @@ func (c *BudgetController) AllLimit(ctx *gin.Context) {
 }
 
 func (c *BudgetController) Overview(ctx *gin.Context) {
-
 	var errInfo []errorsinfo.Errors
 
 	month := ctx.Query("month")
 	year := ctx.Query("year")
 
-	if month == "" || year == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month or year required in query url")
-		response.SendBack(ctx, nil, errInfo, http.StatusBadRequest)
+	if month == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month mandatory required in query url")
+	}
+
+	if year == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "year mandatory required in query url")
+	}
+
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
 	data, httpCode, errInfo := c.useCase.Overview(ctx, month, year)
-
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
-	}
-
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }

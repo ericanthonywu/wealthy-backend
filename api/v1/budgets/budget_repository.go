@@ -30,6 +30,10 @@ type (
 		GetXchangeCurrency(IDMasterExchange uuid.UUID) (data entities.BudgetExistsExchangeExist, err error)
 		GetXchangeCurrencyValue(IDMasterExchange uuid.UUID) (data entities.BudgetExistsExchangeValue, err error)
 		UpdateAmountTravel(IDWalletUUID uuid.UUID, request map[string]interface{}) (err error)
+		CategoryByAccountID(accountID uuid.UUID) (data []entities.CategoryList, err error)
+		GetSubCategory(accountID, category uuid.UUID) (data []entities.SubCategoryList, err error)
+		GetAmountBudgetSubCategory(accountID, subCategoryID uuid.UUID, month, year string) (data entities.SubCategoryBudgetInfo, err error)
+		GetAmountBudgetCategory(accountUUID, categoryUUID uuid.UUID, month, year string) (data entities.CategoryBudgetInfo, err error)
 	}
 )
 
@@ -267,4 +271,49 @@ func (r *BudgetRepository) UpdateAmountTravel(IDWalletUUID uuid.UUID, request ma
 		return err
 	}
 	return nil
+}
+
+func (r *BudgetRepository) CategoryByAccountID(accountID uuid.UUID) (data []entities.CategoryList, err error) {
+	if err := r.db.Raw(`SELECT tmece.expense_types as category_name, tmece.id as category_id, tmece.image_path as category_icon
+FROM public.tbl_master_expense_categories_editable tmece WHERE tmece.id_personal_accounts = ?
+ AND tmece.active = true ORDER BY tmece.expense_types;`, accountID).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return []entities.CategoryList{}, err
+	}
+
+	return data, nil
+}
+
+func (r *BudgetRepository) GetSubCategory(accountID, categoryID uuid.UUID) (data []entities.SubCategoryList, err error) {
+	if err := r.db.Raw(`SELECT tmese.subcategories as sub_category_name, tmese.id as sub_category_id, tmese.image_path as sub_category_icon
+FROM public.tbl_master_expense_subcategories_editable tmese
+WHERE tmese.id_personal_accounts = ? AND tmese.id_master_expense_categories=?
+  AND tmese.active = true
+ORDER BY tmese.subcategories`, accountID, categoryID).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return []entities.SubCategoryList{}, err
+	}
+	return data, nil
+}
+
+func (r *BudgetRepository) GetAmountBudgetSubCategory(accountID, subCategoryID uuid.UUID, month, year string) (data entities.SubCategoryBudgetInfo, err error) {
+	if err := r.db.Raw(`SELECT tb.amount FROM tbl_budgets tb WHERE tb.id_personal_accounts = ? AND tb.id_master_subcategories = ? 
+        AND to_char(tb.created_at, 'MM') = ? AND to_char(tb.created_at, 'YYYY') = ? ORDER BY tb.created_at DESC LIMIT 1`, accountID, subCategoryID, month, year).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.SubCategoryBudgetInfo{}, err
+	}
+	return data, nil
+}
+
+func (r *BudgetRepository) GetAmountBudgetCategory(accountUUID, categoryUUID uuid.UUID, month, year string) (data entities.CategoryBudgetInfo, err error) {
+	if err := r.db.Raw(`SELECT tb.amount FROM tbl_budgets tb WHERE tb.id_personal_accounts = ? 
+        AND tb.id_master_categories = ? AND to_char(tb.created_at, 'MM') = ? AND to_char(tb.created_at, 'YYYY') = ? ORDER BY tb.created_at DESC LIMIT 1`, accountUUID, categoryUUID, month, year).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.CategoryBudgetInfo{}, err
+	}
+	return data, nil
 }
