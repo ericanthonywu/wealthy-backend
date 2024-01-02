@@ -251,7 +251,7 @@ func (s *TransactionUseCase) AddInvestmentTransaction(ctx *gin.Context, request 
 	// account uuid
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	// validate wallet type
+	// fetch wallet investment from account ID
 	dataWalletType, err := s.repo.WalletInvestment(accountUUID)
 	if err != nil {
 		logrus.Error()
@@ -273,6 +273,7 @@ func (s *TransactionUseCase) AddInvestmentTransaction(ctx *gin.Context, request 
 		}
 	}
 
+	// check wallet type for investment
 	_, exists := collectionsWallet[request.IDWallet]
 	if !exists {
 		resp := struct {
@@ -281,6 +282,34 @@ func (s *TransactionUseCase) AddInvestmentTransaction(ctx *gin.Context, request 
 			Message: "no wallet type for investment. please create new one",
 		}
 		return resp, http.StatusNotFound, []errorsinfo.Errors{}
+	}
+
+	// check if sell transaction, make sure already buy stock code before
+	if request.SellBuy == 0 {
+		available := false
+
+		dataStockCode, err := s.repo.ListStockCode(accountUUID)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		if len(dataStockCode) > 0 {
+			for _, v := range dataStockCode {
+				if request.StockCode == v.StockCode {
+					available = true
+					break
+				}
+			}
+		}
+
+		if !available {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: "buy stock code " + request.StockCode + " first before sell",
+			}
+			return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+		}
 	}
 
 	// save investment transaction

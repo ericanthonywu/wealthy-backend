@@ -80,6 +80,8 @@ type (
 		CheckIDTravelBelongsTo(IDTravel uuid.UUID) (data entities.Budget, err error)
 
 		WalletInfo(IDWallet uuid.UUID) (data entities.WalletEntity, err error)
+
+		ListStockCode(accoundID uuid.UUID) (data []entities.StockCodeData, err error)
 	}
 )
 
@@ -884,6 +886,15 @@ func (r *TransactionRepository) WalletInfo(IDWallet uuid.UUID) (data entities.Wa
 	if err := r.db.Raw(`SELECT * FROM tbl_wallets WHERE id=?`, IDWallet).Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.WalletEntity{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) ListStockCode(accoundID uuid.UUID) (data []entities.StockCodeData, err error) {
+	if err := r.db.Raw(`SELECT ttd.stock_code FROM tbl_transactions tt
+         INNER JOIN tbl_transaction_details ttd ON ttd.id_transactions = tt.id
+WHERE tt.id_personal_account = ? AND tt.id_master_invest <> '00000000-0000-0000-0000-000000000000'`, accoundID).Scan(&data).Error; err != nil {
+		return []entities.StockCodeData{}, err
 	}
 	return data, nil
 }

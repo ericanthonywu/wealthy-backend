@@ -248,6 +248,10 @@ type (
 	Budget struct {
 		IDPersonalAccount uuid.UUID `gorm:"column:id_personal_accounts"`
 	}
+
+	StockCodeData struct {
+		StockCode string `gorm:"column:stock_code"`
+	}
 )
 
 func (TransactionEntity) TableName() string {
