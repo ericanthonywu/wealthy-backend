@@ -4,10 +4,10 @@ import "github.com/google/uuid"
 
 type (
 	CategoryResponse struct {
-		CategoryName    string    `json:"category_name"`
-		CategoryID      uuid.UUID `json:"category_id"`
-		CategoryIcon    string    `json:"category_icon"`
-		SubCategoryList []SubCategoryResponse
+		CategoryName    string                `json:"category_name"`
+		CategoryID      uuid.UUID             `json:"category_id"`
+		CategoryIcon    string                `json:"category_icon"`
+		SubCategoryList []SubCategoryResponse `json:"sub_category"`
 	}
 
 	SubCategoryResponse struct {
