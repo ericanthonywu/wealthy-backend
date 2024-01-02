@@ -11,7 +11,7 @@ type (
 	}
 
 	ICategoryHandler interface {
-		GetCatagoriesList(ginContext *gin.Context)
+		GetCatagoriesExpenseList(ginContext *gin.Context)
 	}
 )
 
@@ -19,8 +19,8 @@ func NewCategoryHandler(useCase ICategoryUseCase) *CategoryHandler {
 	return &CategoryHandler{useCase: useCase}
 }
 
-func (c *CategoryHandler) GetCatagoriesList(ginContext *gin.Context) {
-	data, httpCode, errInfo := c.useCase.GetCatagoriesList(ginContext)
+func (c *CategoryHandler) GetCatagoriesExpenseList(ginContext *gin.Context) {
+	data, httpCode, errInfo := c.useCase.GetCatagoriesExpenseList(ginContext)
 	response.SendBack(ginContext, data, errInfo, httpCode)
 	return
 }

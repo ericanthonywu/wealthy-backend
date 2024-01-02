@@ -28,7 +28,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 
 	v1group := router.Group("/v1")
 	{
-		masterGroup := v1group.Group("/categories", tokenSignature(), accountType(), betaVersion())
+		masterGroup := v1group.Group("/masters", tokenSignature(), accountType(), betaVersion())
 		{
 			typeGroup := masterGroup.Group("/types")
 			{
@@ -290,7 +290,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 	{
 		categoriesGroup := v2group.Group("/categories")
 		{
-			categoriesGroup.GET("/list", tokenSignature(), accountType(), categoriesV2.GetCatagoriesList)
+			categoriesGroup.GET("/expense", tokenSignature(), accountType(), categoriesV2.GetCatagoriesExpenseList)
 		}
 	}
 }

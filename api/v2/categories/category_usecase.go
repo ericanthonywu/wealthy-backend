@@ -15,7 +15,8 @@ type (
 	}
 
 	ICategoryUseCase interface {
-		GetCatagoriesList(ginContext *gin.Context) (response []dtos.CategoryListResponse, httpCode int, errInfo []string)
+		GetCategoriesExpenseList(ginContext *gin.Context) (response []dtos.CategoryResponse, httpCode int, errInfo []string)
+		GetCategoriesIncomeList(ginContext *gin.Context) (response []dtos.CategoryResponse, httpCode int, errInfo []string)
 	}
 )
 
@@ -23,18 +24,18 @@ func NewCategoryUseCase(repo ICategoryRepository) *CategoryUseCase {
 	return &CategoryUseCase{repo: repo}
 }
 
-func (s *CategoryUseCase) GetCatagoriesList(ginContext *gin.Context) (response []dtos.CategoryListResponse, httpCode int, errInfo []string) {
-	var subCategoryList []dtos.SubCategoryList
+func (s *CategoryUseCase) GetCategoriesExpenseList(ginContext *gin.Context) (response []dtos.CategoryResponse, httpCode int, errInfo []string) {
+	var subCategoryResponse []dtos.SubCategoryResponse
 
 	// get account ID
 	accountUUID := ginContext.MustGet("accountID").(uuid.UUID)
 
 	// fetch category by account id
-	dataCategories, err := s.repo.GetCategoriesByAccountID(accountUUID)
+	dataCategories, err := s.repo.GetCategoriesExpenseByAccountID(accountUUID)
 	if err != nil {
 		logrus.Errorf(err.Error())
 		errInfo = errorsinfo.ErrorInfoWrapper(errInfo, err.Error())
-		return []dtos.CategoryListResponse{}, http.StatusInternalServerError, errInfo
+		return []dtos.CategoryResponse{}, http.StatusInternalServerError, errInfo
 	}
 
 	// if data categories not empty
@@ -43,7 +44,7 @@ func (s *CategoryUseCase) GetCatagoriesList(ginContext *gin.Context) (response [
 			// get category id
 			categoryID := v.CategoryID
 
-			dataSubCategories, err := s.repo.GetSubCategoryByCategoryID(accountUUID, categoryID)
+			dataSubCategories, err := s.repo.GetSubCategoryExpenseByCategoryID(accountUUID, categoryID)
 			if err != nil {
 				logrus.Error(err.Error())
 			}
@@ -51,7 +52,7 @@ func (s *CategoryUseCase) GetCatagoriesList(ginContext *gin.Context) (response [
 			// if sub categories not empty
 			if len(dataSubCategories) > 0 {
 				for _, w := range dataSubCategories {
-					subCategoryList = append(subCategoryList, dtos.SubCategoryList{
+					subCategoryResponse = append(subCategoryResponse, dtos.SubCategoryResponse{
 						SubcategoryName: w.SubCategoryName,
 						SubcategoryID:   w.SubCategoryID,
 						SubcategoryIcon: w.SubCategoryIcon,
@@ -61,19 +62,19 @@ func (s *CategoryUseCase) GetCatagoriesList(ginContext *gin.Context) (response [
 
 			// if sub categories empty
 			if len(dataSubCategories) == 0 {
-				subCategoryList = []dtos.SubCategoryList{}
+				subCategoryResponse = []dtos.SubCategoryResponse{}
 			}
 
 			// mapping response
-			response = append(response, dtos.CategoryListResponse{
+			response = append(response, dtos.CategoryResponse{
 				CategoryName:    v.CategoryName,
 				CategoryID:      v.CategoryID,
 				CategoryIcon:    v.CategoryIcon,
-				SubCategoryList: subCategoryList,
+				SubCategoryList: subCategoryResponse,
 			})
 
 			// reset
-			subCategoryList = nil
+			subCategoryResponse = nil
 		}
 	}
 
@@ -81,6 +82,68 @@ func (s *CategoryUseCase) GetCatagoriesList(ginContext *gin.Context) (response [
 	if len(errInfo) == 0 {
 		errInfo = []string{}
 	}
+
+	return response, http.StatusOK, errInfo
+}
+
+func (s *CategoryUseCase) GetCategoriesIncomeList(ginContext *gin.Context) (response []dtos.CategoryResponse, httpCode int, errInfo []string) {
+	//var subCategoryResponse []dtos.SubCategoryResponse
+	//
+	//// get account ID
+	//accountUUID := ginContext.MustGet("accountID").(uuid.UUID)
+	//
+	//// fetch category by account id
+	//dataCategories, err := s.repo.GetCategoriesIncomeByAccountID(accountUUID)
+	//if err != nil {
+	//	logrus.Errorf(err.Error())
+	//	errInfo = errorsinfo.ErrorInfoWrapper(errInfo, err.Error())
+	//	return []dtos.CategoryResponse{}, http.StatusInternalServerError, errInfo
+	//}
+	//
+	//// if data categories not empty
+	//if len(dataCategories) > 0 {
+	//	for _, v := range dataCategories {
+	//		// get category id
+	//		categoryID := v.CategoryID
+	//
+	//		dataSubCategories, err := s.repo.GetSubCategoryExpenseByCategoryID(accountUUID, categoryID)
+	//		if err != nil {
+	//			logrus.Error(err.Error())
+	//		}
+	//
+	//		// if sub categories not empty
+	//		if len(dataSubCategories) > 0 {
+	//			for _, w := range dataSubCategories {
+	//				subCategoryResponse = append(subCategoryResponse, dtos.SubCategoryResponse{
+	//					SubcategoryName: w.SubCategoryName,
+	//					SubcategoryID:   w.SubCategoryID,
+	//					SubcategoryIcon: w.SubCategoryIcon,
+	//				})
+	//			}
+	//		}
+	//
+	//		// if sub categories empty
+	//		if len(dataSubCategories) == 0 {
+	//			subCategoryResponse = []dtos.SubCategoryResponse{}
+	//		}
+	//
+	//		// mapping response
+	//		response = append(response, dtos.CategoryResponse{
+	//			CategoryName:    v.CategoryName,
+	//			CategoryID:      v.CategoryID,
+	//			CategoryIcon:    v.CategoryIcon,
+	//			SubCategoryList: subCategoryResponse,
+	//		})
+	//
+	//		// reset
+	//		subCategoryResponse = nil
+	//	}
+	//}
+	//
+	//// if not errors
+	//if len(errInfo) == 0 {
+	//	errInfo = []string{}
+	//}
 
 	return response, http.StatusOK, errInfo
 }

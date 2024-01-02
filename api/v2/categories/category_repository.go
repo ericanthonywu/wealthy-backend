@@ -13,8 +13,8 @@ type (
 	}
 
 	ICategoryRepository interface {
-		GetCategoriesByAccountID(accountID uuid.UUID) (data []entities.CategoryInformation, err error)
-		GetSubCategoryByCategoryID(accountUUID, categoryID uuid.UUID) (data []entities.SubCategoryInformation, err error)
+		GetCategoriesExpenseByAccountID(accountID uuid.UUID) (data []entities.CategoryInformation, err error)
+		GetSubCategoryExpenseByCategoryID(accountUUID, categoryID uuid.UUID) (data []entities.SubCategoryInformation, err error)
 	}
 )
 
@@ -22,7 +22,7 @@ func NewCategoryRepository(db *gorm.DB) *CategoryRepository {
 	return &CategoryRepository{db: db}
 }
 
-func (r *CategoryRepository) GetCategoriesByAccountID(accountID uuid.UUID) (data []entities.CategoryInformation, err error) {
+func (r *CategoryRepository) GetCategoriesExpenseByAccountID(accountID uuid.UUID) (data []entities.CategoryInformation, err error) {
 
 	if err := r.db.Model(&entities.CategoryInformation{}).
 		Select("expense_types as category_name, id as category_id, image_path as category_icon").
@@ -35,7 +35,7 @@ func (r *CategoryRepository) GetCategoriesByAccountID(accountID uuid.UUID) (data
 	return data, nil
 }
 
-func (r *CategoryRepository) GetSubCategoryByCategoryID(accountUUID, categoryID uuid.UUID) (data []entities.SubCategoryInformation, err error) {
+func (r *CategoryRepository) GetSubCategoryExpenseByCategoryID(accountUUID, categoryID uuid.UUID) (data []entities.SubCategoryInformation, err error) {
 	if err := r.db.Model(&entities.SubCategoryInformation{}).
 		Select("subcategories as sub_category_name, id as sub_category_id, image_path as sub_category_icon").
 		Where("id_personal_accounts = ?", accountUUID).
