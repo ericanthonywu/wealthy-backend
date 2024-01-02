@@ -2,7 +2,6 @@ package categories
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/wealthy-app/wealthy-backend/utils/response"
 )
 
 type (
@@ -20,7 +19,7 @@ func NewCategoryHandler(useCase ICategoryUseCase) *CategoryHandler {
 }
 
 func (c *CategoryHandler) GetCatagoriesExpenseList(ginContext *gin.Context) {
-	data, httpCode, errInfo := c.useCase.GetCatagoriesExpenseList(ginContext)
-	response.SendBack(ginContext, data, errInfo, httpCode)
+	//	data, httpCode, errInfo := c.useCase.GetCatagoriesExpenseList(ginContext)
+	//	response.SendBack(ginContext, data, errInfo, httpCode)
 	return
 }
