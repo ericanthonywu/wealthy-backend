@@ -281,20 +281,15 @@ func (s *BudgetUseCase) LatestMonths(ctx *gin.Context, categoryID uuid.UUID) (re
 
 func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest, purpose string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		model       entities.BudgetSetEntities
-		dtoResponse dtos.BudgetSetResponse
-		filename    string
-		targetPath  string
-		imagePath   string
+		model              entities.BudgetSetEntities
+		dtoResponse        dtos.BudgetSetResponse
+		filename           string
+		targetPath         string
+		imagePath          string
+		isSubCategoryValid bool
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	if purpose == constants.Travel {
 		imageData, err := base64.StdEncoding.DecodeString(dtoRequest.ImageBase64)
@@ -349,11 +344,55 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 
 	if purpose != constants.Travel {
 		model.IDCategory = dtoRequest.IDCategory
-		model.IDSubCategory = dtoRequest.IDSubCategory
+
+		// fetch sub category information by categoryID
+		dataSubCategory, err := s.repo.GetSubCategory(accountUUID, dtoRequest.IDCategory)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
+		}
+
+		if len(dataSubCategory) > 0 {
+
+			if dtoRequest.IDSubCategory == uuid.Nil {
+				resp := struct {
+					Message string `json:"message"`
+				}{
+					Message: "sub category id required",
+				}
+				return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+			}
+
+			// check sub category input same as in database
+			for _, v := range dataSubCategory {
+				if dtoRequest.IDSubCategory == v.SubCategoryID {
+					isSubCategoryValid = true
+					break
+				}
+			}
+
+			// is sub category ID valid
+			if !isSubCategoryValid {
+				resp := struct {
+					Message string `json:"message"`
+				}{
+					Message: "sub category id invalid for category id",
+				}
+				return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+			}
+
+			// set id sub category
+			model.IDSubCategory = dtoRequest.IDSubCategory
+		}
+
+		if len(dataSubCategory) == 0 {
+			model.IDSubCategory = uuid.Nil
+		}
+
 	}
 
 	model.Amount = dtoRequest.Amount
-	model.IDPersonalAccount = personalAccount.ID
+	model.IDPersonalAccount = accountUUID
 	model.ID = uuid.New()
 
 	err := s.repo.Limit(&model)
