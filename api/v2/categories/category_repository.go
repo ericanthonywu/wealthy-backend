@@ -13,8 +13,9 @@ type (
 	}
 
 	ICategoryRepository interface {
-		GetCategoriesExpenseByAccountID(accountID uuid.UUID) (data []entities.CategoryInformation, err error)
-		GetSubCategoryExpenseByCategoryID(accountUUID, categoryID uuid.UUID) (data []entities.SubCategoryInformation, err error)
+		GetCategoriesExpenseByAccountID(accountID uuid.UUID) (data []entities.CategoryExpenseInformation, err error)
+		GetCategoriesIncomeByAccountID(accountID uuid.UUID) (data []entities.CategoryIncomeInformation, err error)
+		GetSubCategoryExpenseByCategoryID(accountUUID, categoryID uuid.UUID) (data []entities.SubCategoryExpenseInformation, err error)
 	}
 )
 
@@ -22,28 +23,39 @@ func NewCategoryRepository(db *gorm.DB) *CategoryRepository {
 	return &CategoryRepository{db: db}
 }
 
-func (r *CategoryRepository) GetCategoriesExpenseByAccountID(accountID uuid.UUID) (data []entities.CategoryInformation, err error) {
-
-	if err := r.db.Model(&entities.CategoryInformation{}).
+func (r *CategoryRepository) GetCategoriesExpenseByAccountID(accountID uuid.UUID) (data []entities.CategoryExpenseInformation, err error) {
+	if err := r.db.Model(&entities.CategoryExpenseInformation{}).
 		Select("expense_types as category_name, id as category_id, image_path as category_icon").
 		Where("id_personal_accounts = ?", accountID).
 		Where("active=?", true).
 		Find(&data).Error; err != nil {
 		logrus.Errorf(err.Error())
-		return []entities.CategoryInformation{}, err
+		return []entities.CategoryExpenseInformation{}, err
 	}
 	return data, nil
 }
 
-func (r *CategoryRepository) GetSubCategoryExpenseByCategoryID(accountUUID, categoryID uuid.UUID) (data []entities.SubCategoryInformation, err error) {
-	if err := r.db.Model(&entities.SubCategoryInformation{}).
+func (r *CategoryRepository) GetCategoriesIncomeByAccountID(accountID uuid.UUID) (data []entities.CategoryIncomeInformation, err error) {
+	if err := r.db.Model(&entities.CategoryIncomeInformation{}).
+		Select("income_types as category_name, id as category_id, image_path as category_icon").
+		Where("id_personal_accounts = ?", accountID).
+		Where("active=?", true).
+		Find(&data).Error; err != nil {
+		logrus.Errorf(err.Error())
+		return []entities.CategoryIncomeInformation{}, err
+	}
+	return data, nil
+}
+
+func (r *CategoryRepository) GetSubCategoryExpenseByCategoryID(accountUUID, categoryID uuid.UUID) (data []entities.SubCategoryExpenseInformation, err error) {
+	if err := r.db.Model(&entities.SubCategoryExpenseInformation{}).
 		Select("subcategories as sub_category_name, id as sub_category_id, image_path as sub_category_icon").
 		Where("id_personal_accounts = ?", accountUUID).
 		Where("id_master_expense_categories=?", categoryID).
 		Where("active=?", true).
 		Find(&data).Error; err != nil {
 		logrus.Errorf(err.Error())
-		return []entities.SubCategoryInformation{}, err
+		return []entities.SubCategoryExpenseInformation{}, err
 	}
 	return data, nil
 }

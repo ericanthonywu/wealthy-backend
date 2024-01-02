@@ -290,7 +290,8 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 	{
 		categoriesGroup := v2group.Group("/categories")
 		{
-			categoriesGroup.GET("/expense", tokenSignature(), accountType(), categoriesV2.GetCatagoriesExpenseList)
+			categoriesGroup.GET("/expense", tokenSignature(), accountType(), categoriesV2.GetCategoriesExpenseList)
+			categoriesGroup.GET("/income", tokenSignature(), accountType(), categoriesV2.GetCategoriesIncomeList)
 		}
 	}
 }
