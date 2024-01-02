@@ -2,6 +2,7 @@ package transactions
 
 import (
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -12,6 +13,7 @@ import (
 	"github.com/wealthy-app/wealthy-backend/utils/utilities"
 	"net/http"
 	"sort"
+	"strconv"
 )
 
 type (
@@ -1355,7 +1357,8 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				// if latest data
 				if k == maxData {
 					// average buy
-					averageBuy = (initialInvestment / float64(lotBuy)) * 100
+					average := fmt.Sprintf("%.2f", (initialInvestment)/(float64(lotBuy)*100))
+					averageBuy, _ = strconv.ParseFloat(average, 64)
 
 					// fee buy calculation
 					feeBuy = v.FeeBuy * buy
@@ -1364,8 +1367,9 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					netBuy = buy - feeBuy
 
 					// potential return and percentage
-					potentialReturn += (float64(tradingInfo.Close) - float64(averageBuy)) * float64(lotBuy) * 100
-					percentageReturn = potentialReturn / initialInvestment
+					potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
+					percent := fmt.Sprintf("%.2f", (potentialReturn/initialInvestment)*100)
+					percentageReturn, _ = strconv.ParseFloat(percent, 64)
 
 					if len(sellCollection) > 0 {
 						// buy calculation
@@ -1386,10 +1390,11 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					}
 
 					// mapping
+					potentialReturnDisplay, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", potentialReturn), 64)
 					trxInvestment := entities.TransactionInvestmentEntity{
 						StockCode:         stockCode,
 						TotalLot:          lotBuy - lotSell,
-						ValueBuy:          buy,
+						ValueBuy:          0,
 						FeeBuy:            feeBuy,
 						NetBuy:            netBuy,
 						AverageBuy:        averageBuy,
@@ -1397,7 +1402,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 						IDPersonalAccount: accountID,
 						IDMasterBroker:    IDMasterBroker,
 						GainLoss:          gainloss,
-						PotentialReturn:   potentialReturn,
+						PotentialReturn:   potentialReturnDisplay,
 						PercentageReturn:  percentageReturn,
 						WalletID:          v.IDWallet,
 					}
@@ -1412,9 +1417,9 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 
 			// if stock code different than previous
 			if stockCode != v.StockCode {
-
 				// average buy
-				averageBuy = (initialInvestment / float64(lotBuy)) * 100
+				average := fmt.Sprintf("%.2f", (initialInvestment)/(float64(lotBuy)*100))
+				averageBuy, _ = strconv.ParseFloat(average, 64)
 
 				// fee buy calculation
 				feeBuy = v.FeeBuy * buy
@@ -1424,7 +1429,8 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 
 				// potential return and percentage
 				potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
-				percentageReturn = potentialReturn / initialInvestment
+				percent := fmt.Sprintf("%.2f", (potentialReturn/initialInvestment)*100)
+				percentageReturn, _ = strconv.ParseFloat(percent, 64)
 
 				if len(sellCollection) > 0 {
 					// buy calculation
@@ -1445,10 +1451,11 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				}
 
 				// mapping
+				potentialReturnDisplay, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", potentialReturn), 64)
 				trxInvestment := entities.TransactionInvestmentEntity{
 					StockCode:         stockCode,
 					TotalLot:          lotBuy - lotSell,
-					ValueBuy:          buy,
+					ValueBuy:          0,
 					FeeBuy:            feeBuy,
 					NetBuy:            netBuy,
 					AverageBuy:        averageBuy,
@@ -1456,7 +1463,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					IDPersonalAccount: accountID,
 					IDMasterBroker:    IDMasterBroker,
 					GainLoss:          0,
-					PotentialReturn:   potentialReturn,
+					PotentialReturn:   potentialReturnDisplay,
 					PercentageReturn:  percentageReturn,
 					WalletID:          v.IDWallet,
 				}
@@ -1486,7 +1493,8 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				// if latest data
 				if k == maxData {
 					// average buy
-					averageBuy = (initialInvestment / float64(lotBuy)) * 100
+					average := fmt.Sprintf("%.2f", (initialInvestment)/(float64(lotBuy)*100))
+					averageBuy, _ = strconv.ParseFloat(average, 64)
 
 					// fee buy calculation
 					feeBuy = v.FeeBuy * buy
@@ -1496,13 +1504,15 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 
 					// potential return and percentage
 					potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
-					percentageReturn = potentialReturn / initialInvestment
+					percent := fmt.Sprintf("%.2f", (potentialReturn/initialInvestment)*100)
+					percentageReturn, _ = strconv.ParseFloat(percent, 64)
 
 					// mapping
+					potentialReturnDisplay, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", potentialReturn), 64)
 					trxInvestment = entities.TransactionInvestmentEntity{
 						StockCode:         stockCode,
 						TotalLot:          lotBuy - lotSell,
-						ValueBuy:          buy,
+						ValueBuy:          0,
 						AverageBuy:        averageBuy,
 						FeeBuy:            feeBuy,
 						NetBuy:            netBuy,
@@ -1510,7 +1520,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 						IDPersonalAccount: accountID,
 						IDMasterBroker:    IDMasterBroker,
 						GainLoss:          0,
-						PotentialReturn:   potentialReturn,
+						PotentialReturn:   potentialReturnDisplay,
 						PercentageReturn:  percentageReturn,
 						WalletID:          v.IDWallet,
 					}
@@ -1541,7 +1551,8 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 			// if latest data
 			if k == maxData {
 				// average buy
-				averageBuy = (initialInvestment / float64(lotBuy)) * 100
+				average := fmt.Sprintf("%.2f", (initialInvestment)/(float64(lotBuy)*100))
+				averageBuy, _ = strconv.ParseFloat(average, 64)
 
 				// fee buy calculation
 				feeBuy = v.FeeBuy * buy
@@ -1551,13 +1562,15 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 
 				// potential return and percentage
 				potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
-				percentageReturn = potentialReturn / initialInvestment
+				percent := fmt.Sprintf("%.2f", (potentialReturn/initialInvestment)*100)
+				percentageReturn, _ = strconv.ParseFloat(percent, 64)
 
 				// mapping
+				potentialReturnDisplay, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", potentialReturn), 64)
 				trxInvestment := entities.TransactionInvestmentEntity{
 					StockCode:         stockCode,
 					TotalLot:          lotBuy - lotSell,
-					ValueBuy:          buy,
+					ValueBuy:          0,
 					AverageBuy:        averageBuy,
 					FeeBuy:            feeBuy,
 					NetBuy:            netBuy,
@@ -1565,7 +1578,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					IDPersonalAccount: accountID,
 					IDMasterBroker:    IDMasterBroker,
 					GainLoss:          0,
-					PotentialReturn:   potentialReturn,
+					PotentialReturn:   potentialReturnDisplay,
 					PercentageReturn:  percentageReturn,
 					WalletID:          v.IDWallet,
 				}
@@ -1581,7 +1594,8 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 		// if broker name different than previous
 		if walletName != walletInfo.WalletName {
 			// average buy
-			averageBuy = (initialInvestment / float64(lotBuy)) * 100
+			average := fmt.Sprintf("%.2f", (initialInvestment)/(float64(lotBuy)*100))
+			averageBuy, _ = strconv.ParseFloat(average, 64)
 
 			// fee buy calculation
 			feeBuy = v.FeeBuy * buy
@@ -1591,13 +1605,15 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 
 			// potential return and percentage
 			potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
-			percentageReturn = potentialReturn / initialInvestment
+			percent := fmt.Sprintf("%.2f", (potentialReturn/initialInvestment)*100)
+			percentageReturn, _ = strconv.ParseFloat(percent, 64)
 
 			// mapping
+			potentialReturnDisplay, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", potentialReturn), 64)
 			trxInvestment := entities.TransactionInvestmentEntity{
 				StockCode:         stockCode,
 				TotalLot:          lotBuy - lotSell,
-				ValueBuy:          buy,
+				ValueBuy:          0,
 				AverageBuy:        averageBuy,
 				FeeBuy:            feeBuy,
 				NetBuy:            netBuy,
@@ -1605,7 +1621,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				IDPersonalAccount: accountID,
 				IDMasterBroker:    IDMasterBroker,
 				GainLoss:          0,
-				PotentialReturn:   potentialReturn,
+				PotentialReturn:   potentialReturnDisplay,
 				PercentageReturn:  percentageReturn,
 				WalletID:          v.IDWallet,
 			}
@@ -1637,7 +1653,8 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 			// if latest data
 			if k == maxData {
 				// average buy
-				averageBuy = (initialInvestment / float64(lotBuy)) * 100
+				average := fmt.Sprintf("%.2f", (initialInvestment)/(float64(lotBuy)*100))
+				averageBuy, _ = strconv.ParseFloat(average, 64)
 
 				// fee buy calculation
 				feeBuy = v.FeeBuy * buy
@@ -1647,13 +1664,15 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 
 				// potential return and percentage
 				potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
-				percentageReturn = potentialReturn / initialInvestment
+				percent := fmt.Sprintf("%.2f", (potentialReturn/initialInvestment)*100)
+				percentageReturn, _ = strconv.ParseFloat(percent, 64)
 
 				// mapping
+				potentialReturnDisplay, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", potentialReturn), 64)
 				trxInvestment := entities.TransactionInvestmentEntity{
 					StockCode:         stockCode,
 					TotalLot:          lotBuy - lotSell,
-					ValueBuy:          buy,
+					ValueBuy:          0,
 					AverageBuy:        averageBuy,
 					FeeBuy:            feeBuy,
 					NetBuy:            netBuy,
@@ -1661,7 +1680,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					IDPersonalAccount: accountID,
 					IDMasterBroker:    IDMasterBroker,
 					GainLoss:          0,
-					PotentialReturn:   potentialReturn,
+					PotentialReturn:   potentialReturnDisplay,
 					PercentageReturn:  percentageReturn,
 					WalletID:          v.IDWallet,
 				}

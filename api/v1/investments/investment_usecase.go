@@ -11,6 +11,7 @@ import (
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
 	"net/http"
 	"sort"
+	"strconv"
 )
 
 type (
@@ -82,8 +83,9 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 
 			// calculation for
 			closePrice := float64(dataTrading.Close)
-			potentialReturn := (closePrice - v.AverageBuy) * float64(v.TotalLot) * 100
-			percentagePotentialReturn := (potentialReturn / v.InitialInvestment) / 100
+			potentialReturnString := fmt.Sprintf("%.2f", (closePrice-v.AverageBuy)*float64(v.TotalLot)*100)
+			potentialReturn, _ := strconv.ParseFloat(potentialReturnString, 64)
+			percentagePotentialReturn := (potentialReturn / v.InitialInvestment) * 100
 			totalPotentialReturn += potentialReturn
 
 			investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
@@ -120,8 +122,9 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 
 			// calculation for
 			closePrice := float64(dataTrading.Close)
-			potentialReturn := (closePrice - v.AverageBuy) * float64(v.TotalLot) * 100
-			percentagePotentialReturn := (potentialReturn / v.InitialInvestment) / 100
+			potentialReturnString := fmt.Sprintf("%.2f", (closePrice-v.AverageBuy)*float64(v.TotalLot)*100)
+			potentialReturn, _ := strconv.ParseFloat(potentialReturnString, 64)
+			percentagePotentialReturn := (potentialReturn / v.InitialInvestment) * 100
 			totalPotentialReturn += potentialReturn
 
 			investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
@@ -153,7 +156,8 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 		if walletName != v.WalletName {
 			// potential return
 			closePrice := float64(dataTrading.Close)
-			potentialReturn := (closePrice - v.AverageBuy) * float64(v.TotalLot) * 100
+			potentialReturnString := fmt.Sprintf("%.2f", (closePrice-v.AverageBuy)*float64(v.TotalLot)*100)
+			potentialReturn, _ := strconv.ParseFloat(potentialReturnString, 64)
 
 			investmentDetail = append(investmentDetail, dtos.InvestmentDetails{
 				BrokerName:          walletName,
@@ -171,8 +175,9 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 
 			// calculation for
 			closePrice = float64(dataTrading.Close)
-			potentialReturn = (closePrice - v.AverageBuy) * float64(v.TotalLot) * 100
-			percentagePotentialReturn := (potentialReturn / v.InitialInvestment) / 100
+			potentialReturnString = fmt.Sprintf("%.2f", (closePrice-v.AverageBuy)*float64(v.TotalLot)*100)
+			potentialReturn, _ = strconv.ParseFloat(potentialReturnString, 64)
+			percentagePotentialReturn := (potentialReturn / v.InitialInvestment) * 100
 			totalPotentialReturn += potentialReturn
 
 			investmentInfo = append(investmentInfo, dtos.InvestmentInfo{
@@ -203,7 +208,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 
 	dtoResponse.TotalInvestment = totalInvestment
 	dtoResponse.TotalPotentialReturn = totalPotentialReturn
-	percentage := (totalPotentialReturn / totalInvestment) / 100
+	percentage := (totalPotentialReturn / totalInvestment) * 100
 	dtoResponse.PercentagePotentialReturn = fmt.Sprintf("%.2f", percentage) + "%"
 	dtoResponse.Details = investmentDetail
 
