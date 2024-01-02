@@ -44,7 +44,7 @@ func (c *WalletController) Add(ctx *gin.Context) {
 	}
 
 	if dtoRequest.IDMasterWallet == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master wallet  empty")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories wallet  empty")
 	}
 
 	if dtoRequest.TotalAsset == 0 {
@@ -60,7 +60,7 @@ func (c *WalletController) Add(ctx *gin.Context) {
 		dtoRequest.IDMasterWallet == constants.IDEWallet
 
 	if !isValid {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master wallet unregistered")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories wallet unregistered")
 		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}

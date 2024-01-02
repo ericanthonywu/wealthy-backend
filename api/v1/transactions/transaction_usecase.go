@@ -140,7 +140,7 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 			// check sub expense
 			if request.IDMasterExpenseSubCategories != "" {
 				if request.IDMasterExpenseCategories == "" {
-					errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense categories need along use id master expense subcategories")
+					errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories expense categories need along use id categories expense subcategories")
 					return struct{}{}, http.StatusBadRequest, errInfo
 				}
 

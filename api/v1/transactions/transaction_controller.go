@@ -72,7 +72,7 @@ func (c *TransactionController) Add(ctx *gin.Context) {
 	}
 
 	if dtoRequest.IDMasterTransactionTypes == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master transaction type empty value")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories transaction type empty value")
 	}
 
 	switch dtoRequest.IDMasterTransactionTypes {
@@ -316,12 +316,12 @@ func (c *TransactionController) validateTravelTransactionPayload(request *dtos.T
 	}
 
 	if request.IDMasterExpenseCategories == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense category empty value")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories expense category empty value")
 	}
 
 	// unnecessary field
 	if request.IDMasterIncomeCategories != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master income categories unnecessary for travel transaction")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories income categories unnecessary for travel transaction")
 	}
 
 	if request.IDWallet != "" {
@@ -329,11 +329,11 @@ func (c *TransactionController) validateTravelTransactionPayload(request *dtos.T
 	}
 
 	if request.IDMasterTransactionPriorities != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master transaction priorities unnecessary for travel transaction")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories transaction priorities unnecessary for travel transaction")
 	}
 
 	if request.IDMasterExpenseSubCategories != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense sub categories unnecessary for travel transaction")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories expense sub categories unnecessary for travel transaction")
 	}
 
 	if request.TransferFrom != "" {
@@ -362,16 +362,16 @@ func (c *TransactionController) validateIncomeTransactionPayload(request *dtos.T
 	}
 
 	if request.IDMasterIncomeCategories == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master income categories empty value")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories income categories empty value")
 	}
 
 	// unnecessary field
 	if request.IDMasterExpenseCategories != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense category unnecessary for income transaction")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories expense category unnecessary for income transaction")
 	}
 
 	if request.IDMasterExpenseSubCategories != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense sub category unnecessary for income transaction")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories expense sub category unnecessary for income transaction")
 	}
 
 	if request.IDTravel != "" {
@@ -379,7 +379,7 @@ func (c *TransactionController) validateIncomeTransactionPayload(request *dtos.T
 	}
 
 	if request.IDMasterTransactionPriorities != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master transaction priorities unnecessary for income transaction")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories transaction priorities unnecessary for income transaction")
 	}
 
 	if request.TransferFrom != "" {
@@ -408,20 +408,20 @@ func (c *TransactionController) validateExpenseTransactionPayload(request *dtos.
 	}
 
 	if request.IDMasterExpenseCategories == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense category empty value")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories expense category empty value")
 	}
 
 	if request.IDMasterExpenseSubCategories == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense sub category empty value")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories expense sub category empty value")
 	}
 
 	if request.IDMasterTransactionPriorities == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master transaction priorities empty value")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories transaction priorities empty value")
 	}
 
 	// unnecessary field
 	if request.IDMasterIncomeCategories != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master income categories unnecessary for expense transaction")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories income categories unnecessary for expense transaction")
 	}
 
 	if request.IDTravel != "" {
@@ -450,11 +450,11 @@ func (c *TransactionController) validateInvestTransactionPayload(request *dtos.T
 	}
 
 	if request.IDMasterInvest == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master invest empty value")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories invest empty value")
 	}
 
 	if request.IDMasterTransactionTypes == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master transaction type empty value")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories transaction type empty value")
 	}
 
 	if request.Lot <= 0 {
@@ -496,19 +496,19 @@ func (c *TransactionController) validateTransferTransactionPayload(request *dtos
 
 	// unnecessary field
 	if request.IDMasterExpenseCategories != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense category unnecessary for transfer transaction")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories expense category unnecessary for transfer transaction")
 	}
 
 	if request.IDMasterExpenseSubCategories != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master expense sub category unnecessary for transfer transaction")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories expense sub category unnecessary for transfer transaction")
 	}
 
 	if request.IDMasterTransactionPriorities != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master transaction priorities unnecessary for transfer transaction")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories transaction priorities unnecessary for transfer transaction")
 	}
 
 	if request.IDMasterIncomeCategories != "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master income categories unnecessary for transfer transaction")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories income categories unnecessary for transfer transaction")
 	}
 
 	if request.IDTravel != "" {

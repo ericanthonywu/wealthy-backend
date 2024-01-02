@@ -12,3 +12,7 @@ func ErrorWrapper(errInfo []Errors, errorCode, errorDescription string) []Errors
 	})
 	return errInfo
 }
+
+func ErrorInfoWrapper(errInfo []string, errorDescription string) []string {
+	return append(errInfo, errorDescription)
+}

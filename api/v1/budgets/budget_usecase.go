@@ -332,7 +332,7 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 			logrus.Error(err.Error())
 		}
 
-		// validate id master exchange currency
+		// validate id categories exchange currency
 		dataCurrency, err := s.repo.GetXchangeCurrency(IDMasterExchangeCurrencyUUID)
 		if err != nil {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -340,7 +340,7 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 		}
 
 		if !dataCurrency.Exists {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master exchange currency unknown")
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories exchange currency unknown")
 			return struct{}{}, http.StatusBadRequest, errInfo
 		}
 

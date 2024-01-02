@@ -6,6 +6,8 @@ import (
 )
 
 func API(router *gin.RouterGroup, db *gorm.DB) {
+
+	// version 1
 	master := Masters(db)
 	account := Accounts(db)
 	wallet := Wallets(db)
@@ -21,9 +23,12 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 	notification := Notifications(db)
 	investment := Investments(db)
 
+	// version 2
+	categoriesV2 := CategoriesV2(db)
+
 	v1group := router.Group("/v1")
 	{
-		masterGroup := v1group.Group("/masters", tokenSignature(), accountType(), betaVersion())
+		masterGroup := v1group.Group("/categories", tokenSignature(), accountType(), betaVersion())
 		{
 			typeGroup := masterGroup.Group("/types")
 			{
@@ -278,6 +283,14 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			{
 				travelGroup.GET("/:filename", images.Travel)
 			}
+		}
+	}
+
+	v2group := router.Group("/v2")
+	{
+		categoriesGroup := v2group.Group("/categories")
+		{
+			categoriesGroup.GET("/list", tokenSignature(), accountType(), categoriesV2.GetCatagoriesList)
 		}
 	}
 }

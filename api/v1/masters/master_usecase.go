@@ -73,7 +73,7 @@ func (s *MasterUseCase) WalletType() (data interface{}) {
 		resp := struct {
 			Message string `json:"message"`
 		}{
-			Message: "no master data for wallet",
+			Message: "no categories data for wallet",
 		}
 		return resp
 	}

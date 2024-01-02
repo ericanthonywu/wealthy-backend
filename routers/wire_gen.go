@@ -21,6 +21,7 @@ import (
 	"github.com/wealthy-app/wealthy-backend/api/v1/tracks"
 	"github.com/wealthy-app/wealthy-backend/api/v1/transactions"
 	"github.com/wealthy-app/wealthy-backend/api/v1/wallets"
+	"github.com/wealthy-app/wealthy-backend/api/v2/categories"
 	"gorm.io/gorm"
 )
 
@@ -122,4 +123,11 @@ func Investments(db *gorm.DB) *investments.InvestmentController {
 	investmentUseCase := investments.NewInvestmentUseCase(investmentRepository)
 	investmentController := investments.NewInvestmentController(investmentUseCase)
 	return investmentController
+}
+
+func CategoriesV2(db *gorm.DB) *categories.CategoryHandler {
+	categoryRepository := categories.NewCategoryRepository(db)
+	categoryUseCase := categories.NewCategoryUseCase(categoryRepository)
+	categoryHandler := categories.NewCategoryHandler(categoryUseCase)
+	return categoryHandler
 }

@@ -5,6 +5,8 @@ package routers
 
 import (
 	"github.com/google/wire"
+	"gorm.io/gorm"
+
 	"github.com/wealthy-app/wealthy-backend/api/v1/accounts"
 	"github.com/wealthy-app/wealthy-backend/api/v1/budgets"
 	"github.com/wealthy-app/wealthy-backend/api/v1/images"
@@ -19,7 +21,8 @@ import (
 	"github.com/wealthy-app/wealthy-backend/api/v1/tracks"
 	"github.com/wealthy-app/wealthy-backend/api/v1/transactions"
 	"github.com/wealthy-app/wealthy-backend/api/v1/wallets"
-	"gorm.io/gorm"
+
+	categoriesV2 "github.com/wealthy-app/wealthy-backend/api/v2/categories"
 )
 
 func Accounts(db *gorm.DB) *accounts.AccountController {
@@ -188,4 +191,16 @@ func Investments(db *gorm.DB) *investments.InvestmentController {
 		wire.Bind(new(investments.IInvestmentRepository), new(*investments.InvestmentRepository)),
 	)))
 	return &investments.InvestmentController{}
+}
+
+func CategoriesV2(db *gorm.DB) *categoriesV2.CategoryHandler {
+	panic(wire.Build(wire.NewSet(
+		categoriesV2.NewCategoryHandler,
+		categoriesV2.NewCategoryUseCase,
+		categoriesV2.NewCategoryRepository,
+		wire.Bind(new(categoriesV2.ICategoryHandler), new(*categoriesV2.CategoryHandler)),
+		wire.Bind(new(categoriesV2.ICategoryUseCase), new(*categoriesV2.CategoryUseCase)),
+		wire.Bind(new(categoriesV2.ICategoryRepository), new(*categoriesV2.CategoryRepository)),
+	)))
+	return &categoriesV2.CategoryHandler{}
 }

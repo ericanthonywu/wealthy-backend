@@ -1,0 +1,18 @@
+package dtos
+
+import "github.com/google/uuid"
+
+type (
+	CategoryListResponse struct {
+		CategoryName    string    `json:"category_name"`
+		CategoryID      uuid.UUID `json:"category_id"`
+		CategoryIcon    string    `json:"category_icon"`
+		SubCategoryList []SubCategoryList
+	}
+
+	SubCategoryList struct {
+		SubcategoryName string `json:"sub_cateogry_name"`
+		SubcategoryID   string `json:"sub_cateogry_id"`
+		SubcategoryIcon string `json:"sub_cateogry_icon"`
+	}
+)

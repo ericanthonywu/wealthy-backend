@@ -349,24 +349,24 @@ func (s *AccountUseCase) UpdateProfile(ctx *gin.Context, request map[string]inte
 		}
 	}
 
-	// check id master gender value
+	// check id categories gender value
 	value, exists = request["id_master_gender"]
 	if exists {
 		idMasterGender = fmt.Sprintf("%v", value)
 
 		if idMasterGender == "" {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master gender empty value")
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories gender empty value")
 			return struct{}{}, http.StatusBadRequest, errInfo
 		}
 
-		// check master gender
+		// check categories gender
 		idUUID, err := uuid.Parse(idMasterGender)
 		if err != nil {
 			logrus.Error(err.Error())
 		}
 
 		if !s.repo.GenderData(idUUID) {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id master gender unregistered")
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories gender unregistered")
 			return struct{}{}, http.StatusBadRequest, errInfo
 		}
 	}
@@ -1385,13 +1385,13 @@ func (s *AccountUseCase) DeleteAccount(ctx *gin.Context) (response interface{}, 
 	// delete transaction
 	go s.repo.DeleteAccountTransaction(accountUUID)
 
-	// delete master category editable
+	// delete categories category editable
 	go s.repo.DeleteAccountMasterExpenseCategory(accountUUID)
 
-	// delete master sub category editable
+	// delete categories sub category editable
 	go s.repo.DeleteAccountMasterSubExpenseCategory(accountUUID)
 
-	// delete master income editable
+	// delete categories income editable
 	go s.repo.DeleteAccountMasterIncomeCategory(accountUUID)
 
 	// delete budget
