@@ -147,75 +147,89 @@ func (s *BudgetUseCase) Overview(ctx *gin.Context, month, year string) (response
 		stringBuilder strings.Builder
 	)
 
-	personalDataForSpending := make(map[uuid.UUID]int)
-	personalDataForCount := make(map[uuid.UUID]int)
-
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	// TODO : Remove These
-	personalBudgetData, err := s.repo.PersonalBudget(accountUUID, month, year)
+	// get all category by accountID
+	dataCategory, err := s.repo.CategoryByAccountID(accountUUID)
 	if err != nil {
 		logrus.Error(err.Error())
 	}
 
-	personalTransactionData, err := s.repo.PersonalTransaction(accountUUID, month, year)
-	if err != nil {
-		logrus.Error(err.Error())
-	}
+	if len(dataCategory) > 0 {
+		for _, v := range dataCategory {
+			// initial
+			totalBudgetCategory := 0.0
 
-	if len(personalBudgetData) > 0 {
-
-		if len(personalTransactionData) > 0 {
-			for _, ptd := range personalTransactionData {
-				personalDataForSpending[ptd.ID] = ptd.Amount
-				personalDataForCount[ptd.ID] = ptd.Count
-			}
-		}
-
-		for _, v := range personalBudgetData {
-			count := 0
-			spendingTrx := 0
-
-			if value, isFound := personalDataForSpending[v.ID]; isFound {
-				spendingTrx = value
+			// get sub category by categoryID
+			dataSubCategory, err := s.repo.GetSubCategory(accountUUID, v.CategoryID)
+			if err != nil {
+				logrus.Error(err.Error())
 			}
 
-			if value, isFound := personalDataForCount[v.ID]; isFound {
-				count = value
+			// if data sub category exist , get amount from tbl_budget by sub_category_ID
+			if len(dataSubCategory) > 0 {
+				for _, v := range dataSubCategory {
+					dataBudgetSubCat, err := s.repo.GetAmountBudgetSubCategory(accountUUID, v.SubCategoryID, month, year)
+					if err != nil {
+						logrus.Error(err.Error())
+					}
+
+					// override
+					totalBudgetCategory += dataBudgetSubCat.Amount
+				}
 			}
 
+			// if no data sub category exist, get amount from tbl_badget by category_ID
+			if len(dataSubCategory) == 0 {
+				dataBudgetCategory, err := s.repo.GetAmountBudgetCategory(accountUUID, v.CategoryID, month, year)
+				if err != nil {
+					logrus.Error(err.Error())
+				}
+
+				totalBudgetCategory += dataBudgetCategory.Amount
+			}
+
+			// get transaction by category id
+			dataTransaction, err := s.repo.GetTransactionByCategory(accountUUID, v.CategoryID, month, year)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
+
+			// integration mapping
 			dataDetails = append(dataDetails, dtos.OverviewDetail{
-				CategoryID:      v.ID,
-				CategoryName:    v.Category,
-				TransactionIcon: v.ImagePath,
+				CategoryName:    v.CategoryName,
+				CategoryID:      v.CategoryID,
+				TransactionIcon: v.CategoryIcon,
 				BudgetLimit: dtos.Limit{
 					CurrencyCode: "IDR",
-					Value:        int(v.BudgetLimit),
+					Value:        int(totalBudgetCategory),
 				},
 				TransactionSpending: dtos.Transaction{
 					CurrencyCode: "IDR",
-					Value:        spendingTrx,
+					Value:        int(dataTransaction.Amount),
 				},
-				NumberOfCategories: count,
+				NumberOfCategories: 0,
 			})
 		}
-
-		monthINT, err := strconv.Atoi(month)
-		if err != nil {
-			logrus.Error(err.Error())
-		}
-
-		stringBuilder.WriteString(datecustoms.IntToMonthName(monthINT))
-		stringBuilder.WriteString(" ")
-		stringBuilder.WriteString(year)
-
-		dtoResponse.Period = stringBuilder.String()
-		dtoResponse.Details = dataDetails
-		return dtoResponse, http.StatusOK, errInfo
 	}
 
-	errInfo = errorsinfo.ErrorWrapper(errInfo, "", "data not found")
-	return response, http.StatusNotFound, errInfo
+	monthINT, err := strconv.Atoi(month)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	stringBuilder.WriteString(datecustoms.IntToMonthName(monthINT))
+	stringBuilder.WriteString(" ")
+	stringBuilder.WriteString(year)
+
+	dtoResponse.Period = stringBuilder.String()
+	dtoResponse.Details = dataDetails
+
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
+	return dtoResponse, http.StatusOK, errInfo
 }
 
 func (s *BudgetUseCase) LatestMonths(ctx *gin.Context, categoryID uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {

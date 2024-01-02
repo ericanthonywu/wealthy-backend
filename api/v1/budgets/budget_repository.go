@@ -34,6 +34,7 @@ type (
 		GetSubCategory(accountID, category uuid.UUID) (data []entities.SubCategoryList, err error)
 		GetAmountBudgetSubCategory(accountID, subCategoryID uuid.UUID, month, year string) (data entities.SubCategoryBudgetInfo, err error)
 		GetAmountBudgetCategory(accountUUID, categoryUUID uuid.UUID, month, year string) (data entities.CategoryBudgetInfo, err error)
+		GetTransactionByCategory(accountUUID, categoryID uuid.UUID, month, year string) (data entities.CategoryTransaction, err error)
 	}
 )
 
@@ -314,6 +315,19 @@ func (r *BudgetRepository) GetAmountBudgetCategory(accountUUID, categoryUUID uui
 		Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.CategoryBudgetInfo{}, err
+	}
+	return data, nil
+}
+
+func (r *BudgetRepository) GetTransactionByCategory(accountUUID, categoryID uuid.UUID, month, year string) (data entities.CategoryTransaction, err error) {
+	if err := r.db.Raw(`SELECT tmec.id, coalesce(SUM(tt.amount), 0) as amount FROM tbl_transactions tt
+         LEFT JOIN tbl_master_expense_categories_editable tmec ON tmec.id = tt.id_master_expense_categories
+         LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types WHERE tt.id_personal_account = ?
+  AND to_char(tt.date_time_transaction::DATE, 'MM') = ? AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
+  AND tmtt.type = 'EXPENSE' AND tt.id_master_expense_categories=? GROUP BY tmec.id, amount`, accountUUID, month, year, categoryID).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.CategoryTransaction{}, err
 	}
 	return data, nil
 }
