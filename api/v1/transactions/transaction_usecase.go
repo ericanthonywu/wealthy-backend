@@ -944,21 +944,17 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return struct{}{}, http.StatusBadRequest, errInfo
-	}
-
+	// todo : move to handler service
 	if month == "" && year == "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "both month, year need in query url")
 		return struct{}{}, http.StatusBadRequest, errInfo
 	}
 
+	// todo : move to handler service
 	if month != "" && year != "" {
-		dataNotes = s.repo.ByNote(personalAccount.ID, month, year)
+		dataNotes = s.repo.ByNote(accountUUID, month, year)
 	}
 
 	lengthData := len(dataNotes)
@@ -977,6 +973,11 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 
 		for k, v := range dataNotes {
 
+			dataBudgetEachCat, err := s.repo.BudgetEachCategory(accountUUID, v.CategoryID, month+year)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
+
 			if catPrev == v.TransactionCategory {
 				if k == (lengthData - 1) {
 					//detailNotes.TransactionNotesDeepDetail = append(detailNotes.TransactionNotesDeepDetail, deepDetailsNotes...)
@@ -990,7 +991,7 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 						},
 						TransactionLimit: dtos.Amount{
 							CurrencyCode: "IDR",
-							Value:        v.Budget,
+							Value:        float64(dataBudgetEachCat.BudgetLimit),
 						},
 					})
 
@@ -1011,7 +1012,7 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 						},
 						TransactionLimit: dtos.Amount{
 							CurrencyCode: "IDR",
-							Value:        v.Budget,
+							Value:        float64(dataBudgetEachCat.BudgetLimit),
 						},
 					})
 				}
@@ -1027,7 +1028,7 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 					},
 					TransactionLimit: dtos.Amount{
 						CurrencyCode: "IDR",
-						Value:        v.Budget,
+						Value:        float64(dataBudgetEachCat.BudgetLimit),
 					},
 				})
 
@@ -1062,7 +1063,7 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 						},
 						TransactionLimit: dtos.Amount{
 							CurrencyCode: "IDR",
-							Value:        v.Budget,
+							Value:        float64(dataBudgetEachCat.BudgetLimit),
 						},
 					})
 
@@ -1090,7 +1091,7 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 						},
 						TransactionLimit: dtos.Amount{
 							CurrencyCode: "IDR",
-							Value:        v.Budget,
+							Value:        float64(dataBudgetEachCat.BudgetLimit),
 						},
 					})
 

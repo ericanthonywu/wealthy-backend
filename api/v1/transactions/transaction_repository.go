@@ -84,6 +84,8 @@ type (
 		WalletInfo(IDWallet uuid.UUID) (data entities.WalletEntity, err error)
 
 		ListStockCode(accoundID uuid.UUID) (data []entities.StockCodeData, err error)
+
+		BudgetEachCategory(IDPersonal uuid.UUID, IDCategory uuid.UUID, monthyear string) (data entities.BudgetEachCategory, err error)
 	}
 )
 
@@ -649,20 +651,23 @@ ORDER BY t.date_time_transaction::DATE DESC`, year, IDPersonal).Scan(&data).Erro
 }
 
 func (r *TransactionRepository) ByNote(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionByNotes) {
-	if err := r.db.Raw(`SELECT
-    COALESCE(SUM(t.amount),0) as amount,
-    td.note as transaction_note,
-    tmec.expense_types
+	if err := r.db.Raw(`SELECT COALESCE(SUM(t.amount), 0) as amount,
+       td.note                    as transaction_note,
+       tmec.expense_types,
+       tmec.id                    as category_id
 FROM tbl_transactions t
-INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
-INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
-LEFT JOIN tbl_master_expense_categories tmec ON t.id_master_expense_categories = tmec.id
+         INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
+         INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
+         LEFT JOIN tbl_master_expense_categories_editable tmec ON t.id_master_expense_categories = tmec.id
 WHERE to_char(t.date_time_transaction::DATE, 'MM') = ?
   AND to_char(t.date_time_transaction::DATE, 'YYYY') = ?
   AND t.id_personal_account = ?
+  AND tmec.id_personal_accounts = ?
   AND tmtt.type = 'EXPENSE'
-  AND td.note != ''
-GROUP BY td.note, tmec.expense_types`, month, year, IDPersonal).Scan(&data).Error; err != nil {
+  AND td.note <> ''
+GROUP BY td.note, tmec.expense_types, tmec.id`, month, year, IDPersonal, IDPersonal).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
 		return []entities.TransactionByNotes{}
 	}
 	return data
@@ -907,6 +912,21 @@ func (r *TransactionRepository) ListStockCode(accoundID uuid.UUID) (data []entit
          INNER JOIN tbl_transaction_details ttd ON ttd.id_transactions = tt.id
 WHERE tt.id_personal_account = ? AND tt.id_master_invest <> '00000000-0000-0000-0000-000000000000'`, accoundID).Scan(&data).Error; err != nil {
 		return []entities.StockCodeData{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) BudgetEachCategory(IDPersonal uuid.UUID, IDCategory uuid.UUID, monthyear string) (data entities.BudgetEachCategory, err error) {
+	if err := r.db.Raw(`SELECT SUM(tb.amount) as total_budget_limit, tmece.expense_types as category_name
+FROM tbl_budgets tb
+         INNER JOIN tbl_master_expense_categories_editable tmece ON tmece.id = tb.id_master_categories
+WHERE tmece.id_personal_accounts = ?
+  AND tb.id_personal_accounts = ?
+  AND tmece.active
+  AND to_char(tb.created_at, 'MMYYYY') = ?
+  AND tb.id_master_categories=?
+GROUP BY tmece.expense_types`, IDPersonal, IDPersonal, monthyear, IDCategory).Scan(&data).Error; err != nil {
+		return entities.BudgetEachCategory{}, nil
 	}
 	return data, nil
 }

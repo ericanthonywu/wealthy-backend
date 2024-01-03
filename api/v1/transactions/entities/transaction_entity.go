@@ -153,10 +153,11 @@ type (
 	}
 
 	TransactionByNotes struct {
-		Budget              float64 `gorm:"column:budget"`
-		Amount              float64 `gorm:"column:amount"`
-		TransactionNote     string  `gorm:"column:transaction_note"`
-		TransactionCategory string  `gorm:"column:expense_types"`
+		Budget              float64   `gorm:"column:budget"`
+		Amount              float64   `gorm:"column:amount"`
+		TransactionNote     string    `gorm:"column:transaction_note"`
+		TransactionCategory string    `gorm:"column:expense_types"`
+		CategoryID          uuid.UUID `gorm:"column:category_id"`
 	}
 
 	TransactionSuggestionNotes struct {
@@ -252,6 +253,11 @@ type (
 
 	StockCodeData struct {
 		StockCode string `gorm:"column:stock_code"`
+	}
+
+	BudgetEachCategory struct {
+		Category    string `gorm:"column:category_name"`
+		BudgetLimit int    `gorm:"column:total_budget_limit"`
 	}
 )
 
