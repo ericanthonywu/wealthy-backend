@@ -305,10 +305,7 @@ func (c *TransactionController) Suggestion(ctx *gin.Context) {
 
 	if filterTrx != "" {
 		switch strings.ToUpper(filterTrx) {
-		case "EXPENSE":
-		case "INCOME":
-		case "TRAVEL":
-		case "TRANSFER":
+		case "EXPENSE", "INCOME", "TRAVEL", "TRANSFER":
 			isFilterValid = true
 		}
 
