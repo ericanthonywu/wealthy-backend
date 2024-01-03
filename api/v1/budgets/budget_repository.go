@@ -180,7 +180,7 @@ func (r *BudgetRepository) PersonalBudget(IDPersonal uuid.UUID, month, year stri
         WHERE b.id_master_categories = tmec.id
           AND b.id_personal_accounts = ?
           AND to_char(b.created_at, 'MM') = ?
-          AND to_char(b.created_at, 'YYYY') = ? LIMIT  1) as budget
+          AND to_char(b.created_at, 'YYYY') = ? order by b.created_at LIMIT  1) as budget
 FROM tbl_master_expense_categories_editable tmec
 WHERE tmec.active = true AND tmec.id_personal_accounts = ?`, IDPersonal, month, year, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.PersonalBudget{}, err
