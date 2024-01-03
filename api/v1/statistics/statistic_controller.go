@@ -37,6 +37,7 @@ func (c *StatisticController) Weekly(ctx *gin.Context) {
 		data       interface{}
 		statusCode int
 	)
+
 	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 

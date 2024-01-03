@@ -21,8 +21,6 @@ type (
 		LatestMonths(IDPersonal uuid.UUID, category uuid.UUID) (data []entities.BudgetLatestMonth)
 		Limit(model *entities.BudgetSetEntities) (err error)
 		isBudgetAlreadyExist(model *entities.BudgetSetEntities) (exist bool, id uuid.UUID)
-		PersonalBudget(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalBudget, err error)
-		PersonalTransaction(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalTransaction, err error)
 		Trends(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.TrendsWeekly, err error)
 		BudgetEachCategory(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.BudgetEachCategory, err error)
 		CategoryInfo(IDCategory uuid.UUID) (data entities.CategoryInfo, err error)
@@ -208,7 +206,7 @@ func (r *BudgetRepository) Trends(IDPersonal uuid.UUID, IDCategory uuid.UUID, mo
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-05') AND  CONCAT('` + year + `', '-', '` + month + `', '-11')), 0)::numeric as date_range_05_11,
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-12') AND  CONCAT('` + year + `', '-', '` + month + `', '-18')), 0)::numeric as date_range_12_18,
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-19') AND  CONCAT('` + year + `', '-', '` + month + `', '-25')), 0)::numeric as date_range_19_25,
-    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-26') AND  CONCAT('` + year + `', '-', '` + month + `', '-31')), 0)::numeric as date_range_26_30
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-26') AND  CONCAT('` + year + `', '-', '` + month + `', '-31')), 0)::numeric as date_range_26_31
 	FROM tbl_transactions tt LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types WHERE tt.id_personal_account=?  AND tt.id_master_expense_categories=? AND tmtt.type = 'EXPENSE'`
 
 	if err := r.db.Raw(sql, IDPersonal, IDCategory).Scan(&data).Error; err != nil {

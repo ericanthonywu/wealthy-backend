@@ -38,19 +38,20 @@ type (
 	}
 
 	TransactionInvestmentEntity struct {
-		StockCode         string    `gorm:"column:stock_code"`
-		TotalLot          int64     `gorm:"column:total_lot"`
-		ValueBuy          float64   `gorm:"column:value_buy"`
-		FeeBuy            float64   `gorm:"column:fee_buy"`
-		NetBuy            float64   `gorm:"column:net_buy"`
-		AverageBuy        float64   `gorm:"column:average_buy"`
-		InitialInvestment float64   `gorm:"column:initial_investment"`
-		IDPersonalAccount uuid.UUID `gorm:"column:id_personal_accounts"`
-		IDMasterBroker    uuid.UUID `gorm:"column:id_master_broker"`
-		GainLoss          float64   `gorm:"column:gain_loss"`
-		PotentialReturn   float64   `gorm:"column:potential_return"`
-		PercentageReturn  float64   `gorm:"column:percentage_return"`
-		WalletID          uuid.UUID `gorm:"column:wallet_id"`
+		StockCode          string    `gorm:"column:stock_code"`
+		TotalLot           int64     `gorm:"column:total_lot"`
+		ValueBuy           float64   `gorm:"column:value_buy"`
+		FeeBuy             float64   `gorm:"column:fee_buy"`
+		NetBuy             float64   `gorm:"column:net_buy"`
+		AverageBuy         float64   `gorm:"column:average_buy"`
+		InitialInvestment  float64   `gorm:"column:initial_investment"`
+		IDPersonalAccount  uuid.UUID `gorm:"column:id_personal_accounts"`
+		IDMasterBroker     uuid.UUID `gorm:"column:id_master_broker"`
+		GainLoss           float64   `gorm:"column:gain_loss"`
+		GainLossPercentage float64   `gorm:"column:gain_loss_percentage"`
+		PotentialReturn    float64   `gorm:"column:potential_return"`
+		PercentageReturn   float64   `gorm:"column:percentage_return"`
+		WalletID           uuid.UUID `gorm:"column:wallet_id"`
 	}
 
 	TransactionExpenseTotalHistory struct {

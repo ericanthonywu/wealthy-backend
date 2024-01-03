@@ -200,12 +200,22 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 		if strings.ToUpper(v.WalletType) != constants.Investment {
 
 			// fetch data from transaction latest row to get balance information
-			dataTrx, err := s.repo.LatestAmountWalletInTransaction(v.ID)
-			if err != nil {
-				logrus.Error(err.Error())
-			}
 
-			totalAsset = int64(dataTrx.Balance)
+			/*
+				------------------------------------------------------------
+				feature : get latest balance from transaction
+				------------------------------------------------------------
+				dataTrx, err := s.repo.LatestAmountWalletInTransaction(v.ID)
+				if err != nil {
+					logrus.Error(err.Error())
+				}
+
+				// override with balance
+				totalAsset = int64(dataTrx.Balance)
+
+			*/
+
+			totalAsset = v.TotalAssets
 		}
 
 		// if wallet type is investments
