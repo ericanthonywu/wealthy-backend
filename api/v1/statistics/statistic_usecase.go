@@ -128,7 +128,7 @@ func (s *StatisticUseCase) expenseWeekly(IDPersonal uuid.UUID, month, year strin
 
 	expenseWeekly = append(expenseWeekly, dtos.ExpenseWeekly{
 		StartDate: year + "-" + month + "-26",
-		EndDate:   year + "-" + month + "-30",
+		EndDate:   year + "-" + month + "-31",
 		Amount: dtos.ExpenseTransaction{
 			CurrencyCode: "IDR",
 			Value:        dataExpenseWeekly.DateRange2630,
@@ -184,7 +184,7 @@ func (s *StatisticUseCase) incomeWeekly(IDPersonal uuid.UUID, month, year string
 
 	incomeWeekly = append(incomeWeekly, dtos.IncomeWeekly{
 		StartDate: year + "" + month + "-26",
-		EndDate:   year + "" + month + "-30",
+		EndDate:   year + "" + month + "-31",
 		Amount: dtos.IncomeTransaction{
 			CurrencyCode: "IDR",
 			Value:        dataIncomeWeekly.DateRange2630,
@@ -240,7 +240,7 @@ func (s *StatisticUseCase) investmentWeekly(IDPersonal uuid.UUID, month, year st
 
 	investmentWeekly = append(investmentWeekly, dtos.InvestmentWeekly{
 		StartDate: year + "-" + month + "-26",
-		EndDate:   year + "-" + month + "-30",
+		EndDate:   year + "-" + month + "-31",
 		Amount: dtos.InvestTransaction{
 			CurrencyCode: "IDR",
 			Value:        dataInvestmentWeekly.DateRange2630,
@@ -700,7 +700,7 @@ func (s *StatisticUseCase) subExpenseWeekly(IDPersonal uuid.UUID, IDCategory uui
 
 	data = append(data, dtos.WeeklySubExpenseDetail{
 		StartDate: year + "" + month + "-26",
-		EndDate:   year + "-" + month + "-30",
+		EndDate:   year + "-" + month + "-31",
 		Amount: dtos.WeeklySubExpenseDetailTransaction{
 			CurrencyCode: "IDR",
 			Value:        dataSubExpenseWeekly.DateRange2630,

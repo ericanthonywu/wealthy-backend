@@ -86,7 +86,7 @@ SELECT COALESCE(SUM(tt.amount) FILTER
            ( WHERE tt.id_master_expense_categories IS NOT NULL AND
                    tt.date_time_transaction BETWEEN
                        CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-26') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-30')),
+                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-31')),
                 0) ::text                                               as "26-30",
        COALESCE(SUM(tt.amount) FILTER ( WHERE to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
                MONTH FROM current_timestamp)::text ), 0)::numeric       as total_average_weekly,
@@ -181,7 +181,7 @@ func (r *StatisticRepository) SubExpenseDetail(IDPersonal uuid.UUID, IDCategory 
                 FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-', to_char(tt.date_time_transaction::DATE, 'MM'), '-19') AND CONCAT(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-', to_char(tt.date_time_transaction::DATE, 'MM'), '-25')),
                 0)::numeric as date_range_19_25,
        COALESCE(SUM(tt.amount)
-                FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-', to_char(tt.date_time_transaction::DATE, 'MM'), '-26') AND CONCAT(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-', to_char(tt.date_time_transaction::DATE, 'MM'), '-30')),
+                FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-', to_char(tt.date_time_transaction::DATE, 'MM'), '-26') AND CONCAT(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-', to_char(tt.date_time_transaction::DATE, 'MM'), '-31')),
                 0)::numeric as date_range_26_30
 FROM tbl_transactions tt
          LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
