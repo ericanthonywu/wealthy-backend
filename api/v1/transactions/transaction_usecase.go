@@ -1365,7 +1365,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					feeBuy = (v.FeeBuy / 100) * buy
 
 					// net buy
-					netBuy = buy - feeBuy
+					netBuy = buy + feeBuy
 
 					// potential return and percentage
 					potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
@@ -1378,7 +1378,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 						// buy calculation
 						buy = averageBuy * float64(lotSell) * 100
 						feeBuy = (v.FeeBuy / 100) * buy
-						netBuy = buy - feeBuy
+						netBuy = buy + feeBuy
 
 						// sell calculation
 						totalSell := 0.0
@@ -1439,7 +1439,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				feeBuy = (v.FeeBuy / 100) * buy
 
 				// net buy
-				netBuy = buy - feeBuy
+				netBuy = buy + feeBuy
 
 				// potential return and percentage
 				potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
@@ -1500,7 +1500,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					feeBuy = (v.FeeBuy / 100) * buy
 
 					// net buy
-					netBuy = buy - feeBuy
+					netBuy = buy + feeBuy
 
 					// potential return and percentage
 					potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
@@ -1559,7 +1559,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				feeBuy = v.FeeBuy * buy
 
 				// net buy
-				netBuy = buy - feeBuy
+				netBuy = buy + feeBuy
 
 				// potential return and percentage
 				potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
@@ -1603,7 +1603,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 			feeBuy = v.FeeBuy * buy
 
 			// net buy
-			netBuy = buy - feeBuy
+			netBuy = buy + feeBuy
 
 			// potential return and percentage
 			potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
@@ -1662,7 +1662,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				feeBuy = v.FeeBuy * buy
 
 				// net buy
-				netBuy = buy - feeBuy
+				netBuy = buy + feeBuy
 
 				// potential return and percentage
 				potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
