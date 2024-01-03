@@ -64,7 +64,7 @@ type (
 	Exchange struct {
 		ID       uuid.UUID `gorm:"column:id" json:"id"`
 		Currency string    `gorm:"column:currency" json:"currency"`
-		Value    int64     `gorm:"column:value" json:"value"`
+		Value    float64   `gorm:"column:value" json:"value"`
 	}
 
 	ExpenseCategoryEditable struct {
