@@ -1,6 +1,7 @@
 package statistics
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -36,7 +37,7 @@ func (c *StatisticController) Weekly(ctx *gin.Context) {
 		data       interface{}
 		statusCode int
 	)
-	month := ctx.Query("month")
+	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 
 	if month == "" || year == "" {
@@ -63,7 +64,7 @@ func (c *StatisticController) Summary(ctx *gin.Context) {
 	)
 
 	// get query parameter
-	month := ctx.Query("month")
+	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 	email := ctx.Query("email")
 
@@ -91,7 +92,7 @@ func (c *StatisticController) TransactionPriority(ctx *gin.Context) {
 		errInfo []errorsinfo.Errors
 	)
 
-	month := ctx.Query("month")
+	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 
 	if month == "" || year == "" {
@@ -113,7 +114,7 @@ func (c *StatisticController) TransactionPriority(ctx *gin.Context) {
 func (c *StatisticController) Trend(ctx *gin.Context) {
 	var errInfo []errorsinfo.Errors
 
-	month := ctx.Query("month")
+	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 
 	if month == "" {
@@ -165,7 +166,7 @@ func (c *StatisticController) ExpenseDetail(ctx *gin.Context) {
 	var errInfo []errorsinfo.Errors
 
 	// get value from parameter url
-	month := ctx.Query("month")
+	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 	email := ctx.Query("email")
 
@@ -191,7 +192,7 @@ func (c *StatisticController) ExpenseDetail(ctx *gin.Context) {
 func (c *StatisticController) SubExpenseDetail(ctx *gin.Context) {
 	var errInfo []errorsinfo.Errors
 
-	month := ctx.Query("month")
+	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 	IDCategory := ctx.Query("categoryid")
 

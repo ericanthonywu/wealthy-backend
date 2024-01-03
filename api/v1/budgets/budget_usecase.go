@@ -48,7 +48,7 @@ func (s *BudgetUseCase) AllLimit(ctx *gin.Context) (response interface{}, httpCo
 		stringBuilder   strings.Builder
 	)
 
-	month := ctx.Query("month")
+	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 
 	// accountUUID

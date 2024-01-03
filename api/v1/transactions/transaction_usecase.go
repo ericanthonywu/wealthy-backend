@@ -780,7 +780,7 @@ func (s *TransactionUseCase) Investment(ctx *gin.Context) (response interface{},
 		responseInvestmentDetail []entities.TransactionInvestmentDetail
 	)
 
-	month := ctx.Query("month")
+	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
@@ -941,7 +941,7 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 		dataNotes        []entities.TransactionByNotes
 	)
 
-	month := ctx.Query("month")
+	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 
 	usrEmail := ctx.MustGet("email").(string)

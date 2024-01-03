@@ -1,6 +1,7 @@
 package internals
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -23,7 +24,7 @@ func NewInternalUseCase(repo IInternalRepository) *InternalUseCase {
 }
 
 func (s *InternalUseCase) TransactionNotes(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	month := ctx.Query("month")
+	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 	customerID := ctx.Query("customerid")
 

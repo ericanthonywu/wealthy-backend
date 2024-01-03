@@ -1,6 +1,7 @@
 package transactions
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -226,7 +227,7 @@ func (c *TransactionController) InvestTransactionHistory(ctx *gin.Context) {
 func (c *TransactionController) IncomeSpending(ctx *gin.Context) {
 	var errInfo []errorsinfo.Errors
 
-	month := ctx.Query("month")
+	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 
 	if year == "" {
