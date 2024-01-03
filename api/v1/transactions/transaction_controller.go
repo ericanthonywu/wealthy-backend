@@ -11,6 +11,7 @@ import (
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
 	"github.com/wealthy-app/wealthy-backend/utils/response"
 	"net/http"
+	"strings"
 )
 
 type (
@@ -298,7 +299,34 @@ func (c *TransactionController) TravelTransactionHistory(ctx *gin.Context) {
 }
 
 func (c *TransactionController) Suggestion(ctx *gin.Context) {
-	data, httpCode, errInfo := c.useCase.Suggestion(ctx)
+	var isFilterValid bool
+
+	filterTrx := ctx.Query("type")
+
+	if filterTrx != "" {
+		switch strings.ToUpper(filterTrx) {
+		case "EXPENSE":
+		case "INCOME":
+		case "TRAVEL":
+		case "TRANSFER":
+			isFilterValid = true
+		}
+
+		if !isFilterValid {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: "filter-trx must one of these transaction types :  EXPENSE, INCOME, TRAVEL, TRANSFER",
+			}
+			response.SendBack(ctx, resp, []errorsinfo.Errors{}, http.StatusBadRequest)
+			return
+		}
+
+		// override
+		filterTrx = strings.ToUpper(filterTrx)
+	}
+
+	data, httpCode, errInfo := c.useCase.Suggestion(ctx, filterTrx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
