@@ -227,7 +227,10 @@ func (c *TransactionController) InvestTransactionHistory(ctx *gin.Context) {
 func (c *TransactionController) IncomeSpending(ctx *gin.Context) {
 	var errInfo []errorsinfo.Errors
 
-	month := fmt.Sprintf("%02s", ctx.Query("month"))
+	month := ctx.Query("month")
+	if month != "" {
+		month = fmt.Sprintf("%02s", ctx.Query("month"))
+	}
 	year := ctx.Query("year")
 
 	if year == "" {
