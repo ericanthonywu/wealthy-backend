@@ -38,6 +38,7 @@ type (
 		TotalLot          int64     `gorm:"column:total_lot"`
 		ValueBuy          float64   `gorm:"column:value_buy"`
 		AverageBuy        float64   `gorm:"column:average_buy"`
+		AverageBuyOrigin  float64   `gorm:"column:average_buy_origin"`
 		InitialInvestment float64   `gorm:"column:initial_investment"`
 		IDMasterBroker    uuid.UUID `gorm:"column:id_master_broker"`
 		GainLoss          float64   `gorm:"column:gain_loss"`

@@ -1368,7 +1368,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					netBuy = buy + feeBuy
 
 					// potential return and percentage
-					potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
+					potentialReturn = (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
 					potentialReturnDisplay, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", potentialReturn), 64)
 
 					percent := fmt.Sprintf("%.2f", (potentialReturn/initialInvestment)*100)
@@ -1442,7 +1442,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				netBuy = buy + feeBuy
 
 				// potential return and percentage
-				potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
+				potentialReturn = (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
 				potentialReturnDisplay, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", potentialReturn), 64)
 
 				percent := fmt.Sprintf("%.2f", (potentialReturn/initialInvestment)*100)
@@ -1503,7 +1503,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					netBuy = buy + feeBuy
 
 					// potential return and percentage
-					potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
+					potentialReturn = (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
 					percent := fmt.Sprintf("%.2f", (potentialReturn/initialInvestment)*100)
 					percentageReturn, _ = strconv.ParseFloat(percent, 64)
 
@@ -1562,7 +1562,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				netBuy = buy + feeBuy
 
 				// potential return and percentage
-				potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
+				potentialReturn = (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
 				percent := fmt.Sprintf("%.2f", (potentialReturn/initialInvestment)*100)
 				percentageReturn, _ = strconv.ParseFloat(percent, 64)
 
@@ -1606,7 +1606,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 			netBuy = buy + feeBuy
 
 			// potential return and percentage
-			potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
+			potentialReturn = (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
 			percent := fmt.Sprintf("%.2f", (potentialReturn/initialInvestment)*100)
 			percentageReturn, _ = strconv.ParseFloat(percent, 64)
 
@@ -1665,7 +1665,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				netBuy = buy + feeBuy
 
 				// potential return and percentage
-				potentialReturn += (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
+				potentialReturn = (float64(tradingInfo.Close) - averageBuy) * float64(lotBuy) * 100
 				percent := fmt.Sprintf("%.2f", (potentialReturn/initialInvestment)*100)
 				percentageReturn, _ = strconv.ParseFloat(percent, 64)
 
