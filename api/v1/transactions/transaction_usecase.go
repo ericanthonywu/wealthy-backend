@@ -1139,12 +1139,12 @@ func (s *TransactionUseCase) Suggestion(ctx *gin.Context, filterTrx string) (res
 	}
 
 	if len(dataResponse) == 0 {
-		resp := struct {
-			Message string `json:"message"`
-		}{
-			Message: "no data for note : " + filterTrx,
-		}
-		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+		//resp := struct {
+		//	Message string `json:"message"`
+		//}{
+		//	Message: "no data for note : " + filterTrx,
+		//}
+		return []string{}, http.StatusNotFound, []errorsinfo.Errors{}
 	}
 
 	if len(dataResponse) > 0 {
