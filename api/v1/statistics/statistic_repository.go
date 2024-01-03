@@ -86,8 +86,8 @@ SELECT COALESCE(SUM(tt.amount) FILTER
            ( WHERE tt.id_master_expense_categories IS NOT NULL AND
                    tt.date_time_transaction BETWEEN
                        CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-26') AND
-                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-30')),
-                0) ::text                                               as "26-30",
+                       CONCAT((SELECT temp.year FROM temp), '-', (SELECT temp.month FROM temp), '-31')),
+                0) ::text                                               as "26-31",
        COALESCE(SUM(tt.amount) FILTER ( WHERE to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
                MONTH FROM current_timestamp)::text ), 0)::numeric       as total_average_weekly,
        ROUND(COALESCE(SUM(tt.amount) FILTER ( WHERE to_char(tt.date_time_transaction::DATE, 'MM') = EXTRACT(
@@ -108,7 +108,7 @@ func (r *StatisticRepository) expenseWeekly(IDPersonal uuid.UUID, month, year st
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-05') AND  CONCAT('` + year + `', '-', '` + month + `', '-11')), 0)::numeric as date_range_05_11,
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-12') AND  CONCAT('` + year + `', '-', '` + month + `', '-18')), 0)::numeric as date_range_12_18,
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-19') AND  CONCAT('` + year + `', '-', '` + month + `', '-25')), 0)::numeric as date_range_19_25,
-    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-26') AND  CONCAT('` + year + `', '-', '` + month + `', '-31')), 0)::numeric as date_range_26_30
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-26') AND  CONCAT('` + year + `', '-', '` + month + `', '-31')), 0)::numeric as date_range_26_31
 FROM tbl_transactions tt LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types WHERE tt.id_personal_account=? AND tmtt.type = 'EXPENSE'`
 
 	if err := r.db.Raw(sql, IDPersonal).Scan(&data).Error; err != nil {
@@ -123,7 +123,7 @@ func (r *StatisticRepository) incomeWeekly(IDPersonal uuid.UUID, month, year str
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-05') AND  CONCAT('` + year + `', '-', '` + month + `', '-11')), 0)::numeric as date_range_05_11,
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-12') AND  CONCAT('` + year + `', '-', '` + month + `', '-18')), 0)::numeric as date_range_12_18,
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-19') AND  CONCAT('` + year + `', '-', '` + month + `', '-25')), 0)::numeric as date_range_19_25,
-    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-26') AND  CONCAT('` + year + `', '-', '` + month + `', '-31')), 0)::numeric as date_range_26_30
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-26') AND  CONCAT('` + year + `', '-', '` + month + `', '-31')), 0)::numeric as date_range_26_31
 FROM tbl_transactions tt LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types WHERE tt.id_personal_account=? AND tmtt.type = 'INCOME'`
 
 	if err := r.db.Raw(sql, IDPersonal).Scan(&data).Error; err != nil {
@@ -138,7 +138,7 @@ func (r *StatisticRepository) investmentWeekly(IDPersonal uuid.UUID, month, year
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-05') AND  CONCAT('` + year + `', '-', '` + month + `', '-11')), 0)::numeric as date_range_05_11,
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-12') AND  CONCAT('` + year + `', '-', '` + month + `', '-18')), 0)::numeric as date_range_12_18,
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-19') AND  CONCAT('` + year + `', '-', '` + month + `', '-25')), 0)::numeric as date_range_19_25,
-    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-26') AND  CONCAT('` + year + `', '-', '` + month + `', '-31')), 0)::numeric as date_range_26_30
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-26') AND  CONCAT('` + year + `', '-', '` + month + `', '-31')), 0)::numeric as date_range_26_31
 FROM tbl_transactions tt LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types WHERE tt.id_personal_account=? AND tmtt.type = 'INVEST'`
 
 	if err := r.db.Raw(sql, IDPersonal).Scan(&data).Error; err != nil {
@@ -181,7 +181,7 @@ func (r *StatisticRepository) SubExpenseDetail(IDPersonal uuid.UUID, IDCategory 
                 FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-', to_char(tt.date_time_transaction::DATE, 'MM'), '-19') AND CONCAT(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-', to_char(tt.date_time_transaction::DATE, 'MM'), '-25')),
                 0)::numeric as date_range_19_25,
        COALESCE(SUM(tt.amount)
-                FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-', to_char(tt.date_time_transaction::DATE, 'MM'), '-26') AND CONCAT(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-', to_char(tt.date_time_transaction::DATE, 'MM'), '-30')),
+                FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-', to_char(tt.date_time_transaction::DATE, 'MM'), '-26') AND CONCAT(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-', to_char(tt.date_time_transaction::DATE, 'MM'), '-31')),
                 0)::numeric as date_range_26_30
 FROM tbl_transactions tt
          LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types

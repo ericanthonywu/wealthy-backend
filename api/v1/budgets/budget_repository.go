@@ -21,8 +21,6 @@ type (
 		LatestMonths(IDPersonal uuid.UUID, category uuid.UUID) (data []entities.BudgetLatestMonth)
 		Limit(model *entities.BudgetSetEntities) (err error)
 		isBudgetAlreadyExist(model *entities.BudgetSetEntities) (exist bool, id uuid.UUID)
-		PersonalBudget(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalBudget, err error)
-		PersonalTransaction(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalTransaction, err error)
 		Trends(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.TrendsWeekly, err error)
 		BudgetEachCategory(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.BudgetEachCategory, err error)
 		CategoryInfo(IDCategory uuid.UUID) (data entities.CategoryInfo, err error)
@@ -170,45 +168,13 @@ AND to_char(b.created_at, 'YYYY') = EXTRACT(YEAR FROM current_timestamp)::text`,
 	return true, m.ID
 }
 
-func (r *BudgetRepository) PersonalBudget(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalBudget, err error) {
-	month = fmt.Sprintf("%02s", month)
-	if err := r.db.Raw(`SELECT tmec.id,
-       tmec.expense_types                             as category,
-       tmec.image_path,
-       (SELECT b.amount
-        FROM tbl_budgets b
-        WHERE b.id_master_categories = tmec.id
-          AND b.id_personal_accounts = ?
-          AND to_char(b.created_at, 'MM') = ?
-          AND to_char(b.created_at, 'YYYY') = ? LIMIT  1) as budget
-FROM tbl_master_expense_categories_editable tmec
-WHERE tmec.active = true AND tmec.id_personal_accounts = ?`, IDPersonal, month, year, IDPersonal).Scan(&data).Error; err != nil {
-		return []entities.PersonalBudget{}, err
-	}
-	return data, nil
-}
-
-func (r *BudgetRepository) PersonalTransaction(IDPersonal uuid.UUID, month, year string) (data []entities.PersonalTransaction, err error) {
-	month = fmt.Sprintf("%02s", month)
-	if err := r.db.Raw(`SELECT tmec.id, tmec.expense_types as category, coalesce(SUM(tt.amount),0) as amount, COUNT(tt.id_master_expense_categories)
-FROM tbl_transactions tt
-LEFT JOIN tbl_master_expense_categories tmec ON tmec.id = tt.id_master_expense_categories
-LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
-WHERE tt.id_personal_account=?
-  AND to_char(tt.date_time_transaction::DATE, 'MM') = ? AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ? AND tmtt.type = 'EXPENSE'
-group by tmec.id, tmec.expense_types`, IDPersonal, month, year).Scan(&data).Error; err != nil {
-		return []entities.PersonalTransaction{}, err
-	}
-	return data, nil
-}
-
 func (r *BudgetRepository) Trends(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.TrendsWeekly, err error) {
 	month = fmt.Sprintf("%02s", month)
 	sql := `SELECT COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + ` ', '-01') AND  CONCAT('` + year + `', '-', '` + month + `', '-04')), 0)::numeric as date_range_01_04,
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-05') AND  CONCAT('` + year + `', '-', '` + month + `', '-11')), 0)::numeric as date_range_05_11,
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-12') AND  CONCAT('` + year + `', '-', '` + month + `', '-18')), 0)::numeric as date_range_12_18,
     COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-19') AND  CONCAT('` + year + `', '-', '` + month + `', '-25')), 0)::numeric as date_range_19_25,
-    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-26') AND  CONCAT('` + year + `', '-', '` + month + `', '-30')), 0)::numeric as date_range_26_30
+    COALESCE(SUM(tt.amount) FILTER (WHERE tt.date_time_transaction BETWEEN CONCAT('` + year + `', '-', '` + month + `', '-26') AND  CONCAT('` + year + `', '-', '` + month + `', '-31')), 0)::numeric as date_range_26_31
 	FROM tbl_transactions tt LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types WHERE tt.id_personal_account=?  AND tt.id_master_expense_categories=? AND tmtt.type = 'EXPENSE'`
 
 	if err := r.db.Raw(sql, IDPersonal, IDCategory).Scan(&data).Error; err != nil {
@@ -219,10 +185,10 @@ func (r *BudgetRepository) Trends(IDPersonal uuid.UUID, IDCategory uuid.UUID, mo
 
 func (r *BudgetRepository) BudgetEachCategory(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.BudgetEachCategory, err error) {
 	month = fmt.Sprintf("%02s", month)
-	if err := r.db.Raw(`SELECT tmec.expense_types as category ,COALESCE(ROUNd(SUM(b.amount))::INT, 0) as budget_limit
+	if err := r.db.Raw(`SELECT tmec.expense_types as category ,COALESCE(ROUNd(b.amount)::INT, 0) as budget_limit
 	FROM tbl_budgets b INNER JOIN tbl_master_expense_categories tmec ON tmec.id = b.id_master_categories
 	WHERE id_master_categories = ? AND b.id_personal_accounts = ? AND to_char(b.created_at, 'MM') = ? AND to_char(b.created_at, 'YYYY') = ? 
-	GROUP BY tmec.expense_types`, IDCategory, IDPersonal, month, year).Scan(&data).Error; err != nil {
+	GROUP BY tmec.expense_types, b.amount, b.created_at ORDER BY b.created_at desc limit 1`, IDCategory, IDPersonal, month, year).Scan(&data).Error; err != nil {
 		return entities.BudgetEachCategory{}, nil
 	}
 	return data, nil

@@ -1,6 +1,7 @@
 package budgets
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -41,7 +42,7 @@ func (c *BudgetController) AllLimit(ctx *gin.Context) {
 func (c *BudgetController) Overview(ctx *gin.Context) {
 	var errInfo []errorsinfo.Errors
 
-	month := ctx.Query("month")
+	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 
 	if month == "" {
@@ -166,7 +167,7 @@ func (c *BudgetController) Trends(ctx *gin.Context) {
 		dtoResponse interface{}
 	)
 
-	month := ctx.Query("month")
+	month := fmt.Sprintf("%02s", ctx.Query("month"))
 	year := ctx.Query("year")
 	IDCategory := ctx.Query("categoryid")
 
