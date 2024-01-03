@@ -673,6 +673,7 @@ func (r *TransactionRepository) SuggestionWithFilter(IDPersonalAccount uuid.UUID
 INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
 INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
 WHERE t.id_personal_account=? AND tmtt.type=?`, IDPersonalAccount, typeTrx).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
 		return []entities.TransactionSuggestionNotes{}, err
 	}
 	return data, nil

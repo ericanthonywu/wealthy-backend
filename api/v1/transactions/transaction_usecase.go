@@ -1138,8 +1138,12 @@ func (s *TransactionUseCase) Suggestion(ctx *gin.Context, filterTrx string) (res
 	}
 
 	if len(dataResponse) == 0 {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "data not found")
-		return []string{}, http.StatusBadRequest, errInfo
+		resp := struct {
+			Message string `json:"message"`
+		}{
+			Message: "no data for note : " + filterTrx,
+		}
+		return resp, http.StatusBadRequest, []errorsinfo.Errors{}
 	}
 
 	if len(dataResponse) > 0 {
