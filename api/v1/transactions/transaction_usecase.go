@@ -1150,6 +1150,9 @@ func (s *TransactionUseCase) Suggestion(ctx *gin.Context, filterTrx string) (res
 		for _, v := range dataResponse {
 			suggestionCollection = append(suggestionCollection, v.Note)
 		}
+
+		// override
+		suggestionCollection = utilities.RemoveEmptyStrings(suggestionCollection)
 	}
 
 	// if no error
