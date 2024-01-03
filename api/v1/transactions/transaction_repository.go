@@ -51,7 +51,9 @@ type (
 		InvestAnnuallyTotal(IDPersonal uuid.UUID, year string) (data entities.TransactionInvestmentTotals)
 		InvestAnnuallyDetail(IDPersonal uuid.UUID, year string) (data []entities.TransactionInvestmentDetail)
 		ByNote(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionByNotes)
-		Suggestion(IDPersoalAccount uuid.UUID) (data []entities.TransactionSuggestionNotes, err error)
+
+		SuggestionWithFilter(IDPersonalAccount uuid.UUID, typeTrx string) (data []entities.TransactionSuggestionNotes, err error)
+		SuggestionWithoutFilter(IDPersonalAccount uuid.UUID) (data []entities.TransactionSuggestionNotes, err error)
 
 		WalletExist(IDWallet uuid.UUID) bool
 		BudgetWithCurrency(IDTravel uuid.UUID) (data entities.TransactionWithCurrency, err error)
@@ -666,11 +668,20 @@ GROUP BY td.note, tmec.expense_types`, month, year, IDPersonal).Scan(&data).Erro
 	return data
 }
 
-func (r *TransactionRepository) Suggestion(IDPersoalAccount uuid.UUID) (data []entities.TransactionSuggestionNotes, err error) {
+func (r *TransactionRepository) SuggestionWithFilter(IDPersonalAccount uuid.UUID, typeTrx string) (data []entities.TransactionSuggestionNotes, err error) {
 	if err = r.db.Raw(`SELECT DISTINCT td.note FROM tbl_transactions t
 INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
 INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
-WHERE t.id_personal_account=? AND tmtt.type='EXPENSE'`, IDPersoalAccount).Scan(&data).Error; err != nil {
+WHERE t.id_personal_account=? AND tmtt.type=?`, IDPersonalAccount, typeTrx).Scan(&data).Error; err != nil {
+		return []entities.TransactionSuggestionNotes{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) SuggestionWithoutFilter(IDPersonalAccount uuid.UUID) (data []entities.TransactionSuggestionNotes, err error) {
+	if err = r.db.Raw(`SELECT DISTINCT td.note FROM tbl_transactions t INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
+INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types WHERE t.id_personal_account=?`, IDPersonalAccount).
+		Scan(&data).Error; err != nil {
 		return []entities.TransactionSuggestionNotes{}, err
 	}
 	return data, nil

@@ -32,7 +32,7 @@ type (
 		IncomeSpending(ctx *gin.Context, month string, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		Investment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		ByNotes(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
-		Suggestion(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		Suggestion(ctx *gin.Context, filterTrx string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		CashFlow(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		WalletNonInvestment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		WalletInvestment(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
@@ -1110,31 +1110,31 @@ func (s *TransactionUseCase) ByNotes(ctx *gin.Context) (response interface{}, ht
 	return dtoResponse, http.StatusOK, errInfo
 }
 
-func (s *TransactionUseCase) Suggestion(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+func (s *TransactionUseCase) Suggestion(ctx *gin.Context, filterTrx string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
 		dataResponse         []entities.TransactionSuggestionNotes
 		suggestionCollection []string
 		err                  error
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return []string{}, httpCode, errInfo
+	if filterTrx != "" {
+		dataResponse, err = s.repo.SuggestionWithFilter(accountUUID, filterTrx)
+		if err != nil {
+			logrus.Error(err.Error())
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return []string{}, http.StatusInternalServerError, errInfo
+		}
 	}
 
-	dataResponse, err = s.repo.Suggestion(personalAccount.ID)
-	if err != nil {
-		logrus.Error(err.Error())
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		return []string{}, http.StatusInternalServerError, errInfo
-	}
-
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
+	if filterTrx == "" {
+		dataResponse, err = s.repo.SuggestionWithoutFilter(accountUUID)
+		if err != nil {
+			logrus.Error(err.Error())
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return []string{}, http.StatusInternalServerError, errInfo
+		}
 	}
 
 	if len(dataResponse) == 0 {
@@ -1146,6 +1146,11 @@ func (s *TransactionUseCase) Suggestion(ctx *gin.Context) (response interface{},
 		for _, v := range dataResponse {
 			suggestionCollection = append(suggestionCollection, v.Note)
 		}
+	}
+
+	// if no error
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
 	}
 
 	return suggestionCollection, http.StatusOK, errInfo
