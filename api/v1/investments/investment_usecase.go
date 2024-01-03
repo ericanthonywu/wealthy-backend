@@ -259,20 +259,24 @@ func (s *InvestmentUseCase) GainLoss(ctx *gin.Context) (response interface{}, ht
 			return response, http.StatusInternalServerError, errInfo
 		}
 
+		totalLot := float64(v.Lot)
+		priceSell := float64(v.Price)
+
 		// sell calculation
-		valueSell := float64(v.Lot * v.Price * 100)
-		feeSell := v.FeeSell * valueSell
-		netSell := valueSell - feeSell
+		valueSell, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", totalLot*priceSell*100), 64)
+		feeSell, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", (v.FeeSell/100)*valueSell), 64)
+		netSell, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", valueSell-feeSell), 64)
 
 		// buy information
-		valueBuy := dataInvestment.ValueBuy
-		netBuy := dataInvestment.NetBuy
+		valueBuy, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", (totalLot*dataInvestment.AverageBuy)*100), 64)
+		feeBuy, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", (v.FeeBuy/100)*valueBuy), 64)
+		netBuy, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", valueBuy+feeBuy), 64)
 
 		// gain loss
-		gainLoss := netSell - netBuy
+		gainLoss, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", netSell-netBuy), 64)
 
 		// percentage return
-		percentageReturn := gainLoss / valueBuy
+		percentageReturn, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", (gainLoss/valueBuy)*100), 64)
 
 		dtoResponse = append(dtoResponse, dtos.InvestmentGainLoss{
 			DataTransaction:   v.DateTransaction,
@@ -282,7 +286,7 @@ func (s *InvestmentUseCase) GainLoss(ctx *gin.Context) (response interface{}, ht
 			Price:             float64(v.Price),
 			Name:              dataTrading.Name,
 			InitialInvestment: valueSell,
-			Percentage:        fmt.Sprintf("%.2f", percentageReturn),
+			Percentage:        fmt.Sprintf("%.2f", percentageReturn) + "%",
 			TotalDays:         datecustoms.TotalDaysBetweenDate(v.DateTransaction),
 			GainLoss:          gainLoss,
 		})
