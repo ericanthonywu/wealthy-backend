@@ -440,10 +440,6 @@ func (c *TransactionController) validateExpenseTransactionPayload(request *dtos.
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories expense category empty value")
 	}
 
-	if request.IDMasterExpenseSubCategories == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories expense sub category empty value")
-	}
-
 	if request.IDMasterTransactionPriorities == "" {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories transaction priorities empty value")
 	}
