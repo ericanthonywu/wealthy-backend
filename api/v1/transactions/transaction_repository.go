@@ -677,7 +677,7 @@ func (r *TransactionRepository) SuggestionWithFilter(IDPersonalAccount uuid.UUID
 	if err = r.db.Raw(`SELECT DISTINCT td.note FROM tbl_transactions t
 INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
 INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types
-WHERE t.id_personal_account=? AND tmtt.type=?`, IDPersonalAccount, typeTrx).Scan(&data).Error; err != nil {
+WHERE t.id_personal_account=? AND tmtt.type=? AND td.note<>''`, IDPersonalAccount, typeTrx).Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return []entities.TransactionSuggestionNotes{}, err
 	}
@@ -686,7 +686,7 @@ WHERE t.id_personal_account=? AND tmtt.type=?`, IDPersonalAccount, typeTrx).Scan
 
 func (r *TransactionRepository) SuggestionWithoutFilter(IDPersonalAccount uuid.UUID) (data []entities.TransactionSuggestionNotes, err error) {
 	if err = r.db.Raw(`SELECT DISTINCT td.note FROM tbl_transactions t INNER JOIN tbl_transaction_details td ON td.id_transactions = t.id
-INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types WHERE t.id_personal_account=?`, IDPersonalAccount).
+INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = t.id_master_transaction_types WHERE t.id_personal_account=? AND td.note<>''`, IDPersonalAccount).
 		Scan(&data).Error; err != nil {
 		return []entities.TransactionSuggestionNotes{}, err
 	}
