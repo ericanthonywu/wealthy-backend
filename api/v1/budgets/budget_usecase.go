@@ -195,6 +195,12 @@ func (s *BudgetUseCase) Overview(ctx *gin.Context, month, year string) (response
 				logrus.Error(err.Error())
 			}
 
+			// get number of transactions by category id
+			dataNumberOfTransactions, err := s.repo.GetNumberOfTransactionByCategory(accountUUID, v.CategoryID, month, year)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
+
 			// integration mapping
 			dataDetails = append(dataDetails, dtos.OverviewDetail{
 				CategoryName:    v.CategoryName,
@@ -208,7 +214,7 @@ func (s *BudgetUseCase) Overview(ctx *gin.Context, month, year string) (response
 					CurrencyCode: "IDR",
 					Value:        int(dataTransaction.Amount),
 				},
-				NumberOfCategories: 0,
+				NumberOfTransaction: int(dataNumberOfTransactions.NumberOfTrx),
 			})
 		}
 	}
