@@ -33,6 +33,7 @@ type (
 		GetAmountBudgetSubCategory(accountID, subCategoryID uuid.UUID, month, year string) (data entities.SubCategoryBudgetInfo, err error)
 		GetAmountBudgetCategory(accountUUID, categoryUUID uuid.UUID, month, year string) (data entities.CategoryBudgetInfo, err error)
 		GetTransactionByCategory(accountUUID, categoryID uuid.UUID, month, year string) (data entities.CategoryTransaction, err error)
+		GetNumberOfTransactionByCategory(accountUUID, categoryID uuid.UUID, month, year string) (data entities.NumberOfTransaction, err error)
 	}
 )
 
@@ -318,14 +319,24 @@ func (r *BudgetRepository) GetAmountBudgetCategory(accountUUID, categoryUUID uui
 }
 
 func (r *BudgetRepository) GetTransactionByCategory(accountUUID, categoryID uuid.UUID, month, year string) (data entities.CategoryTransaction, err error) {
-	if err := r.db.Raw(`SELECT tmec.id, coalesce(SUM(tt.amount), 0) as amount FROM tbl_transactions tt
-         LEFT JOIN tbl_master_expense_categories_editable tmec ON tmec.id = tt.id_master_expense_categories
-         LEFT JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types WHERE tt.id_personal_account = ?
+	if err := r.db.Raw(`SELECT coalesce(sum(tt.amount),0) as amount FROM tbl_transactions tt WHERE tt.id_personal_account = ?
   AND to_char(tt.date_time_transaction::DATE, 'MM') = ? AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
-  AND tmtt.type = 'EXPENSE' AND tt.id_master_expense_categories=? GROUP BY tmec.id, amount`, accountUUID, month, year, categoryID).
+  AND tt.id_master_expense_categories=?`, accountUUID, month, year, categoryID).
 		Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.CategoryTransaction{}, err
+	}
+	return data, nil
+}
+
+func (r *BudgetRepository) GetNumberOfTransactionByCategory(accountUUID, categoryID uuid.UUID, month, year string) (data entities.NumberOfTransaction, err error) {
+	if err := r.db.Raw(`SELECT count(tt.id) as number_of_transaction FROM tbl_transactions tt WHERE tt.id_personal_account = ?
+  AND to_char(tt.date_time_transaction::DATE, 'MM') = ?
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
+  AND tt.id_master_expense_categories=?`, accountUUID, month, year, categoryID).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.NumberOfTransaction{}, err
 	}
 	return data, nil
 }

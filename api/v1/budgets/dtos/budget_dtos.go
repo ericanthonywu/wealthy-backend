@@ -52,7 +52,7 @@ type (
 		TransactionIcon     string      `json:"transaction_category_icon"`
 		BudgetLimit         Limit       `json:"budget_limit"`
 		TransactionSpending Transaction `json:"transaction_spending"`
-		NumberOfCategories  int         `json:"number_of_categories"`
+		NumberOfTransaction int         `json:"number_of_transaction"`
 	}
 
 	Limit struct {

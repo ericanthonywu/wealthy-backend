@@ -143,6 +143,10 @@ type (
 	CategoryTransaction struct {
 		Amount float64 `gorm:"column:amount"`
 	}
+
+	NumberOfTransaction struct {
+		NumberOfTrx int64 `gorm:"column:number_of_transaction"`
+	}
 )
 
 func (BudgetSetEntities) TableName() string {
