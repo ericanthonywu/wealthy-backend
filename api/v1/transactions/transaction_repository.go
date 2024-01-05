@@ -933,5 +933,14 @@ WHERE tmece.id_personal_accounts = ? AND tmece.id = ? AND tmece.active`, account
 		logrus.Error(err.Error())
 		return entities.Category{}, err
 	}
+
+	if data == (entities.Category{}) {
+		if err := r.db.Raw(`SELECT tmice.id as category_id, tmice.income_types as category_name, tmice.image_path as category_icon
+FROM tbl_master_income_categories_editable tmice
+WHERE tmice.id_personal_accounts = ? AND tmice.id = ? AND tmice.active`, accountUUID, IDCategory).
+			Scan(&data).Error; err != nil {
+
+		}
+	}
 	return data, nil
 }
