@@ -259,6 +259,20 @@ type (
 		Category    string `gorm:"column:category_name"`
 		BudgetLimit int    `gorm:"column:total_budget_limit"`
 	}
+
+	IncomeSpendingMonthly struct {
+		DateTransaction string    `gorm:"column:transaction_date"`
+		Amount          float64   `gorm:"column:transaction_amount"`
+		Note            string    `gorm:"column:transaction_note"`
+		Type            string    `gorm:"column:transaction_type"`
+		IDCategory      uuid.UUID `gorm:"column:id_category"`
+	}
+
+	Category struct {
+		CategoryName string    `gorm:"column:category_name"`
+		CategoryID   uuid.UUID `gorm:"column:category_id"`
+		CategoryIcon string    `gorm:"column:category_icon"`
+	}
 )
 
 func (TransactionEntity) TableName() string {

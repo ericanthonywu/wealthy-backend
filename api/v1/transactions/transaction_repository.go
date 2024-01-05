@@ -42,7 +42,7 @@ type (
 		TravelDetailWithoutData(IDPersonal, idTravel uuid.UUID) (data []entities.TransactionDetailTravel)
 
 		IncomeSpendingMonthlyTotal(IDPersonal uuid.UUID, month, year string) (data entities.TransactionIncomeSpendingTotalMonthly)
-		IncomeSpendingMonthlyDetail(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionIncomeSpendingDetailMonthly)
+		IncomeSpendingMonthlyDetail(IDPersonal uuid.UUID, month, year string) (data []entities.IncomeSpendingMonthly)
 		IncomeSpendingAnnuallyTotal(IDPersonal uuid.UUID, year string) (data entities.TransactionIncomeSpendingTotalAnnually)
 		IncomeSpendingAnnuallyDetail(IDPersonal uuid.UUID, year string) (data []entities.TransactionIncomeSpendingDetailAnnually)
 
@@ -86,6 +86,8 @@ type (
 		ListStockCode(accoundID uuid.UUID) (data []entities.StockCodeData, err error)
 
 		BudgetEachCategory(IDPersonal uuid.UUID, IDCategory uuid.UUID, monthyear string) (data entities.BudgetEachCategory, err error)
+
+		GetCategoryInformation(accountUUID, IDCategory uuid.UUID) (data entities.Category, err error)
 	}
 )
 
@@ -490,38 +492,31 @@ GROUP BY year, month`, month, year, IDPersonal).Scan(&data).Error; err != nil {
 	return data
 }
 
-func (r *TransactionRepository) IncomeSpendingMonthlyDetail(IDPersonal uuid.UUID, month, year string) (data []entities.TransactionIncomeSpendingDetailMonthly) {
-	if err := r.db.Raw(`SELECT concat(to_char(tt.date_time_transaction::DATE, 'YYYY'), '-',
-              to_char(tt.date_time_transaction::DATE, 'MM'), '-',
-              to_char(tt.date_time_transaction::DATE, 'DD'))::text as date,
-       tmec.image_path,
+func (r *TransactionRepository) IncomeSpendingMonthlyDetail(IDPersonal uuid.UUID, month, year string) (data []entities.IncomeSpendingMonthly) {
+	if err := r.db.Raw(`SELECT tt.date_time_transaction as transaction_date,
+       tt.amount                as transaction_amount,
        CASE
-           WHEN tmec.expense_types IS NOT NULL THEN tmec.expense_types
-           WHEN tmic.income_types IS NOT NULL THEN tmic.income_types
-           END ::text                                              as transaction_category,
+           WHEN tt.id_master_income_categories = '00000000-0000-0000-0000-000000000000'
+               THEN tt.id_master_expense_categories
+           WHEN tt.id_master_expense_categories = '00000000-0000-0000-0000-000000000000'
+               THEN tt.id_master_income_categories
+           END                  as id_category,
+       tmtt.type                as transaction_type,
        CASE
-           WHEN tmec.expense_types IS NOT NULL THEN 'EXPENSE'
-           WHEN tmic.income_types IS NOT NULL THEN 'INCOME'
-           END :: text                                             as transaction_type,
-       coalesce(SUM(tt.amount), 0)::numeric                        as transaction_amount,
-       CASE
-           WHEN td.note IS NULL THEN ''
-           WHEN td.note IS NOT NULL THEN td.note
-           END::text                                               as transaction_note
+           WHEN ttd.note = '' THEN ''
+           WHEN ttd.note IS NULL THEN ''
+           WHEN ttd.note IS NOT NULL THEN ttd.note
+           END                  as transaction_note
 FROM tbl_transactions tt
-         LEFT JOIN tbl_master_expense_categories_editable tmec
-                   ON tt.id_master_expense_categories = tmec.id
-         LEFT JOIN tbl_master_income_categories_editable tmic
-                   ON tt.id_master_income_categories = tmic.id
-         INNER JOIN tbl_transaction_details td ON tt.id = td.id_transactions
+         INNER JOIN tbl_transaction_details ttd ON ttd.id_transactions = tt.id
          INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
-WHERE to_char(tt.date_time_transaction::DATE, 'MM') = ?
+WHERE tt.id_personal_account = ?
+  AND to_char(tt.date_time_transaction::DATE, 'MM') = ?
   AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
-  AND tt.id_personal_account = ?
   AND (tmtt.type = 'INCOME' OR tmtt.type = 'EXPENSE')
-GROUP BY date, transaction_category, tmec.expense_types, tmic.income_types, td.note, tmec.image_path
-ORDER BY date DESC`, month, year, IDPersonal).Scan(&data).Error; err != nil {
-		return []entities.TransactionIncomeSpendingDetailMonthly{}
+ORDER BY tt.date_time_transaction DESC`, IDPersonal, month, year).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return []entities.IncomeSpendingMonthly{}
 	}
 
 	return data
@@ -927,6 +922,16 @@ WHERE tmece.id_personal_accounts = ?
   AND tb.id_master_categories=?
 GROUP BY tmece.expense_types`, IDPersonal, IDPersonal, monthyear, IDCategory).Scan(&data).Error; err != nil {
 		return entities.BudgetEachCategory{}, nil
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) GetCategoryInformation(accountUUID, IDCategory uuid.UUID) (data entities.Category, err error) {
+	if err := r.db.Raw(`SELECT tmece.id as category_id, tmece.expense_types as category_name, tmece.image_path as category_icon
+FROM tbl_master_expense_categories_editable tmece
+WHERE tmece.id_personal_accounts = ? AND tmece.id = ? AND tmece.active`, accountUUID, IDCategory).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.Category{}, err
 	}
 	return data, nil
 }
