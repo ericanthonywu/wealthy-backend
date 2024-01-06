@@ -537,6 +537,10 @@ func (s *BudgetUseCase) Trends(ctx *gin.Context, IDCategory uuid.UUID, month, ye
 	dtoResponse.Expense.AverageDailySpendingRecommended.CurrencyCode = "IDR"
 	dtoResponse.Expense.AverageDailySpendingRecommended.Value = dataBudgetEachCategory.BudgetLimit / 30
 
+	if len(errInfo) == 0 {
+		errInfo = []errorsinfo.Errors{}
+	}
+
 	return dtoResponse, http.StatusOK, errInfo
 }
 
