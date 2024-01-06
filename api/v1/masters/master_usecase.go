@@ -7,7 +7,6 @@ import (
 	"github.com/wealthy-app/wealthy-backend/api/v1/masters/dtos"
 	"github.com/wealthy-app/wealthy-backend/api/v1/masters/entities"
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
-	"github.com/wealthy-app/wealthy-backend/utils/personalaccounts"
 	"github.com/wealthy-app/wealthy-backend/utils/utilities"
 	"net/http"
 	"strings"
@@ -185,16 +184,9 @@ func (s *MasterUseCase) PersonalExpenseCategory(ctx *gin.Context) (response inte
 }
 
 func (s *MasterUseCase) PersonalExpenseSubCategory(ctx *gin.Context, expenseIDUUID uuid.UUID) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
-	}
-
-	data, err := s.repo.PersonalExpenseSubCategory(personalAccount.ID, expenseIDUUID)
+	data, err := s.repo.PersonalExpenseSubCategory(accountUUID, expenseIDUUID)
 	if err != nil {
 		logrus.Error(err.Error())
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
