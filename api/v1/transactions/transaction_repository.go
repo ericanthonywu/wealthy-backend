@@ -864,10 +864,12 @@ WHERE to_char(tt.date_time_transaction::DATE, 'MM')::numeric = EXTRACT(MONTH FRO
 func (r *TransactionRepository) DataTotalExpense(accountUUID uuid.UUID) (data entities.TotalExpenseCashflow, err error) {
 	if err := r.db.Raw(`SELECT sum(amount)  as total_expense
 FROM tbl_transactions tt
+INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
 WHERE to_char(tt.date_time_transaction::DATE, 'MM')::numeric = EXTRACT(MONTH FROM CURRENT_DATE)
   AND to_char(tt.date_time_transaction::DATE, 'YYYY')::numeric = EXTRACT(YEAR FROM CURRENT_DATE)
   AND tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'
-  AND tt.id_personal_account = ?`, accountUUID).Scan(&data).Error; err != nil {
+  AND tmtt.type <> 'TRAVEL'
+   AND tt.id_personal_account = ?`, accountUUID).Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.TotalExpenseCashflow{}, err
 	}
