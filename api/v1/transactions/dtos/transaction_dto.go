@@ -90,11 +90,12 @@ type (
 	}
 
 	TransactionDetailAnnually struct {
-		LastDayInMonth int     `json:"last_day_month"`
-		MonthYear      string  `json:"month_year"`
-		TotalIncome    int     `json:"total_income"`
-		TotalSpending  int     `json:"total_spending"`
-		NetIncome      float64 `json:"net_income"`
+		LastDayInMonth  int     `json:"last_day_month"`
+		MonthYear       string  `json:"month_year"`
+		TotalDayInMonth int     `json:"total_day_in_month"`
+		TotalIncome     int     `json:"total_income"`
+		TotalSpending   int     `json:"total_spending"`
+		NetIncome       float64 `json:"net_income"`
 	}
 
 	TransactionIncomeSpendingInvestmentDetail struct {
