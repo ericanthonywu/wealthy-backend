@@ -324,10 +324,10 @@ func (r *BudgetRepository) GetTransactionByCategory(accountUUID, categoryID uuid
 	if err := r.db.Raw(`SELECT coalesce(sum(tt.amount), 0) as amount
 FROM tbl_transactions tt
          INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
-WHERE tt.id_personal_account = '869b4b16-abaa-11ee-9c29-02427cb40fbb'
-  AND to_char(tt.date_time_transaction::DATE, 'MM') = '01'
-  AND to_char(tt.date_time_transaction::DATE, 'YYYY') = '2024'
-  AND tt.id_master_expense_categories = '2cd0b60e-9165-4f34-aa8a-d39ff28adb35'
+WHERE tt.id_personal_account = ?
+  AND to_char(tt.date_time_transaction::DATE, 'MM') = ?
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
+  AND tt.id_master_expense_categories = ?
   AND tmtt.type <> 'TRAVEL'`, accountUUID, month, year, categoryID).
 		Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
