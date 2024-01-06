@@ -273,6 +273,22 @@ type (
 		CategoryID   uuid.UUID `gorm:"column:category_id"`
 		CategoryIcon string    `gorm:"column:category_icon"`
 	}
+
+	TotalSpendingMonthly struct {
+		Amount float64 `gorm:"column:total_spending"`
+	}
+
+	TotalIncomeMonthly struct {
+		Amount float64 `gorm:"column:total_income"`
+	}
+
+	TotalSpendingAnnual struct {
+		Amount float64 `gorm:"column:total_spending"`
+	}
+
+	TotalIncomeAnnual struct {
+		Amount float64 `gorm:"column:total_income"`
+	}
 )
 
 func (TransactionEntity) TableName() string {
