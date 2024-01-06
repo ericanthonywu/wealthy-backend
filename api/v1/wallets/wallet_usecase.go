@@ -110,16 +110,16 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 			return struct{}{}, http.StatusInternalServerError, errInfo
 		}
 
-		//// if wallet type is not investment
-		//if WalletType != constants.Investment {
-		//	// save initial transaction
-		//	err = s.writeInitialTransaction(request, &walletEntity, accountUUID)
-		//	if err != nil {
-		//		logrus.Error(err.Error())
-		//		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		//		return struct{}{}, http.StatusInternalServerError, errInfo
-		//	}
-		//}
+		// if wallet type is not investment
+		if WalletType != constants.Investment {
+			// save initial transaction
+			err = s.writeInitialTransaction(request, &walletEntity, accountUUID)
+			if err != nil {
+				logrus.Error(err.Error())
+				errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+				return struct{}{}, http.StatusInternalServerError, errInfo
+			}
+		}
 	}
 
 	// account type PRO
@@ -133,15 +133,15 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 		}
 
 		// if wallet type is not investment
-		//if WalletType != constants.Investment {
-		//	// save initial transaction
-		//	err = s.writeInitialTransaction(request, &walletEntity, accountUUID)
-		//	if err != nil {
-		//		logrus.Error(err.Error())
-		//		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		//		return struct{}{}, http.StatusInternalServerError, errInfo
-		//	}
-		//}
+		if WalletType != constants.Investment {
+			// save initial transaction
+			err = s.writeInitialTransaction(request, &walletEntity, accountUUID)
+			if err != nil {
+				logrus.Error(err.Error())
+				errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+				return struct{}{}, http.StatusInternalServerError, errInfo
+			}
+		}
 	}
 
 	// if no error message
@@ -201,21 +201,15 @@ func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, 
 
 			// fetch data from transaction latest row to get balance information
 
-			/*
-				------------------------------------------------------------
-				feature : get latest balance from transaction
-				------------------------------------------------------------
-				dataTrx, err := s.repo.LatestAmountWalletInTransaction(v.ID)
-				if err != nil {
-					logrus.Error(err.Error())
-				}
+			dataTrx, err := s.repo.LatestAmountWalletInTransaction(v.ID)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
 
-				// override with balance
-				totalAsset = int64(dataTrx.Balance)
+			// override with balance
+			totalAsset = int64(dataTrx.Balance)
 
-			*/
-
-			totalAsset = v.TotalAssets
+			// totalAsset = v.TotalAssets
 		}
 
 		// if wallet type is investments
@@ -280,26 +274,26 @@ func (s *WalletUseCase) UpdateAmount(ctx *gin.Context, IDWallet string, request 
 	if amount > 0 {
 
 		// get account
-		//accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+		accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-		//request := dtos.WalletAddRequest{
-		//	IDMasterWallet: UUIDWallet.String(),
-		//	TotalAsset:     int64(amount),
-		//}
-		//
-		//walletEntity := entities.WalletEntity{
-		//	ID:          UUIDWallet,
-		//	IDAccount:   accountUUID,
-		//	TotalAssets: int64(amount),
-		//}
+		request := dtos.WalletAddRequest{
+			IDMasterWallet: UUIDWallet.String(),
+			TotalAsset:     int64(amount),
+		}
+
+		walletEntity := entities.WalletEntity{
+			ID:          UUIDWallet,
+			IDAccount:   accountUUID,
+			TotalAssets: int64(amount),
+		}
 
 		// save for latest balance
-		//err = s.writeInitialTransaction(&request, &walletEntity, accountUUID)
-		//if err != nil {
-		//	logrus.Error(err.Error())
-		//	errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-		//	return struct{}{}, http.StatusInternalServerError, errInfo
-		//}
+		err = s.writeInitialTransaction(&request, &walletEntity, accountUUID)
+		if err != nil {
+			logrus.Error(err.Error())
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusInternalServerError, errInfo
+		}
 	}
 
 	// update data
@@ -324,38 +318,18 @@ func (s *WalletUseCase) UpdateAmount(ctx *gin.Context, IDWallet string, request 
 }
 
 func (s *WalletUseCase) writeInitialTransaction(request *dtos.WalletAddRequest, walletEntity *entities.WalletEntity, IDPersonalAccount uuid.UUID) (err error) {
-	// setup id_master_income_category
-	incomeCategoryUUID, err := uuid.Parse("13c4a525-2200-497b-af4b-ef8fa2fe93cc")
-	if err != nil {
-		logrus.Error(err.Error())
-	}
-
-	// setup id_master_transaction_priority
-	trxPriorityUUID, err := uuid.Parse("9b96cdf8-8173-4d54-9142-e6ebd1f6aea3")
-	if err != nil {
-		logrus.Error(err.Error())
-	}
-
-	// setup id_master_transaction_type
-	trxTypeUUID, err := uuid.Parse("c023a068-a239-42cd-b03a-70304f55d0d3")
-	if err != nil {
-		logrus.Error(err.Error())
-	}
 
 	// setup trx
 	trx := entities.WalletInitTransaction{
-		ID:                            uuid.New(),
-		Date:                          datecustoms.NowTransaction(),
-		Fees:                          0,
-		Amount:                        float64(request.TotalAsset),
-		IDPersonalAccount:             IDPersonalAccount,
-		IDWallet:                      walletEntity.ID,
-		IDMasterIncomeCategories:      incomeCategoryUUID,
-		IDMasterTransactionPriorities: trxPriorityUUID,
-		IDMasterTransactionTypes:      trxTypeUUID,
-		Credit:                        float64(request.TotalAsset),
-		Debit:                         0,
-		Balance:                       float64(request.TotalAsset),
+		ID:                uuid.New(),
+		Date:              datecustoms.NowTransaction(),
+		Fees:              0,
+		Amount:            float64(request.TotalAsset),
+		IDPersonalAccount: IDPersonalAccount,
+		IDWallet:          walletEntity.ID,
+		Credit:            float64(request.TotalAsset),
+		Debit:             0,
+		Balance:           float64(request.TotalAsset),
 	}
 
 	// no setup trx detail
