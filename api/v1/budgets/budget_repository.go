@@ -332,10 +332,14 @@ func (r *BudgetRepository) GetTransactionByCategory(accountUUID, categoryID uuid
 }
 
 func (r *BudgetRepository) GetNumberOfTransactionByCategory(accountUUID, categoryID uuid.UUID, month, year string) (data entities.NumberOfTransaction, err error) {
-	if err := r.db.Raw(`SELECT count(tt.id) as number_of_transaction FROM tbl_transactions tt WHERE tt.id_personal_account = ?
-  AND to_char(tt.date_time_transaction::DATE, 'MM') = ?
-  AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
-  AND tt.id_master_expense_categories=?`, accountUUID, month, year, categoryID).
+	if err := r.db.Raw(`SELECT coalesce(sum(tt.amount), 0) as amount
+FROM tbl_transactions tt
+INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
+WHERE tt.id_personal_account = ?
+  AND to_char(tt.date_time_transaction::DATE, 'MM') = '01'
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY') = '2024'
+  AND tt.id_master_expense_categories=?
+AND tmtt.type <> 'TRAVEL'`, accountUUID, month, year, categoryID).
 		Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.NumberOfTransaction{}, err
