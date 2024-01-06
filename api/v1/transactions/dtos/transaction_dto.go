@@ -77,7 +77,7 @@ type (
 	}
 
 	TransactionSummaryIncomeSpending struct {
-		Month         string  `json:"month,omitempty"`
+		Month         string  `json:"month"`
 		Year          int     `json:"year"`
 		TotalIncome   float64 `json:"total_income"`
 		TotalSpending float64 `json:"total_spending"`
