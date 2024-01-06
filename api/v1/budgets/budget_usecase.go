@@ -360,6 +360,7 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 		model.IDMasterExchangeCurrency = IDMasterExchangeCurrencyUUID
 		model.IDCategory = IDCategoryUUID
 		model.IDSubCategory = IDSubCategoryUUID
+		model.Currency = dtoRequest.ExchangeRate
 	}
 
 	if purpose != constants.Travel {
@@ -411,7 +412,7 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 
 	}
 
-	model.Amount = dtoRequest.Amount
+	model.Amount = int64(float64(dtoRequest.Amount) * dtoRequest.ExchangeRate)
 	model.IDPersonalAccount = accountUUID
 	model.ID = uuid.New()
 

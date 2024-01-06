@@ -57,7 +57,7 @@ type (
 
 		WalletExist(IDWallet uuid.UUID) bool
 		BudgetWithCurrency(IDTravel uuid.UUID) (data entities.TransactionWithCurrency, err error)
-
+		BudgetCurrencyByIDTravel(IDTravel uuid.UUID) (data entities.TransactionWithCurrency, err error)
 		AllInvestmentsTrx(accountUUID uuid.UUID) (data models.TrxInvest, err error)
 		PreviousInvestment(accountUUID uuid.UUID, stockCode string, IDMasterBrokerUUID uuid.UUID) (data entities.TransactionInvestmentEntity, err error)
 		GetTradingInfo(stockCode string) (data entities.InvestmentTreding, err error)
@@ -703,9 +703,18 @@ func (r *TransactionRepository) WalletExist(IDWallet uuid.UUID) bool {
 	return model.Exists
 }
 
-func (r *TransactionRepository) BudgetWithCurrency(IDTravel uuid.UUID) (data entities.TransactionWithCurrency, rr error) {
+func (r *TransactionRepository) BudgetWithCurrency(IDTravel uuid.UUID) (data entities.TransactionWithCurrency, err error) {
 	if err := r.db.Raw(`SELECT tmec.currency_value FROM tbl_budgets tb INNER JOIN tbl_master_exchange_currency tmec ON tmec.id = tb.id_master_exchance_currency
 WHERE tb.id=?`, IDTravel).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.TransactionWithCurrency{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) BudgetCurrencyByIDTravel(IDTravel uuid.UUID) (data entities.TransactionWithCurrency, err error) {
+	if err := r.db.Raw(`SELECT tb.currency as currency_value FROM tbl_budgets tb WHERE tb.id=?`, IDTravel).
 		Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.TransactionWithCurrency{}, err

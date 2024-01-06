@@ -147,6 +147,10 @@ func (c *BudgetController) Limit(ctx *gin.Context) {
 		if utilities.IsEmptyString(dtoRequest.IDMasterExchangeCurrency) {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories exchange currency empty value")
 		}
+
+		if dtoRequest.ExchangeRate <= 0.0 {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "exchange rate min 1")
+		}
 	}
 
 	// show err info

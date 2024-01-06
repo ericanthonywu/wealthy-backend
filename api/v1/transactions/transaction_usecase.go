@@ -87,10 +87,18 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 			return resp, http.StatusBadRequest, []errorsinfo.Errors{}
 		}
 
-		dataCurrency, err := s.repo.BudgetWithCurrency(IDTravelUUID)
+		// get currency from tbl_master_exchange_currency
+		// dataCurrency, err := s.repo.BudgetWithCurrency(IDTravelUUID)
+		//if err != nil {
+		//	logrus.Error(err.Error())
+		//}
+
+		// get currency by travel_id
+		dataCurrency, err := s.repo.BudgetCurrencyByIDTravel(IDTravelUUID)
 		if err != nil {
 			logrus.Error(err.Error())
 		}
+
 		convertAmount = dataCurrency.CurrencyValue * request.Amount
 	}
 

@@ -80,6 +80,7 @@ type (
 		Filename                     string    `gorm:"column:filename"`
 		TravelStartDate              string    `gorm:"column:travel_start_date"`
 		TravelEndDate                string    `gorm:"column:travel_end_date"`
+		Currency                     float64   `gorm:"column:currency"`
 	}
 
 	BudgetExistEntities struct {
