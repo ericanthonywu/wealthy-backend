@@ -218,8 +218,12 @@ func (r *BudgetRepository) Trends(IDPersonal uuid.UUID, IDCategory uuid.UUID, mo
 
 func (r *BudgetRepository) BudgetEachCategory(IDPersonal uuid.UUID, IDCategory uuid.UUID, month, year string) (data entities.BudgetEachCategory, err error) {
 	month = fmt.Sprintf("%02s", month)
-	if err := r.db.Raw(`SELECT coalesce(sum(tb.amount), 0) as budget_limit FROM tbl_budgets tb WHERE tb.id_master_categories = ? 
-    AND tb.id_personal_accounts = ?`, IDPersonal, IDCategory, month, year).Scan(&data).Error; err != nil {
+	if err := r.db.Raw(`SELECT coalesce(sum(tb.amount), 0) as budget_limit
+FROM tbl_budgets tb
+WHERE tb.id_master_categories = ?
+  AND tb.id_personal_accounts = ?
+  AND to_char(tb.created_at, 'MM') = ?
+  AND to_char(tb.created_at, 'YYYY') = ?`, IDCategory, IDPersonal, month, year).Scan(&data).Error; err != nil {
 		return entities.BudgetEachCategory{}, nil
 	}
 	return data, nil
