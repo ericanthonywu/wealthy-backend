@@ -160,8 +160,6 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 					logrus.Error(err.Error())
 				}
 			}
-
-			// deduction last balance
 		}
 	}
 
@@ -195,6 +193,18 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 	}
 
 	if request.IDMasterExpenseCategories != "" {
+
+		// if balance is insufficient
+		if dataLastBalance.Balance < float64(request.Amount) {
+			resp := struct {
+				Message string `json:"message"`
+			}{
+				Message: "insufficient wallet balance. please top up wallet",
+			}
+			return resp, http.StatusBadRequest, []errorsinfo.Errors{}
+		}
+
+		// if balance is sufficient
 		Balance = dataLastBalance.Balance - float64(request.Amount)
 		Credit = 0
 		Debit = float64(request.Amount)
