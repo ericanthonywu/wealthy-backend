@@ -53,12 +53,12 @@ func (r *MasterRepository) TransactionType() (data []entities.TransactionType) {
 }
 
 func (r *MasterRepository) IncomeType() (data []entities.IncomeType) {
-	r.db.Where("active = ?", true).Find(&data)
+	r.db.Where("active = ?", true).Order("income_types ASC").Find(&data)
 	return data
 }
 
 func (r *MasterRepository) ExpenseType() (data []entities.ExpenseType) {
-	r.db.Find(&data)
+	r.db.Where("active = ?", true).Order("expense_types ASC").Find(&data)
 	return data
 }
 
@@ -101,7 +101,9 @@ func (r *MasterRepository) Gender() (data []entities.Gender) {
 
 func (r *MasterRepository) SubExpenseCategory(expenseID uuid.UUID) (data []entities.SubExpenseCategories) {
 	r.db.Where("id_master_expense_categories = ?", expenseID).
-		Where("active=?", true).Find(&data)
+		Where("active=?", true).
+		Order("subcategories ASC").
+		Find(&data)
 	return data
 }
 
@@ -131,7 +133,7 @@ WHERE tmec.active = true`).Scan(&data).Error; err != nil {
 
 func (r *MasterRepository) PersonalIncomeCategory(IDPersonal uuid.UUID) (data []entities.IncomeCategoryEditable, err error) {
 	if err = r.db.Raw(`SELECT tmice.id, tmice.income_types as category, tmice.image_path FROM tbl_master_income_categories_editable tmice
-WHERE tmice.id_personal_accounts=? AND tmice.active=true`, IDPersonal).Scan(&data).Error; err != nil {
+WHERE tmice.id_personal_accounts=? AND tmice.active=true ORDER BY category`, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.IncomeCategoryEditable{}, err
 	}
 	return data, nil
@@ -139,8 +141,7 @@ WHERE tmice.id_personal_accounts=? AND tmice.active=true`, IDPersonal).Scan(&dat
 
 func (r *MasterRepository) PersonalExpenseCategory(IDPersonal uuid.UUID) (data []entities.ExpenseCategoryEditable, err error) {
 	if err = r.db.Raw(`SELECT tmece.id, tmece.expense_types, tmece.image_path FROM tbl_master_expense_categories_editable tmece
-WHERE tmece.id_personal_accounts=? AND
-tmece.active=true;`, IDPersonal).Scan(&data).Error; err != nil {
+WHERE tmece.id_personal_accounts=? AND tmece.active ORDER BY tmece.expense_types`, IDPersonal).Scan(&data).Error; err != nil {
 		return []entities.ExpenseCategoryEditable{}, err
 	}
 	return data, nil
@@ -149,7 +150,7 @@ tmece.active=true;`, IDPersonal).Scan(&data).Error; err != nil {
 func (r *MasterRepository) PersonalExpenseSubCategory(IDPersonal, expenseIDUUID uuid.UUID) (data []entities.ExpenseSubCategoryEditable, err error) {
 	if err = r.db.Raw(`SELECT tmese.id, tmese.subcategories, tmese.image_path , tmese.id_master_expense_categories FROM tbl_master_expense_subcategories_editable tmese
 WHERE tmese.id_personal_accounts=?  AND tmese.id_master_expense_categories=? AND
-tmese.active=true`, IDPersonal, expenseIDUUID).Scan(&data).Error; err != nil {
+tmese.active=true ORDER BY tmese.subcategories`, IDPersonal, expenseIDUUID).Scan(&data).Error; err != nil {
 		return []entities.ExpenseSubCategoryEditable{}, err
 	}
 	return data, nil
