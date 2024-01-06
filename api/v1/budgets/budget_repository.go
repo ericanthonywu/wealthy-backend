@@ -337,10 +337,14 @@ WHERE tt.id_personal_account = '869b4b16-abaa-11ee-9c29-02427cb40fbb'
 }
 
 func (r *BudgetRepository) GetNumberOfTransactionByCategory(accountUUID, categoryID uuid.UUID, month, year string) (data entities.NumberOfTransaction, err error) {
-	if err := r.db.Raw(`SELECT count(tt.id) as number_of_transaction FROM tbl_transactions tt WHERE tt.id_personal_account = ?
+	if err := r.db.Raw(`SELECT count(tt.id) as number_of_transaction
+FROM tbl_transactions tt
+         INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
+WHERE tt.id_personal_account = ?
   AND to_char(tt.date_time_transaction::DATE, 'MM') = ?
   AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
-  AND tt.id_master_expense_categories=?`, accountUUID, month, year, categoryID).
+  AND tt.id_master_expense_categories = ?
+  AND tmtt.type <> 'TRAVEL'`, accountUUID, month, year, categoryID).
 		Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())
 		return entities.NumberOfTransaction{}, err
