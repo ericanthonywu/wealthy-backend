@@ -798,6 +798,7 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 		}
 
 		dtoResponseAnnually.Summary = dtos.TransactionSummaryIncomeSpending{
+			Month:         "",
 			Year:          yearINT,
 			TotalIncome:   dataTotalIncomeAnnually.Amount,
 			TotalSpending: dataTotalSpendingAnnually.Amount,
