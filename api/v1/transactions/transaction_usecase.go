@@ -1278,8 +1278,8 @@ func (s *TransactionUseCase) CashFlow(ctx *gin.Context) (response interface{}, h
 		return struct{}{}, http.StatusInternalServerError, errInfo
 	}
 
-	dtoResponse.CountIncome = dataCountExpense.CountExpense
-	dtoResponse.CountExpense = dataCountIncome.CountIncome
+	dtoResponse.CountIncome = dataCountIncome.CountIncome
+	dtoResponse.CountExpense = dataCountExpense.CountExpense
 	dtoResponse.AverageDay.Income = dataIncomeEachDay.IncomeAverage
 	dtoResponse.AverageDay.Expense = dataExpenseEachDay.ExpenseAverage
 	dtoResponse.AverageMonth.Income = dataIncomeMonthly.IncomeAverage
