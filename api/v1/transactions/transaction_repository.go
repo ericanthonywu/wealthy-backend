@@ -553,17 +553,18 @@ func (r *TransactionRepository) IncomeSpendingAnnuallyDetail(IDPersonal uuid.UUI
                 FILTER ( WHERE tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000' ),
                 0) :: numeric                                        as total_income,
        COALESCE(SUM(tt.amount)
-                FILTER ( WHERE tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000' ),
+                FILTER ( WHERE tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000' AND  tmtt.type <> 'TRAVEL'),
                 0) :: numeric                                        as total_spending,
        COALESCE(SUM(tt.amount)
                 FILTER ( WHERE tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000' ),
                 0) - COALESCE(SUM(tt.amount) FILTER ( WHERE tt.id_master_expense_categories <>
-                                                            '00000000-0000-0000-0000-000000000000' ),
+                                                            '00000000-0000-0000-0000-000000000000' AND  tmtt.type <> 'TRAVEL' ),
                               0) :: numeric                          as net_income
 FROM tbl_transactions tt
          LEFT JOIN tbl_master_expense_categories tmec ON tt.id_master_expense_categories = tmec.id
          LEFT JOIN tbl_master_income_categories tmic
                    ON tt.id_master_income_categories = tmic.id
+INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
 WHERE to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
   AND tt.id_personal_account = ?
 GROUP BY month_year, month, total_days_in_month, date_origin
