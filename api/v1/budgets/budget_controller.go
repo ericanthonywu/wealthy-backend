@@ -171,13 +171,22 @@ func (c *BudgetController) Trends(ctx *gin.Context) {
 	year := ctx.Query("year")
 	IDCategory := ctx.Query("categoryid")
 
-	if month == "" || year == "" || IDCategory == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month or year required in query url")
-		response.SendBack(ctx, nil, errInfo, http.StatusBadRequest)
-		return
+	if month == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "month required in query url")
 	}
 
-	month = fmt.Sprintf("%02s", month)
+	if year == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "year required in query url")
+	}
+
+	if IDCategory == "" {
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id category required in query url")
+	}
+
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
 
 	IDCat, err := uuid.Parse(IDCategory)
 	if err != nil {
@@ -185,10 +194,6 @@ func (c *BudgetController) Trends(ctx *gin.Context) {
 	}
 
 	dtoResponse, httpCode, errInfo = c.useCase.Trends(ctx, IDCat, month, year)
-
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
-	}
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
 	return
 }

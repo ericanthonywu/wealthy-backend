@@ -440,16 +440,10 @@ func (s *BudgetUseCase) Trends(ctx *gin.Context, IDCategory uuid.UUID, month, ye
 		totalRemains             int
 		stringBuilder            strings.Builder
 	)
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	dataTrends, err := s.repo.Trends(personalAccount.ID, IDCategory, month, year)
+	dataTrends, err := s.repo.Trends(accountUUID, IDCategory, month, year)
 	if err != nil {
 		httpCode = http.StatusInternalServerError
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -502,7 +496,7 @@ func (s *BudgetUseCase) Trends(ctx *gin.Context, IDCategory uuid.UUID, month, ye
 		},
 	})
 
-	dataBudgetEachCategory, err := s.repo.BudgetEachCategory(personalAccount.ID, IDCategory, month, year)
+	dataBudgetEachCategory, err := s.repo.BudgetEachCategory(accountUUID, IDCategory, month, year)
 	if err != nil {
 		logrus.Error(err.Error())
 	}
