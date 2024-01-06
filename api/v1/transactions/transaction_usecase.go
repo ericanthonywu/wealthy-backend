@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/wealthy-app/wealthy-backend/api/v1/transactions/dtos"
 	"github.com/wealthy-app/wealthy-backend/api/v1/transactions/entities"
+	"github.com/wealthy-app/wealthy-backend/utils/datecustoms"
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
 	"github.com/wealthy-app/wealthy-backend/utils/personalaccounts"
 	"github.com/wealthy-app/wealthy-backend/utils/utilities"
@@ -573,18 +574,36 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 		dtoResponse                          dtos.TransactionIncomeSpendingInvestment
 		dtoResponseAnnually                  dtos.TransactionIncomeSpendingInvestmentAnnually
 		dtoAnnualyDetail                     []dtos.TransactionDetailAnnually
-		responseIncomeSpendingTotal          interface{}
 		responseIncomeSpendingDetailMonthly  []entities.IncomeSpendingMonthly
 		responseIncomeSpendingDetailAnnually []entities.TransactionIncomeSpendingDetailAnnually
 		detailsMonthly                       []dtos.TransactionIncomeSpendingInvestmentDetail
 		deepDetailsMonthly                   []dtos.TransactionDetails
+		dataTotalSpendingMonthly             entities.TotalSpendingMonthly
+		dataTotalIncomeMonthly               entities.TotalIncomeMonthly
+		dataTotalSpendingAnnually            entities.TotalSpendingAnnual
+		dataTotalIncomeAnnually              entities.TotalIncomeAnnual
+		err                                  error
 	)
 
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// if month and year not empty
 	if month != "" && year != "" {
-		responseIncomeSpendingTotal = s.repo.IncomeSpendingMonthlyTotal(accountUUID, month, year)
+		// get total spending/expense monthly
+		dataTotalSpendingMonthly, err = s.repo.TotalSpendingMonthly(accountUUID, month, year)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
+
+		// get total income monthly
+		dataTotalIncomeMonthly, err = s.repo.TotalIncomeMonthly(accountUUID, month, year)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
+
+		// get detail transaction monthly
 		responseIncomeSpendingDetailMonthly = s.repo.IncomeSpendingMonthlyDetail(accountUUID, month, year)
 
 		isNotExist := len(responseIncomeSpendingDetailMonthly) == 0
@@ -600,20 +619,22 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 
 	// if there is year only
 	if month == "" && year != "" {
-		responseIncomeSpendingTotal = s.repo.IncomeSpendingAnnuallyTotal(accountUUID, year)
-		responseIncomeSpendingDetailAnnually = s.repo.IncomeSpendingAnnuallyDetail(accountUUID, year)
+		// get total spending/expense annually
+		dataTotalSpendingAnnually, err = s.repo.TotalSpendingAnnual(accountUUID, year)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
 
-		//if len(responseIncomeSpendingDetailAnnually) > 0 {
-		//	isNotExist := responseIncomeSpendingDetailAnnually[0].NetIncome == 0 && responseIncomeSpendingDetailAnnually[0].TotalIncome == 0 && responseIncomeSpendingDetailAnnually[0].TotalSpending == 0
-		//	if isNotExist {
-		//		resp := struct {
-		//			Message string `json:"message"`
-		//		}{
-		//			Message: "no data for income-spending",
-		//		}
-		//		return resp, http.StatusNotFound, []errorsinfo.Errors{}
-		//	}
-		//}
+		// get total income annually
+		dataTotalIncomeAnnually, err = s.repo.TotalIncomeAnnual(accountUUID, year)
+		if err != nil {
+			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
+			return struct{}{}, http.StatusBadRequest, errInfo
+		}
+
+		// get detail transaction annually
+		responseIncomeSpendingDetailAnnually = s.repo.IncomeSpendingAnnuallyDetail(accountUUID, year)
 
 		if len(responseIncomeSpendingDetailAnnually) == 0 {
 			resp := struct {
@@ -624,15 +645,6 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 			return resp, http.StatusNotFound, []errorsinfo.Errors{}
 		}
 	}
-
-	// todo : figure out the another way
-	//if len(responseIncomeSpendingDetailMonthly) == 0 {
-	//	return dtos.TransactionIncomeSpendingInvestment{}, http.StatusNotFound, errInfo
-	//}
-	//
-	//if len(responseIncomeSpendingDetailAnnually) == 0 {
-	//	return dtos.TransactionIncomeSpendingInvestmentAnnually{}, http.StatusNotFound, errInfo
-	//}
 
 	if len(responseIncomeSpendingDetailMonthly) > 0 {
 
@@ -742,7 +754,27 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 				}
 			}
 		}
-		dtoResponse.Summary = responseIncomeSpendingTotal
+
+		// mapping for summary
+		monthINT, err := strconv.Atoi(month)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		yearINT, err := strconv.Atoi(year)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		monthName := datecustoms.IntToMonthName(monthINT)
+
+		dtoResponse.Summary = dtos.TransactionSummaryIncomeSpending{
+			Month:         monthName + " " + year,
+			Year:          yearINT,
+			TotalIncome:   dataTotalIncomeMonthly.Amount,
+			TotalSpending: dataTotalSpendingMonthly.Amount,
+			NetIncome:     dataTotalIncomeMonthly.Amount - dataTotalSpendingMonthly.Amount,
+		}
 		return dtoResponse, http.StatusOK, []errorsinfo.Errors{}
 	}
 
@@ -750,16 +782,28 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 
 		for _, v := range responseIncomeSpendingDetailAnnually {
 			dtoAnnualyDetail = append(dtoAnnualyDetail, dtos.TransactionDetailAnnually{
-				LastDayInMonth:  utilities.GetLastDay(v.DateOrigin),
-				MonthYear:       v.MonthYear,
-				TotalDayInMonth: v.TotalDayInMonth,
-				TotalIncome:     v.TotalIncome,
-				TotalSpending:   v.TotalSpending,
-				NetIncome:       v.NetIncome,
+				LastDayInMonth: utilities.GetLastDay(v.DateOrigin),
+				MonthYear:      v.MonthYear,
+				TotalIncome:    v.TotalIncome,
+				TotalSpending:  v.TotalSpending,
+				NetIncome:      v.NetIncome,
 			})
 		}
 
-		dtoResponseAnnually.Summary = responseIncomeSpendingTotal
+		// mapping for summary
+
+		yearINT, err := strconv.Atoi(year)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		dtoResponseAnnually.Summary = dtos.TransactionSummaryIncomeSpending{
+			Year:          yearINT,
+			TotalIncome:   dataTotalIncomeAnnually.Amount,
+			TotalSpending: dataTotalSpendingAnnually.Amount,
+			NetIncome:     dataTotalIncomeAnnually.Amount - dataTotalSpendingAnnually.Amount,
+		}
+
 		dtoResponseAnnually.Detail = dtoAnnualyDetail
 		return dtoResponseAnnually, http.StatusOK, []errorsinfo.Errors{}
 	}

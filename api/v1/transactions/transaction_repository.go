@@ -88,6 +88,11 @@ type (
 		BudgetEachCategory(IDPersonal uuid.UUID, IDCategory uuid.UUID, monthyear string) (data entities.BudgetEachCategory, err error)
 
 		GetCategoryInformation(accountUUID, IDCategory uuid.UUID) (data entities.Category, err error)
+
+		TotalSpendingMonthly(accountUUID uuid.UUID, month, year string) (data entities.TotalSpendingMonthly, err error)
+		TotalIncomeMonthly(accountUUID uuid.UUID, month, year string) (data entities.TotalIncomeMonthly, err error)
+		TotalSpendingAnnual(accountUUID uuid.UUID, year string) (data entities.TotalSpendingAnnual, err error)
+		TotalIncomeAnnual(accountUUID uuid.UUID, year string) (data entities.TotalIncomeAnnual, err error)
 	}
 )
 
@@ -939,8 +944,56 @@ WHERE tmece.id_personal_accounts = ? AND tmece.id = ? AND tmece.active`, account
 FROM tbl_master_income_categories_editable tmice
 WHERE tmice.id_personal_accounts = ? AND tmice.id = ? AND tmice.active`, accountUUID, IDCategory).
 			Scan(&data).Error; err != nil {
-
 		}
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) TotalSpendingMonthly(accountUUID uuid.UUID, month, year string) (data entities.TotalSpendingMonthly, err error) {
+	if err := r.db.Raw(`SELECT coalesce(SUM(tt.amount), 0) as total_spending FROM tbl_transactions tt
+INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
+WHERE tt.id_personal_account = ?
+  AND to_char(tt.date_time_transaction::DATE, 'MM') = ?
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
+  AND tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'
+  AND tmtt.type <> 'TRAVEL'`, accountUUID, month, year).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.TotalSpendingMonthly{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) TotalIncomeMonthly(accountUUID uuid.UUID, month, year string) (data entities.TotalIncomeMonthly, err error) {
+	if err := r.db.Raw(`SELECT coalesce(SUM(tt.amount),0) as total_income FROM tbl_transactions tt WHERE tt.id_personal_account = ?
+  AND to_char(tt.date_time_transaction::DATE, 'MM') = ? AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
+AND tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000'`, accountUUID, month, year).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.TotalIncomeMonthly{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) TotalSpendingAnnual(accountUUID uuid.UUID, year string) (data entities.TotalSpendingAnnual, err error) {
+	if err := r.db.Raw(`SELECT coalesce(SUM(tt.amount), 0) as total_spending FROM tbl_transactions tt
+INNER JOIN tbl_master_transaction_types tmtt ON tmtt.id = tt.id_master_transaction_types
+WHERE tt.id_personal_account = ?
+  AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ? AND tt.id_master_expense_categories <> '00000000-0000-0000-0000-000000000000'
+  AND tmtt.type <> 'TRAVEL'`, accountUUID, year).Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.TotalSpendingAnnual{}, err
+	}
+	return data, nil
+}
+
+func (r *TransactionRepository) TotalIncomeAnnual(accountUUID uuid.UUID, year string) (data entities.TotalIncomeAnnual, err error) {
+	if err := r.db.Raw(`SELECT coalesce(SUM(tt.amount), 0) as total_income
+FROM tbl_transactions tt WHERE tt.id_personal_account = ? AND to_char(tt.date_time_transaction::DATE, 'YYYY') = ?
+  AND tt.id_master_income_categories <> '00000000-0000-0000-0000-000000000000'`, accountUUID, year).
+		Scan(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.TotalIncomeAnnual{}, err
 	}
 	return data, nil
 }
