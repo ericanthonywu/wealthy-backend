@@ -34,6 +34,7 @@ type (
 		TravelEndDate            string    `json:"travel_end_date,omitempty"`
 		ImageBase64              string    `json:"image_base64,omitempty"`
 		IDMasterExchangeCurrency string    `json:"id_master_exchange_currency,omitempty"`
+		ExchangeRate             float64   `json:"exchange_rate,omitempty"`
 	}
 
 	BudgetSetResponse struct {
