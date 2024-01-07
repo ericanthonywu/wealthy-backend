@@ -66,6 +66,10 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 
 	for k, v := range trxData {
 
+		if v.TotalLot == 0 {
+			continue
+		}
+
 		dateTotal = datecustoms.TotalDaysBetweenDate(v.DateTransaction.Format("2006-01-02"))
 		if dateTotal < 0 {
 			dateTotal = 0
@@ -208,9 +212,19 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 
 	dtoResponse.TotalInvestment = totalInvestment
 	dtoResponse.TotalPotentialReturn = totalPotentialReturn
-	percentage := (totalPotentialReturn / totalInvestment) * 100
-	dtoResponse.PercentagePotentialReturn = fmt.Sprintf("%.2f", percentage) + "%"
-	dtoResponse.Details = investmentDetail
+
+	if totalPotentialReturn > 0 {
+		percentage := (totalPotentialReturn / totalInvestment) * 100
+		dtoResponse.PercentagePotentialReturn = fmt.Sprintf("%.2f", percentage) + "%"
+	} else {
+		dtoResponse.PercentagePotentialReturn = fmt.Sprintf("%.2f", 0.0) + "%"
+	}
+
+	if len(investmentDetail) == 0 {
+		dtoResponse.Details = []dtos.InvestmentDetails{}
+	} else {
+		dtoResponse.Details = investmentDetail
+	}
 
 	// clear
 	if len(errInfo) == 0 {
