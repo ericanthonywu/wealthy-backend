@@ -278,6 +278,7 @@ func (s *TransactionUseCase) AddInvestmentTransaction(ctx *gin.Context, request 
 		logrus.Error()
 	}
 
+	// if no wallet available
 	if len(dataWalletType) == 0 {
 		resp := struct {
 			Message string `json:"message"`
@@ -1501,6 +1502,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 						PotentialReturn:    potentialReturnDisplay,
 						PercentageReturn:   percentageReturn,
 						WalletID:           v.IDWallet,
+						DateTime:           v.Date,
 					}
 
 					// save data into investment table
@@ -1546,6 +1548,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					PotentialReturn:    potentialReturnDisplay,
 					PercentageReturn:   percentageReturn,
 					WalletID:           v.IDWallet,
+					DateTime:           v.Date,
 				}
 
 				// save previous data into investment table
@@ -1606,6 +1609,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 						PotentialReturn:    potentialReturnDisplay,
 						PercentageReturn:   percentageReturn,
 						WalletID:           v.IDWallet,
+						DateTime:           v.Date,
 					}
 
 					// save data into investment table
@@ -1665,6 +1669,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					PotentialReturn:    potentialReturnDisplay,
 					PercentageReturn:   percentageReturn,
 					WalletID:           v.IDWallet,
+					DateTime:           v.Date,
 				}
 
 				// save data into investment table
@@ -1708,6 +1713,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 				PotentialReturn:   potentialReturnDisplay,
 				PercentageReturn:  percentageReturn,
 				WalletID:          v.IDWallet,
+				DateTime:          v.Date,
 			}
 
 			// save previous data into investment table
@@ -1767,6 +1773,7 @@ func (s *TransactionUseCase) investmentCalculation(accountID uuid.UUID) (err err
 					PotentialReturn:   potentialReturnDisplay,
 					PercentageReturn:  percentageReturn,
 					WalletID:          v.IDWallet,
+					DateTime:          v.Date,
 				}
 
 				// save data into investment table
