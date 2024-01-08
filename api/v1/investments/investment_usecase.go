@@ -70,7 +70,7 @@ func (s *InvestmentUseCase) Portfolio(ctx *gin.Context) (response interface{}, h
 			continue
 		}
 
-		dateTotal = datecustoms.TotalDaysBetweenDate(v.DateTransaction.Format("2006-01-02"))
+		dateTotal = datecustoms.TotalDaysBetweenDate(v.DateTransaction)
 		if dateTotal < 0 {
 			dateTotal = 0
 		}

@@ -44,7 +44,7 @@ type (
 		GainLoss          float64   `gorm:"column:gain_loss"`
 		PotentialReturn   float64   `gorm:"column:potential_return"`
 		PercentageReturn  float64   `gorm:"column:percentage_return"`
-		DateTransaction   time.Time `gorm:"column:created_at"`
+		DateTransaction   string    `gorm:"column:date_time"`
 		FeeBuy            float64   `gorm:"column:fee_buy"`
 		NetBuy            float64   `gorm:"column:net_buy"`
 		BrokerName        string    `gorm:"column:broker_name"`
