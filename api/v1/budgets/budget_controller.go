@@ -105,7 +105,7 @@ func (c *BudgetController) Limit(ctx *gin.Context) {
 
 	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "body payload required")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
 		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
@@ -132,9 +132,12 @@ func (c *BudgetController) Limit(ctx *gin.Context) {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "travel_end_date attribute needed in body payload")
 		}
 
-		if utilities.IsEmptyString(dtoRequest.ImageBase64) {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "image_base54 attribute needed in body payload")
-		}
+		// --------------------------------------------------------------------------------------------------
+		// Disable image for travel
+		// --------------------------------------------------------------------------------------------------
+		//if utilities.IsEmptyString(dtoRequest.ImageBase64) {
+		//	errInfo = errorsinfo.ErrorWrapper(errInfo, "", "image_base54 attribute needed in body payload")
+		//}
 
 		if utilities.IsEmptyString(dtoRequest.IDMasterTransactionTypes.String()) {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id_master_transaction_types attribute needed in body payload")
