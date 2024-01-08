@@ -312,14 +312,22 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	if purpose == constants.Travel {
-		imageData, err := base64.StdEncoding.DecodeString(dtoRequest.ImageBase64)
-		filename = fmt.Sprintf("%d", time.Now().Unix()) + ".png"
-		targetPath = "assets/travel/" + filename
-		imagePath = "images/travel/" + filename
+		if dtoRequest.ImageBase64 != "" {
+			imageData, err := base64.StdEncoding.DecodeString(dtoRequest.ImageBase64)
+			filename = fmt.Sprintf("%d", time.Now().Unix()) + ".png"
+			targetPath = "assets/travel/" + filename
+			imagePath = "images/travel/" + filename
 
-		err = utilities.SaveImage(imageData, targetPath)
-		if err != nil {
-			logrus.Error(err.Error())
+			err = utilities.SaveImage(imageData, targetPath)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
+
+			model.Filename = filename
+			model.ImagePath = imagePath
+		} else {
+			model.Filename = ""
+			model.ImagePath = ""
 		}
 
 		IDMasterExchangeCurrencyUUID, err := uuid.Parse(dtoRequest.IDMasterExchangeCurrency)
@@ -352,8 +360,6 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 
 		model.Departure = dtoRequest.Departure
 		model.Arrival = dtoRequest.Arrival
-		model.Filename = filename
-		model.ImagePath = imagePath
 		model.TravelStartDate = dtoRequest.TravelStartDate
 		model.TravelEndDate = dtoRequest.TravelEndDate
 		model.IDMasterTransactionType = dtoRequest.IDMasterTransactionTypes
