@@ -7,10 +7,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/wealthy-app/wealthy-backend/api/v1/statistics/dtos"
 	"github.com/wealthy-app/wealthy-backend/api/v1/statistics/entities"
-	"github.com/wealthy-app/wealthy-backend/constants"
 	"github.com/wealthy-app/wealthy-backend/utils/datecustoms"
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
-	"github.com/wealthy-app/wealthy-backend/utils/personalaccounts"
 	"net/http"
 	"strconv"
 	"strings"
@@ -48,18 +46,11 @@ func (s *StatisticUseCase) Weekly(ctx *gin.Context, month, year string) (respons
 		dtoResponse   dtos.WeeklyData
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	accountID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
-	}
-
-	dataExpenseWeekly := s.expenseWeekly(personalAccount.ID, month, year)
-	dataIncomeWeekly := s.incomeWeekly(personalAccount.ID, month, year)
-	dataInvestmentWeekly := s.investmentWeekly(personalAccount.ID, month, year)
+	dataExpenseWeekly := s.expenseWeekly(accountID, month, year)
+	dataIncomeWeekly := s.incomeWeekly(accountID, month, year)
+	dataInvestmentWeekly := s.investmentWeekly(accountID, month, year)
 
 	monthINT, err := strconv.Atoi(month)
 	if err != nil {
@@ -276,15 +267,9 @@ func (s *StatisticUseCase) Summary(ctx *gin.Context, month, year, email string) 
 
 	// if email is empty
 	if email == "" {
-		usrEmail := ctx.MustGet("email").(string)
-		personalAccount := personalaccounts.Informations(ctx, usrEmail)
+		accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-		if personalAccount.ID == uuid.Nil {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-			return response, http.StatusNotFound, errInfo
-		}
-
-		dataCurrentSummary, err = s.repo.SummaryMonthly(personalAccount.ID, month, year)
+		dataCurrentSummary, err = s.repo.SummaryMonthly(accountUUID, month, year)
 		if err != nil {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 			return response, http.StatusInternalServerError, errInfo
@@ -299,7 +284,7 @@ func (s *StatisticUseCase) Summary(ctx *gin.Context, month, year, email string) 
 			yearPrevious = year
 		}
 
-		dataPreviousSummary, err = s.repo.SummaryMonthly(personalAccount.ID, monthPrevious, yearPrevious)
+		dataPreviousSummary, err = s.repo.SummaryMonthly(accountUUID, monthPrevious, yearPrevious)
 		if err != nil {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 			return response, http.StatusInternalServerError, errInfo
@@ -395,16 +380,9 @@ func (s *StatisticUseCase) Priority(ctx *gin.Context, month, year string) (respo
 		percentageNeed string
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
-	}
-
-	dataPriority := s.repo.Priority(personalAccount.ID, month, year)
+	dataPriority := s.repo.Priority(accountUUID, month, year)
 
 	monthINT, err := strconv.Atoi(month)
 	if err != nil {
@@ -458,13 +436,8 @@ func (s *StatisticUseCase) Trend(ctx *gin.Context, month, year string) (response
 		totalDaily    int
 		looping       int
 	)
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	monthINT, err := strconv.Atoi(month)
 	if err != nil {
@@ -475,7 +448,7 @@ func (s *StatisticUseCase) Trend(ctx *gin.Context, month, year string) (response
 	stringBuilder.WriteString(" ")
 	stringBuilder.WriteString(year)
 
-	dataExpenseWeekly := s.expenseWeekly(personalAccount.ID, month, year)
+	dataExpenseWeekly := s.expenseWeekly(accountUUID, month, year)
 
 	isData := dataExpenseWeekly[0].Amount.Value > 0 ||
 		dataExpenseWeekly[1].Amount.Value > 0 ||
@@ -536,14 +509,8 @@ func (s *StatisticUseCase) ExpenseDetail(ctx *gin.Context, month, year, email st
 
 	// if email empty
 	if email == "" {
-		usrEmail := ctx.MustGet("email").(string)
-		personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-		if personalAccount.ID == uuid.Nil {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
-			return struct{}{}, http.StatusUnauthorized, errInfo
-		}
-		IDUser = personalAccount.ID
+		accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+		IDUser = accountUUID
 	}
 
 	// if email not empty
@@ -611,15 +578,9 @@ func (s *StatisticUseCase) SubExpenseDetail(ctx *gin.Context, month, year string
 		dtoResponse   dtos.WeeklySubExpense
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
-
-	categoryName, dataExpenseWeekly, err := s.subExpenseWeekly(personalAccount.ID, IDCategory, month, year)
+	categoryName, dataExpenseWeekly, err := s.subExpenseWeekly(accountUUID, IDCategory, month, year)
 	if err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		return struct{}{}, http.StatusInternalServerError, errInfo

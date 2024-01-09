@@ -138,8 +138,6 @@ func (c *StatisticController) Trend(ctx *gin.Context) {
 
 func (c *StatisticController) AnalyticsTrend(ctx *gin.Context) {
 	var errInfo []errorsinfo.Errors
-	{
-	}
 
 	period := ctx.Query("period")
 	typeName := ctx.Query("type")

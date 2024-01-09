@@ -77,7 +77,7 @@ func main() {
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logrus.Error("listen: %s\n", err)
+			logrus.Error(err.Error())
 		}
 	}()
 

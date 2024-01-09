@@ -11,7 +11,6 @@ import (
 	"github.com/wealthy-app/wealthy-backend/constants"
 	"github.com/wealthy-app/wealthy-backend/utils/datecustoms"
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
-	"github.com/wealthy-app/wealthy-backend/utils/personalaccounts"
 	"github.com/wealthy-app/wealthy-backend/utils/utilities"
 	"net/http"
 	"os"
@@ -244,16 +243,9 @@ func (s *BudgetUseCase) LatestMonths(ctx *gin.Context, categoryID uuid.UUID) (re
 		details     []dtos.LatestDetails
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return []dtos.LatestDetails{}, httpCode, errInfo
-	}
-
-	dataLatestMonth := s.repo.LatestMonths(personalAccount.ID, categoryID)
+	dataLatestMonth := s.repo.LatestMonths(accountUUID, categoryID)
 
 	if len(dataLatestMonth) == 0 {
 		httpCode = http.StatusOK

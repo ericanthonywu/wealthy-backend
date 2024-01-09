@@ -14,7 +14,6 @@ import (
 	"github.com/wealthy-app/wealthy-backend/utils/datecustoms"
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
 	"github.com/wealthy-app/wealthy-backend/utils/password"
-	"github.com/wealthy-app/wealthy-backend/utils/personalaccounts"
 	"github.com/wealthy-app/wealthy-backend/utils/token"
 	"github.com/wealthy-app/wealthy-backend/utils/utilities"
 	"net/http"
@@ -243,16 +242,10 @@ func (s *AccountUseCase) SignOut() {
 func (s *AccountUseCase) GetProfile(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var dtoResponse dtos.AccountProfile
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// get profile by customer ID
-	dataProfile := s.repo.GetProfile(personalAccount.ID)
+	dataProfile := s.repo.GetProfile(accountUUID)
 
 	if dataProfile.Email == "" || dataProfile.ID == uuid.Nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "can not give profile info. profile not set properly")
@@ -298,13 +291,7 @@ func (s *AccountUseCase) UpdateProfile(ctx *gin.Context, request map[string]inte
 		idMasterGender string
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// validate restrict changes
 	if request["id"] != nil {
@@ -405,7 +392,7 @@ func (s *AccountUseCase) UpdateProfile(ctx *gin.Context, request map[string]inte
 	}
 
 	// update profile
-	err = s.repo.UpdateProfile(personalAccount.ID, request)
+	err = s.repo.UpdateProfile(accountUUID, request)
 	if err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		return struct{}{}, http.StatusInternalServerError, errInfo
@@ -425,16 +412,10 @@ func (s *AccountUseCase) ChangePassword(ctx *gin.Context, request *dtos.AccountC
 		dtoResponse = make(map[string]bool)
 	)
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// get data that stored in db
-	dataProfile := s.repo.GetProfilePassword(personalAccount.ID)
+	dataProfile := s.repo.GetProfilePassword(accountUUID)
 
 	// check if dataProfile existed from database
 	if dataProfile.Email == "" || dataProfile.ID == uuid.Nil {
@@ -455,7 +436,7 @@ func (s *AccountUseCase) ChangePassword(ctx *gin.Context, request *dtos.AccountC
 	// set new password
 	update["password"] = newPassword
 
-	err := s.repo.UpdatePassword(personalAccount.ID, update)
+	err := s.repo.UpdatePassword(accountUUID, update)
 	if err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		return struct{}{}, http.StatusInternalServerError, errInfo
@@ -668,14 +649,7 @@ func (s *AccountUseCase) ValidateRefCode(request *dtos.AccountRefCodeValidationR
 func (s *AccountUseCase) SetAvatar(ctx *gin.Context, request *dtos.AccountAvatarRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	updateProfile := make(map[string]interface{})
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return dtos.AccountAvatarResponse{}, httpCode, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// decode base64 image from string
 	imageData, err := base64.StdEncoding.DecodeString(request.ImageBase64)
@@ -685,7 +659,7 @@ func (s *AccountUseCase) SetAvatar(ctx *gin.Context, request *dtos.AccountAvatar
 	}
 
 	// get profile from customer ID
-	dataProfile := s.repo.GetProfile(personalAccount.ID)
+	dataProfile := s.repo.GetProfile(accountUUID)
 
 	// remove old image from storage
 	if dataProfile.ImagePath != "" || dataProfile.FileName != "" {
@@ -701,7 +675,7 @@ func (s *AccountUseCase) SetAvatar(ctx *gin.Context, request *dtos.AccountAvatar
 	// remove empty column after remove file
 	updateProfile["image_path"] = ""
 	updateProfile["file_name"] = ""
-	err = s.repo.UpdateProfile(personalAccount.ID, updateProfile)
+	err = s.repo.UpdateProfile(accountUUID, updateProfile)
 	if err != nil {
 		logrus.Error(err.Error())
 	}
@@ -723,7 +697,7 @@ func (s *AccountUseCase) SetAvatar(ctx *gin.Context, request *dtos.AccountAvatar
 	updateProfile["file_name"] = filename
 
 	// update table with new data
-	err = s.repo.UpdateProfile(personalAccount.ID, updateProfile)
+	err = s.repo.UpdateProfile(accountUUID, updateProfile)
 	if err != nil {
 		logrus.Error(err.Error())
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -751,17 +725,10 @@ func (s *AccountUseCase) RemoveAvatar(ctx *gin.Context) (response interface{}, h
 
 	updateProfile := make(map[string]interface{})
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return dtos.AccountAvatarResponse{}, httpCode, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// get profile by customer id
-	dataProfile := s.repo.GetProfile(personalAccount.ID)
+	dataProfile := s.repo.GetProfile(accountUUID)
 
 	// remove previous image
 	if dataProfile.ImagePath != "" || dataProfile.FileName != "" {
@@ -779,7 +746,7 @@ func (s *AccountUseCase) RemoveAvatar(ctx *gin.Context) (response interface{}, h
 	updateProfile["file_name"] = ""
 
 	// update column with empty value
-	err = s.repo.UpdateProfile(personalAccount.ID, updateProfile)
+	err = s.repo.UpdateProfile(accountUUID, updateProfile)
 	if err != nil {
 		logrus.Error(err.Error())
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -833,13 +800,8 @@ func (s *AccountUseCase) InviteSharing(ctx *gin.Context, dtoResponse *dtos.Accou
 		err                error
 	)
 
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
 
 	// get profile for email target
 	dataProfileSender, err := s.repo.GetProfileByEmail(usrEmail)
@@ -870,7 +832,7 @@ func (s *AccountUseCase) InviteSharing(ctx *gin.Context, dtoResponse *dtos.Accou
 	}
 
 	// if already in group sharing
-	if s.repo.IsAlreadySharing(personalAccount.ID, dataProfileReceipt.ID) {
+	if s.repo.IsAlreadySharing(accountUUID, dataProfileReceipt.ID) {
 		resp := struct {
 			Message string `json:"message"`
 		}{
@@ -884,7 +846,7 @@ func (s *AccountUseCase) InviteSharing(ctx *gin.Context, dtoResponse *dtos.Accou
 
 	// save invitation
 	modelInviteSharing.ID = IDGroupSharing
-	modelInviteSharing.ShareFrom = personalAccount.ID
+	modelInviteSharing.ShareFrom = accountUUID
 	modelInviteSharing.ShareTo = dataProfileReceipt.ID
 	modelInviteSharing.IsAccepted = false
 
@@ -922,13 +884,8 @@ func (s *AccountUseCase) InviteSharing(ctx *gin.Context, dtoResponse *dtos.Accou
 }
 
 func (s *AccountUseCase) AcceptSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingAccept) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
+	// get customer id
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// translate string to uuid value
 	IDGroupSharingUUID, err := uuid.Parse(dtoRequest.IDGroupSharing)
@@ -944,7 +901,7 @@ func (s *AccountUseCase) AcceptSharing(ctx *gin.Context, dtoRequest *dtos.Accoun
 	}
 
 	// if not eligible
-	if dataGroupSharing.ShareFrom == personalAccount.ID {
+	if dataGroupSharing.ShareFrom == accountUUID {
 		resp := struct {
 			Message string `json:"message"`
 		}{
@@ -976,14 +933,6 @@ func (s *AccountUseCase) AcceptSharing(ctx *gin.Context, dtoRequest *dtos.Accoun
 }
 
 func (s *AccountUseCase) RejectSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingAccept) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
-
 	// translate string to uuid value
 	IDGroupSharingUUID, err := uuid.Parse(dtoRequest.IDGroupSharing)
 	if err != nil {
@@ -1012,14 +961,11 @@ func (s *AccountUseCase) RejectSharing(ctx *gin.Context, dtoRequest *dtos.Accoun
 }
 
 func (s *AccountUseCase) RemoveSharing(ctx *gin.Context, dtoRequest *dtos.AccountGroupSharingRemove) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-
+	// get email user
 	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
 
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
+	// get customer id
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// email token is same as email target
 	if usrEmail == dtoRequest.EmailAccount {
@@ -1034,7 +980,7 @@ func (s *AccountUseCase) RemoveSharing(ctx *gin.Context, dtoRequest *dtos.Accoun
 	}
 
 	// make sure invitation has accepted before
-	dataFirst, dataSecond := s.repo.GroupSharingInfoByIDPersonalAccount(personalAccount.ID, dataProfile.ID)
+	dataFirst, dataSecond := s.repo.GroupSharingInfoByIDPersonalAccount(accountUUID, dataProfile.ID)
 
 	if !dataFirst.IsAccepted || !dataSecond.IsAccepted {
 		resp := struct {
@@ -1081,16 +1027,11 @@ func (s *AccountUseCase) RemoveSharing(ctx *gin.Context, dtoRequest *dtos.Accoun
 func (s *AccountUseCase) GroupSharingAccepted(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var dtoResponse []dtos.AccountShare
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
+	// get customer id
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// get profile by email in token
-	dataGroupSharingWithProfile, err := s.repo.GroupSharingList(personalAccount.ID)
+	dataGroupSharingWithProfile, err := s.repo.GroupSharingList(accountUUID)
 	if err != nil {
 		logrus.Error(err.Error())
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -1098,7 +1039,7 @@ func (s *AccountUseCase) GroupSharingAccepted(ctx *gin.Context) (response interf
 	}
 
 	// reserve
-	dataGroupSharingWithProfileReserve, err := s.repo.GroupSharingListReserve(personalAccount.ID)
+	dataGroupSharingWithProfileReserve, err := s.repo.GroupSharingListReserve(accountUUID)
 	if err != nil {
 		logrus.Error(err.Error())
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -1172,17 +1113,16 @@ func (s *AccountUseCase) GroupSharingAccepted(ctx *gin.Context) (response interf
 func (s *AccountUseCase) GroupSharingPending(ctx *gin.Context) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var dtoResponse []dtos.AccountShare
 
-	// user id
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
+	// get customer id
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
-	if personalAccount.ID == uuid.Nil {
+	if accountUUID == uuid.Nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
 		return struct{}{}, http.StatusUnauthorized, errInfo
 	}
 
 	// get profile by email in token
-	dataGroupSharingWithProfile, err := s.repo.GroupSharingListPending(personalAccount.ID)
+	dataGroupSharingWithProfile, err := s.repo.GroupSharingListPending(accountUUID)
 	if err != nil {
 		logrus.Error(err.Error())
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -1190,7 +1130,7 @@ func (s *AccountUseCase) GroupSharingPending(ctx *gin.Context) (response interfa
 	}
 
 	// reverse
-	dataGroupSharingWithProfileReverse, err := s.repo.GroupSharingListPendingReverse(personalAccount.ID)
+	dataGroupSharingWithProfileReverse, err := s.repo.GroupSharingListPendingReverse(accountUUID)
 	if err != nil {
 		logrus.Error(err.Error())
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
@@ -1346,18 +1286,13 @@ func (s *AccountUseCase) VerifyOTP(ctx *gin.Context, request *dtos.AccountOTPVer
 }
 
 func (s *AccountUseCase) ChangePasswordForgot(ctx *gin.Context, request *dtos.AccountChangeForgotPassword) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
+	// get customer id
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// save
 	hashPassword := password.Generate(request.NewPassword)
 
-	err := s.repo.ChangePassword(personalAccount.ID, hashPassword)
+	err := s.repo.ChangePassword(accountUUID, hashPassword)
 	if err != nil {
 		logrus.Error(err.Error())
 	}

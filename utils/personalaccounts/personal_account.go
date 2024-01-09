@@ -1,12 +1,19 @@
 package personalaccounts
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func Informations(ctx *gin.Context, email string) (data PersonalAccountEntities) {
-	db := ctx.MustGet("db").(*gorm.DB)
+type PersonalAccountEntities struct {
+	ID                   uuid.UUID `gorm:"column:id"`
+	IDMasterAccountTypes uuid.UUID `gorm:"column:id_master_account_types"`
+	AccountTypes         string    `gorm:"column:account_type"`
+	TotalWallets         int64     `gorm:"column:total_wallet"`
+	ReferCode            string    `gorm:"column:refer_code"`
+}
+
+func Informations(db *gorm.DB, email string) (data PersonalAccountEntities) {
 	db.Raw(`SELECT pa.id,
        pa.id_master_account_types,
        mat.account_type,

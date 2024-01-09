@@ -10,7 +10,6 @@ import (
 	"github.com/wealthy-app/wealthy-backend/api/v1/transactions/entities"
 	"github.com/wealthy-app/wealthy-backend/utils/datecustoms"
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
-	"github.com/wealthy-app/wealthy-backend/utils/personalaccounts"
 	"github.com/wealthy-app/wealthy-backend/utils/utilities"
 	"net/http"
 	"sort"
@@ -408,21 +407,14 @@ func (s *TransactionUseCase) IncomeTransactionHistory(ctx *gin.Context) (respons
 	startDate := ctx.Query("startDate")
 	endDate := ctx.Query("endDate")
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	if startDate == "" || endDate == "" {
-		responseIncomeTotalHistory = s.repo.IncomeTotalHistoryWithoutDate(personalAccount.ID)
-		responseIncomeDetailHistory = s.repo.IncomeDetailHistoryWithoutData(personalAccount.ID)
+		responseIncomeTotalHistory = s.repo.IncomeTotalHistoryWithoutDate(accountUUID)
+		responseIncomeDetailHistory = s.repo.IncomeDetailHistoryWithoutData(accountUUID)
 	} else {
-		responseIncomeTotalHistory = s.repo.IncomeTotalHistoryWithData(personalAccount.ID, startDate, endDate)
-		responseIncomeDetailHistory = s.repo.IncomeDetailHistoryWithData(personalAccount.ID, startDate, endDate)
+		responseIncomeTotalHistory = s.repo.IncomeTotalHistoryWithData(accountUUID, startDate, endDate)
+		responseIncomeDetailHistory = s.repo.IncomeDetailHistoryWithData(accountUUID, startDate, endDate)
 	}
 
 	if responseIncomeTotalHistory.TotalIncome == 0 || responseIncomeDetailHistory == nil {
@@ -463,7 +455,7 @@ func (s *TransactionUseCase) TravelTransactionHistory(ctx *gin.Context, IDTravel
 	// check id travel
 	dataTravel, err := s.repo.CheckIDTravelBelongsTo(IDTravel)
 	if err != nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
+		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		return response, http.StatusInternalServerError, errInfo
 	}
 
@@ -523,19 +515,12 @@ func (s *TransactionUseCase) TransferTransactionHistory(ctx *gin.Context) (respo
 	startDate := ctx.Query("startDate")
 	endDate := ctx.Query("endDate")
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	if startDate == "" || endDate == "" {
-		responseTransferDetailHistory = s.repo.TransferDetailWithoutData(personalAccount.ID)
+		responseTransferDetailHistory = s.repo.TransferDetailWithoutData(accountUUID)
 	} else {
-		responseTransferDetailHistory = s.repo.TransferDetailWithData(personalAccount.ID, startDate, endDate)
+		responseTransferDetailHistory = s.repo.TransferDetailWithData(accountUUID, startDate, endDate)
 	}
 
 	if len(responseTransferDetailHistory) == 0 {
@@ -560,19 +545,12 @@ func (s *TransactionUseCase) InvestTransactionHistory(ctx *gin.Context) (respons
 	startDate := ctx.Query("startDate")
 	endDate := ctx.Query("endDate")
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusNotFound
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "not found")
-		return response, httpCode, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	if startDate == "" || endDate == "" {
-		responseInvestDetailHistory = s.repo.InvestDetailWithoutData(personalAccount.ID)
+		responseInvestDetailHistory = s.repo.InvestDetailWithoutData(accountUUID)
 	} else {
-		responseInvestDetailHistory = s.repo.InvestDetailWithData(personalAccount.ID, startDate, endDate)
+		responseInvestDetailHistory = s.repo.InvestDetailWithData(accountUUID, startDate, endDate)
 	}
 
 	if len(responseInvestDetailHistory) == 0 {

@@ -10,7 +10,6 @@ import (
 	"github.com/wealthy-app/wealthy-backend/constants"
 	"github.com/wealthy-app/wealthy-backend/utils/datecustoms"
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
-	"github.com/wealthy-app/wealthy-backend/utils/personalaccounts"
 	"net/http"
 	"strings"
 )
@@ -24,6 +23,7 @@ type (
 		Add(ctx *gin.Context, request *dtos.WalletAddRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		List(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		UpdateAmount(ctx *gin.Context, IDWallet string, request map[string]interface{}) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
+		TotalWealth(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors)
 		writeInitialTransaction(request *dtos.WalletAddRequest, walletEntity *entities.WalletEntity, IDPersonal uuid.UUID) (err error)
 	}
 )
@@ -163,21 +163,14 @@ func (s *WalletUseCase) Add(ctx *gin.Context, request *dtos.WalletAddRequest) (r
 func (s *WalletUseCase) List(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
 		err         error
-		email       string
 		dataList    []entities.WalletEntity
 		dtoResponse []dtos.WalletListResponse
 	)
 
-	email = fmt.Sprintf("%v", ctx.MustGet("email"))
-	personalData := personalaccounts.Informations(ctx, email)
-
-	if personalData.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// get data wallet
-	dataList, err = s.repo.List(personalData.ID)
+	dataList, err = s.repo.List(accountUUID)
 	if err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		return struct{}{}, http.StatusInternalServerError, errInfo
@@ -342,4 +335,14 @@ func (s *WalletUseCase) writeInitialTransaction(request *dtos.WalletAddRequest, 
 	}
 
 	return nil
+}
+
+func (s *WalletUseCase) TotalWealth(ctx *gin.Context) (data interface{}, httpCode int, errInfo []errorsinfo.Errors) {
+	//accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	// get list wallet
+
+	// get latest balance
+
+	return
 }

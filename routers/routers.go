@@ -226,6 +226,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			walletGroup.POST("", wallet.Add)
 			walletGroup.GET("", wallet.List)
 			walletGroup.PATCH("/amount/:id-wallet", wallet.UpdateAmount)
+			walletGroup.GET("/total-wealth", wallet.TotalWealth)
 		}
 
 		subscriptionGroup := v1group.Group("/subscriptions", tokenSignature())

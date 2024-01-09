@@ -12,6 +12,7 @@ import (
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
 	"github.com/wealthy-app/wealthy-backend/utils/personalaccounts"
 	"github.com/wealthy-app/wealthy-backend/utils/response"
+	"gorm.io/gorm"
 	"net/http"
 	"os"
 	"strings"
@@ -81,7 +82,9 @@ func accountType() gin.HandlerFunc {
 		var errInfo []errorsinfo.Errors
 
 		usrEmail := c.MustGet("email").(string)
-		personalAccount := personalaccounts.Informations(c, usrEmail)
+		db := c.MustGet("db").(*gorm.DB)
+
+		personalAccount := personalaccounts.Informations(db, usrEmail)
 
 		if personalAccount.ID == uuid.Nil {
 			errInfo = errorsinfo.ErrorWrapper(errInfo, "", constants.TokenInvalidInformation)
@@ -100,7 +103,8 @@ func accountType() gin.HandlerFunc {
 func betaVersion() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		dataPromotion := beta.ExpiredPromotion(c)
+		db := c.MustGet("db").(*gorm.DB)
+		dataPromotion := beta.ExpiredPromotion(db)
 		diff := datecustoms.TotalDaysBetweenDate(dataPromotion.Expired)
 
 		if diff <= 0 {

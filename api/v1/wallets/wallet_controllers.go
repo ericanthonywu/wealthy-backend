@@ -18,6 +18,7 @@ type (
 		Add(ctx *gin.Context)
 		List(ctx *gin.Context)
 		UpdateAmount(ctx *gin.Context)
+		TotalWealth(ctx *gin.Context)
 	}
 )
 
@@ -116,6 +117,12 @@ func (c *WalletController) UpdateAmount(ctx *gin.Context) {
 	}
 
 	data, httpCode, errInfo = c.useCase.UpdateAmount(ctx, walletID, dtoRequest)
+	response.SendBack(ctx, data, errInfo, httpCode)
+	return
+}
+
+func (c *WalletController) TotalWealth(ctx *gin.Context) {
+	data, httpCode, errInfo := c.useCase.TotalWealth(ctx)
 	response.SendBack(ctx, data, errInfo, httpCode)
 	return
 }
