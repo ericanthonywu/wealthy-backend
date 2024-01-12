@@ -3,6 +3,10 @@ package transactions
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"sort"
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -11,9 +15,6 @@ import (
 	"github.com/wealthy-app/wealthy-backend/utils/datecustoms"
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
 	"github.com/wealthy-app/wealthy-backend/utils/utilities"
-	"net/http"
-	"sort"
-	"strconv"
 )
 
 type (
@@ -706,17 +707,6 @@ func (s *TransactionUseCase) IncomeSpending(ctx *gin.Context, month string, year
 
 			// if previous is different current
 			if dateTempPrev != v.DateTransaction {
-				deepDetailsMonthly = append(deepDetailsMonthly, dtos.TransactionDetails{
-					TransactionCategory:     dataCategory.CategoryName,
-					TransactionType:         v.Type,
-					TransactionCategoryIcon: dataCategory.CategoryIcon,
-					TransactionAmount: dtos.Amount{
-						CurrencyCode: "IDR",
-						Value:        v.Amount,
-					},
-					TransactionNote: v.Note,
-				})
-
 				detailsMonthly = append(detailsMonthly, dtos.TransactionIncomeSpendingInvestmentDetail{
 					TransactionDate:    dateTempPrev,
 					TransactionDetails: deepDetailsMonthly,
