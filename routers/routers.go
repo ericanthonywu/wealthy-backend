@@ -295,7 +295,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			categoriesGroup.GET("/income", tokenSignature(), accountType(), categoriesV2.GetCategoriesIncomeList)
 		}
 
-		walletGroup := v1group.Group("/wallets", tokenSignature(), accountType(), betaVersion())
+		walletGroup := v2group.Group("/wallets", tokenSignature(), accountType(), betaVersion())
 		{
 			walletGroup.POST("", walletsV2.NewWallet)
 			walletGroup.GET("", walletsV2.GetAllWallets)

@@ -29,9 +29,9 @@ type (
 		setInitialBalance(walletType string, amount int64, walletID, accountUUID uuid.UUID) (err error)
 		setBalanceInvestment(amount int64, walletID, accountUUID uuid.UUID) (err error)
 		setBalanceNonInvestment(amount int64, walletID, accountUUID uuid.UUID) (err error)
-		latestBalance(walletType string, walletID uuid.UUID)
-		getBalanceInvestment(walletID uuid.UUID)
-		getBalanceNonInvestment(walletID uuid.UUID)
+		latestBalance(walletType string, walletID uuid.UUID) (amount int64)
+		getBalanceInvestment(walletID uuid.UUID) (amount int64)
+		getBalanceNonInvestment(walletID uuid.UUID) (amount int64)
 	}
 )
 
@@ -154,6 +154,8 @@ func (s *WalletUseCase) addWalletProAccount(request *dtos.WalletAddRequest, wall
 		return uuid.Nil, err
 	}
 
+	// set initial balance
+	err = s.setInitialBalance(walletType, request.TotalAsset, walletID, accountUUID)
 	return walletID, nil
 }
 
@@ -219,7 +221,7 @@ func (s *WalletUseCase) setWalletType(IDMasterWallet string) (walletType string)
 	case constants.IDEWallet:
 		walletType = constants.EWallet
 	}
-	return constants.Cash
+	return walletType
 }
 
 func (s *WalletUseCase) setInitialBalance(walletType string, amount int64, walletID, accountUUID uuid.UUID) (err error) {

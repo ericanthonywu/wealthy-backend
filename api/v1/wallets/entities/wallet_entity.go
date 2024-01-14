@@ -44,7 +44,7 @@ type (
 
 	WalletInitTransactionInvestment struct {
 		IDWallet          uuid.UUID `gorm:"column:wallet_id"`
-		IDPersonalAccount uuid.UUID `gorm:"column:id_personal_account"`
+		IDPersonalAccount uuid.UUID `gorm:"column:id_personal_accounts"`
 		Balance           float64   `gorm:"column:balance"`
 	}
 
