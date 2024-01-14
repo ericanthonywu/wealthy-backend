@@ -16,3 +16,7 @@ func ErrorWrapper(errInfo []Errors, errorCode, errorDescription string) []Errors
 func ErrorInfoWrapper(errInfo []string, errorDescription string) []string {
 	return append(errInfo, errorDescription)
 }
+
+func ErrorWrapperArray(errInfo []string, errorDescription string) []string {
+	return append(errInfo, errorDescription)
+}

@@ -31,27 +31,27 @@ func NewWalletController(useCase IWalletUseCase) *WalletController {
 func (c *WalletController) NewWallet(ctx *gin.Context) {
 	var (
 		dtoRequest dtos.WalletAddRequest
-		errInfo    []errorsinfo.Errors
+		errInfo    []string
 	)
 
 	// bind
 	if err := ctx.ShouldBindJSON(&dtoRequest); err != nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "no body payload")
+		errInfo = errorsinfo.ErrorWrapperArray(errInfo, "no body payload")
 		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
 
 	// validate
 	if dtoRequest.WalletName == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "wallet name empty")
+		errInfo = errorsinfo.ErrorWrapperArray(errInfo, "wallet name empty")
 	}
 
 	if dtoRequest.IDMasterWallet == "" {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories wallet  empty")
+		errInfo = errorsinfo.ErrorWrapperArray(errInfo, "id categories wallet  empty")
 	}
 
 	if dtoRequest.TotalAsset == 0 {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "total assets empty")
+		errInfo = errorsinfo.ErrorWrapperArray(errInfo, "total assets empty")
 	}
 
 	// check wallet id
@@ -63,7 +63,7 @@ func (c *WalletController) NewWallet(ctx *gin.Context) {
 		dtoRequest.IDMasterWallet == constants.IDEWallet
 
 	if !isValid {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "id categories wallet unregistered")
+		errInfo = errorsinfo.ErrorWrapperArray(errInfo, "id categories wallet unregistered")
 		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
 		return
 	}
