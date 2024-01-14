@@ -2,6 +2,8 @@ package wallets
 
 import (
 	"errors"
+	"fmt"
+	"github.com/sirupsen/logrus"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +24,7 @@ type (
 	IWalletUseCase interface {
 		NewWallet(ctx *gin.Context, request *dtos.WalletAddRequest) (response interface{}, httpCode int, errInfo []string)
 		GetAllWallets(ctx *gin.Context) (response interface{}, httpCode int, errInfo []string)
+		UpdateAmount(ctx *gin.Context, walletID string, request map[string]interface{}) (response interface{}, httpCode int, errInfo []string)
 		addWalletProAccount(request *dtos.WalletAddRequest, walletType string, accountUUID, UUIDIDMasterWalletType uuid.UUID) (walletID uuid.UUID, err error)
 		addWalletBasicAccount(request *dtos.WalletAddRequest, walletType string, accountUUID, UUIDIDMasterWalletType uuid.UUID) (walletID uuid.UUID, err error)
 		addNewWallet(walletEntity *entities.WalletEntity) (err error)
@@ -32,6 +35,7 @@ type (
 		latestBalance(walletType string, walletID uuid.UUID) (amount int64)
 		getBalanceInvestment(walletID uuid.UUID) (amount int64)
 		getBalanceNonInvestment(walletID uuid.UUID) (amount int64)
+		getValueFromRequest(request map[string]interface{}) (walletName string, amount float64, err error)
 	}
 )
 
@@ -129,6 +133,55 @@ func (s *WalletUseCase) GetAllWallets(ctx *gin.Context) (response interface{}, h
 
 	return dtoResponse, http.StatusOK, []string{}
 
+}
+
+func (s *WalletUseCase) UpdateAmount(ctx *gin.Context, walletID string, request map[string]interface{}) (response interface{}, httpCode int, errInfo []string) {
+	var (
+		err error
+	)
+
+	// get information from context : account type and account uuid
+	_, accountUUID := personalaccounts.AccountInformation(ctx)
+
+	// convert wallet id type into uuid.UUID
+	walletUUID, err := uuid.Parse(walletID)
+	if err != nil {
+		logrus.Error(err.Error())
+	}
+
+	// get wallet type
+	dataWallets, err := s.repo.GetWalletType(walletUUID)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapperArray(errInfo, err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// get value of request
+	_, amount, err := s.getValueFromRequest(request)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapperArray(errInfo, err.Error())
+		return struct{}{}, http.StatusUnprocessableEntity, errInfo
+	}
+
+	// set for latest balance
+	if amount > 0 {
+		err = s.setInitialBalance(dataWallets.WalletType, int64(amount), walletUUID, accountUUID)
+	}
+
+	// update wallet information
+	err = s.repo.UpdateWalletInformation(walletUUID, request)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapperArray(errInfo, err.Error())
+		return struct{}{}, http.StatusUnprocessableEntity, errInfo
+	}
+
+	resp := struct {
+		Message string `json:"message"`
+	}{
+		Message: "update wallet success",
+	}
+
+	return resp, http.StatusOK, []string{}
 }
 
 func (s *WalletUseCase) addWalletProAccount(request *dtos.WalletAddRequest, walletType string, accountUUID, UUIDIDMasterWalletType uuid.UUID) (walletID uuid.UUID, err error) {
@@ -291,4 +344,26 @@ func (s *WalletUseCase) getBalanceNonInvestment(walletID uuid.UUID) (amount int6
 		return 0
 	}
 	return int64(data.Balance)
+}
+
+func (s *WalletUseCase) getValueFromRequest(request map[string]interface{}) (walletName string, amount float64, err error) {
+	// check wallet name exist from payload
+	value, exists := request["wallet_name"]
+	if exists {
+		walletName = fmt.Sprintf("%v", value)
+		if walletName == "" {
+			return "", 0, errors.New("wallet name empty value")
+		}
+	}
+
+	// check amount exist from payload
+	value, exists = request["amount"]
+	if exists {
+		amount = value.(float64)
+		if amount <= 0 {
+			return "", 0, errors.New("amount must greater than 0")
+		}
+	}
+
+	return walletName, amount, nil
 }

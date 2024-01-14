@@ -299,7 +299,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 		{
 			walletGroup.POST("", walletsV2.NewWallet)
 			walletGroup.GET("", walletsV2.GetAllWallets)
-			walletGroup.PATCH("/amount/:id-wallet", walletsV2.UpdateWallet)
+			walletGroup.PATCH("/:id-wallet", walletsV2.UpdateWallet)
 		}
 
 	}
