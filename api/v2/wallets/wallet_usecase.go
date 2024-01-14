@@ -67,8 +67,9 @@ func (s *WalletUseCase) NewWallet(ctx *gin.Context, request *dtos.WalletAddReque
 		break
 	}
 
-	if len(errInfo) > 0 {
-		return struct{}{}, httpCode, errInfo
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapperArray(errInfo, err.Error())
+		return struct{}{}, http.StatusUnprocessableEntity, errInfo
 	}
 
 	// mapping success response
