@@ -42,6 +42,12 @@ type (
 		Balance                       float64   `gorm:"column:balance"`
 	}
 
+	WalletInitTransactionInvestment struct {
+		IDWallet          uuid.UUID `gorm:"column:wallet_id"`
+		IDPersonalAccount uuid.UUID `gorm:"column:id_personal_accounts"`
+		Balance           float64   `gorm:"column:balance"`
+	}
+
 	WalletInitTransactionDetail struct {
 		IDTransaction     uuid.UUID `gorm:"column:id_transactions"`
 		Repeat            bool      `gorm:"column:repeat"`
@@ -66,4 +72,8 @@ func (WalletInitTransaction) TableName() string {
 
 func (WalletInitTransactionDetail) TableName() string {
 	return "tbl_transaction_details"
+}
+
+func (WalletInitTransactionInvestment) TableName() string {
+	return "tbl_investment_history"
 }
