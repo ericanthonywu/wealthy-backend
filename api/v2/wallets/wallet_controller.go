@@ -84,11 +84,12 @@ func (c *WalletController) NewWallet(ctx *gin.Context) {
 	dtoResponse, httpCode, errInfo := c.useCase.NewWallet(ctx, &dtoRequest)
 	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
 	return
-
 }
 
 func (c *WalletController) GetAllWallets(ctx *gin.Context) {
-
+	dtoResponse, httpCode, errInfo := c.useCase.GetAllWallets(ctx)
+	response.SendBack(ctx, dtoResponse, errInfo, httpCode)
+	return
 }
 
 func (c *WalletController) UpdateWallet(ctx *gin.Context) {

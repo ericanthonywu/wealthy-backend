@@ -19,6 +19,9 @@ type (
 		NumberOfWalletsByID(IDPersonal uuid.UUID) (totalWallet int64, err error)
 		SetBalanceNonInvestment(trx *entities.WalletInitTransaction, trxDetail *entities.WalletInitTransactionDetail) (err error)
 		SetBalanceInvestment(trx *entities.WalletInitTransactionInvestment) (err error)
+		GetAllWallets(accountUUID uuid.UUID) (data []entities.WalletEntity, err error)
+		GetBalanceInvestment(walletID uuid.UUID) (data entities.WalletInitTransactionInvestment, err error)
+		GetBalanceNonInvestment(walletID uuid.UUID) (data entities.WalletInitTransaction, err error)
 	}
 )
 
@@ -66,4 +69,31 @@ func (r *WalletRepository) SetBalanceNonInvestment(trx *entities.WalletInitTrans
 
 func (r *WalletRepository) SetBalanceInvestment(trx *entities.WalletInitTransactionInvestment) (err error) {
 	return r.db.Create(&trx).Error
+}
+
+func (r *WalletRepository) GetAllWallets(accountUUID uuid.UUID) (data []entities.WalletEntity, err error) {
+	if err := r.db.Where("id_account=?", accountUUID).Find(&data).Error; err != nil {
+		return []entities.WalletEntity{}, err
+	}
+	return data, nil
+}
+
+func (r *WalletRepository) GetBalanceInvestment(walletID uuid.UUID) (data entities.WalletInitTransactionInvestment, err error) {
+	if err := r.db.Where("wallet_id = ?", walletID).
+		Order("created_at desc").
+		First(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.WalletInitTransactionInvestment{}, err
+	}
+	return data, nil
+}
+
+func (r *WalletRepository) GetBalanceNonInvestment(walletID uuid.UUID) (data entities.WalletInitTransaction, err error) {
+	if err := r.db.Where("id_wallets = ?", walletID).
+		Order("created_at desc").
+		First(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.WalletInitTransaction{}, err
+	}
+	return data, nil
 }

@@ -21,6 +21,7 @@ type (
 
 	IWalletUseCase interface {
 		NewWallet(ctx *gin.Context, request *dtos.WalletAddRequest) (response interface{}, httpCode int, errInfo []string)
+		GetAllWallets(ctx *gin.Context) (response interface{}, httpCode int, errInfo []string)
 		addWalletProAccount(request *dtos.WalletAddRequest, walletType string, accountUUID, UUIDIDMasterWalletType uuid.UUID) (walletID uuid.UUID, err error)
 		addWalletBasicAccount(request *dtos.WalletAddRequest, walletType string, accountUUID, UUIDIDMasterWalletType uuid.UUID) (walletID uuid.UUID, err error)
 		addNewWallet(walletEntity *entities.WalletEntity) (err error)
@@ -28,6 +29,9 @@ type (
 		setInitialBalance(walletType string, amount int64, walletID, accountUUID uuid.UUID) (err error)
 		setBalanceInvestment(amount int64, walletID, accountUUID uuid.UUID) (err error)
 		setBalanceNonInvestment(amount int64, walletID, accountUUID uuid.UUID) (err error)
+		latestBalance(walletType string, walletID uuid.UUID)
+		getBalanceInvestment(walletID uuid.UUID)
+		getBalanceNonInvestment(walletID uuid.UUID)
 	}
 )
 
@@ -82,6 +86,49 @@ func (s *WalletUseCase) NewWallet(ctx *gin.Context, request *dtos.WalletAddReque
 	}
 
 	return resp, http.StatusOK, []string{}
+}
+
+func (s *WalletUseCase) GetAllWallets(ctx *gin.Context) (response interface{}, httpCode int, errInfo []string) {
+	var dtoResponse []dtos.WalletListResponse
+
+	// get information from context : account type and account uuid
+	_, accountUUID := personalaccounts.AccountInformation(ctx)
+
+	// get all wallet by account ID
+	walletCollection, err := s.repo.GetAllWallets(accountUUID)
+	if err != nil {
+		errInfo = errorsinfo.ErrorWrapperArray(errInfo, err.Error())
+		return struct{}{}, http.StatusInternalServerError, errInfo
+	}
+
+	// if no collection of wallet data
+	if len(walletCollection) == 0 {
+		errInfo = errorsinfo.ErrorWrapperArray(errInfo, errors.New("this account has no wallet").Error())
+		return struct{}{}, http.StatusNotFound, errInfo
+	}
+
+	for _, v := range walletCollection {
+		// get latest balance
+		balance := s.latestBalance(v.WalletType, v.ID)
+
+		// mapping response
+		dtoResponse = append(dtoResponse, dtos.WalletListResponse{
+			IDAccount: v.IDAccount,
+			WalletDetails: dtos.WalletDetails{
+				WalletID:           v.ID,
+				WalletType:         v.WalletType,
+				WalletName:         v.WalletName,
+				IDMasterWalletType: v.IDMasterWalletType,
+			},
+			Active:        v.Active,
+			FeeInvestBuy:  v.FeeInvestBuy,
+			FeeInvestSell: v.FeeInvestSell,
+			TotalAssets:   balance,
+		})
+	}
+
+	return dtoResponse, http.StatusOK, []string{}
+
 }
 
 func (s *WalletUseCase) addWalletProAccount(request *dtos.WalletAddRequest, walletType string, accountUUID, UUIDIDMasterWalletType uuid.UUID) (walletID uuid.UUID, err error) {
@@ -216,4 +263,30 @@ func (s *WalletUseCase) setBalanceNonInvestment(amount int64, walletID, accountU
 
 	// record as initialized balance
 	return s.repo.SetBalanceNonInvestment(&newTransactionAsBalance, &trxDetail)
+}
+
+func (s *WalletUseCase) latestBalance(walletType string, walletID uuid.UUID) (amount int64) {
+	switch walletType {
+	case constants.Investment:
+		return s.getBalanceInvestment(walletID)
+	case constants.Cash, constants.CreditCard, constants.DebitCard, constants.EWallet, constants.Saving:
+		return s.getBalanceNonInvestment(walletID)
+	}
+	return 0
+}
+
+func (s *WalletUseCase) getBalanceInvestment(walletID uuid.UUID) (amount int64) {
+	data, err := s.repo.GetBalanceInvestment(walletID)
+	if err != nil {
+		return 0
+	}
+	return int64(data.Balance)
+}
+
+func (s *WalletUseCase) getBalanceNonInvestment(walletID uuid.UUID) (amount int64) {
+	data, err := s.repo.GetBalanceNonInvestment(walletID)
+	if err != nil {
+		return 0
+	}
+	return int64(data.Balance)
 }
