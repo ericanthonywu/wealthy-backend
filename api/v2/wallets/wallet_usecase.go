@@ -209,6 +209,10 @@ func (s *WalletUseCase) addWalletProAccount(request *dtos.WalletAddRequest, wall
 
 	// set initial balance
 	err = s.setInitialBalance(walletType, request.TotalAsset, walletID, accountUUID)
+	if err != nil {
+		return walletID, err
+	}
+
 	return walletID, nil
 }
 
@@ -249,7 +253,7 @@ func (s *WalletUseCase) addWalletBasicAccount(request *dtos.WalletAddRequest, wa
 	// set initial balance
 	err = s.setInitialBalance(walletType, request.TotalAsset, walletID, accountUUID)
 	if err != nil {
-		return uuid.Nil, err
+		return walletID, err
 	}
 
 	return walletID, nil

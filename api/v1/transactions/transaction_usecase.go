@@ -272,6 +272,8 @@ func (s *TransactionUseCase) AddInvestmentTransaction(ctx *gin.Context, request 
 	// account uuid
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
+	// check eligible wallet
+
 	// fetch wallet investment from account ID
 	dataWalletType, err := s.repo.WalletInvestment(accountUUID)
 	if err != nil {

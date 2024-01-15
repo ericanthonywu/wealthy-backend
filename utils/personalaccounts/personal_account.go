@@ -2,6 +2,7 @@ package personalaccounts
 
 import (
 	"fmt"
+	"github.com/wealthy-app/wealthy-backend/constants"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -33,4 +34,9 @@ func AccountInformation(ctx *gin.Context) (accountType string, accountUUID uuid.
 	accountType = fmt.Sprintf("%v", ctx.MustGet("accountType"))
 	accountUUID = ctx.MustGet("accountID").(uuid.UUID)
 	return
+}
+
+func PremiumFeature(ctx *gin.Context) bool {
+	accountType, _ := AccountInformation(ctx)
+	return accountType == constants.AccountBasic
 }

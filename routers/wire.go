@@ -22,6 +22,7 @@ import (
 	"github.com/wealthy-app/wealthy-backend/api/v1/transactions"
 	"github.com/wealthy-app/wealthy-backend/api/v1/wallets"
 	categoriesV2 "github.com/wealthy-app/wealthy-backend/api/v2/categories"
+	transactionV2 "github.com/wealthy-app/wealthy-backend/api/v2/transactions"
 	wallets2 "github.com/wealthy-app/wealthy-backend/api/v2/wallets"
 )
 
@@ -215,4 +216,16 @@ func WalletsV2(db *gorm.DB) *wallets2.WalletController {
 		wire.Bind(new(wallets2.IWalletRepository), new(*wallets2.WalletRepository)),
 	)))
 	return &wallets2.WalletController{}
+}
+
+func TransactionV2(db *gorm.DB) *transactionV2.TransactionController {
+	panic(wire.Build(wire.NewSet(
+		transactionV2.NewTransactionController,
+		transactionV2.NewTransactionUseCase,
+		transactionV2.NewTransactionRepository,
+		wire.Bind(new(transactionV2.ITransactionController), new(*transactionV2.TransactionController)),
+		wire.Bind(new(transactionV2.ITransactionUseCase), new(*transactionV2.TransactionUseCase)),
+		wire.Bind(new(transactionV2.ITransactionRepository), new(*transactionV2.TransactionRepository)),
+	)))
+	return &transactionV2.TransactionController{}
 }

@@ -26,6 +26,7 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 	// version 2
 	categoriesV2 := CategoriesV2(db)
 	walletsV2 := WalletsV2(db)
+	transactionV2 := TransactionV2(db)
 
 	v1group := router.Group("/v1")
 	{
@@ -300,6 +301,14 @@ func API(router *gin.RouterGroup, db *gorm.DB) {
 			walletGroup.POST("", walletsV2.NewWallet)
 			walletGroup.GET("", walletsV2.GetAllWallets)
 			walletGroup.PATCH("/:id-wallet", walletsV2.UpdateWallet)
+		}
+
+		transactionGroup := v2group.Group("/transactions")
+		{
+			recordGroup := transactionGroup.Group("/records")
+			{
+				recordGroup.POST("/investments", transactionV2.InvestmentRecords)
+			}
 		}
 
 	}
