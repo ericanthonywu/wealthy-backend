@@ -12,7 +12,6 @@ import (
 	"github.com/wealthy-app/wealthy-backend/constants"
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
 	"github.com/wealthy-app/wealthy-backend/utils/orderid"
-	"github.com/wealthy-app/wealthy-backend/utils/personalaccounts"
 	"io"
 	"net/http"
 	"os"
@@ -40,13 +39,7 @@ func (s *PaymentUseCase) Subscriptions(ctx *gin.Context, request *dtos.PaymentSu
 
 	orderID := orderid.Generator()
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return struct{}{}, http.StatusUnauthorized, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	// convert package id ( string to uuid )
 	PackageIDUUID, err := uuid.Parse(request.PackageID)
@@ -67,7 +60,7 @@ func (s *PaymentUseCase) Subscriptions(ctx *gin.Context, request *dtos.PaymentSu
 	}
 
 	// check if already subscription
-	dataSubs, err := s.repo.GetSubscriptionInformation(personalAccount.ID)
+	dataSubs, err := s.repo.GetSubscriptionInformation(accountUUID)
 	if err != nil {
 		errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
 		return struct{}{}, http.StatusInternalServerError, errInfo
@@ -145,7 +138,7 @@ func (s *PaymentUseCase) Subscriptions(ctx *gin.Context, request *dtos.PaymentSu
 
 		model := entities.SubsTransaction{
 			ID:                 uuid.New(),
-			IDPersonalAccount:  personalAccount.ID,
+			IDPersonalAccount:  accountUUID,
 			RedirectURL:        midTransResponse.RedirectUrl,
 			Token:              midTransResponse.Token,
 			SubscriptionID:     PackageIDUUID,

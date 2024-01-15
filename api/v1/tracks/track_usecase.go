@@ -6,7 +6,6 @@ import (
 	"github.com/wealthy-app/wealthy-backend/api/v1/tracks/dtos"
 	"github.com/wealthy-app/wealthy-backend/api/v1/tracks/entities"
 	"github.com/wealthy-app/wealthy-backend/utils/errorsinfo"
-	"github.com/wealthy-app/wealthy-backend/utils/personalaccounts"
 	"net/http"
 )
 
@@ -27,17 +26,10 @@ func NewTrackUseCase(repo ITrackRepository) *TrackUseCase {
 func (s *TrackUseCase) ScreenTime(ctx *gin.Context, dtoRequest *dtos.ScreenTimeRequest) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var model entities.ScreenTime
 
-	usrEmail := ctx.MustGet("email").(string)
-	personalAccount := personalaccounts.Informations(ctx, usrEmail)
-
-	if personalAccount.ID == uuid.Nil {
-		httpCode = http.StatusUnauthorized
-		errInfo = errorsinfo.ErrorWrapper(errInfo, "", "token contains invalid information")
-		return response, httpCode, errInfo
-	}
+	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
 
 	model.ID = uuid.New()
-	model.IDPersonal = personalAccount.ID
+	model.IDPersonal = accountUUID
 	model.StartDate = dtoRequest.StartTime
 	model.EndDate = dtoRequest.EndTime
 
