@@ -1,7 +1,6 @@
 package payments
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/wealthy-app/wealthy-backend/api/v1/payments/dtos"
@@ -69,8 +68,6 @@ func (c *PaymentController) MidtransWebhook(ctx *gin.Context) {
 		response.SendBack(ctx, dtos.PaymentSubscription{}, errInfo, http.StatusBadRequest)
 		return
 	}
-
-	fmt.Println("%+v", dtoRequest)
 
 	serverKey := os.Getenv("MIDTRANS_SERVER_KEY")
 	sha512, err := utilities.CalculateSHA512(dtoRequest.OrderId + dtoRequest.StatusCode + dtoRequest.GrossAmount + serverKey)

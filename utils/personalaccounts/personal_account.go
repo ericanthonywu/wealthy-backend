@@ -17,8 +17,7 @@ type PersonalAccountEntities struct {
 	ReferCode            string    `gorm:"column:refer_code"`
 }
 
-func Informations(ctx *gin.Context, email string) (data PersonalAccountEntities) {
-	db := ctx.MustGet("db").(*gorm.DB)
+func Informations(db *gorm.DB, email string) (data PersonalAccountEntities) {
 	db.Raw(`SELECT pa.id,
        pa.id_master_account_types,
        mat.account_type,
