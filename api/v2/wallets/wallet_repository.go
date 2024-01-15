@@ -22,6 +22,8 @@ type (
 		GetAllWallets(accountUUID uuid.UUID) (data []entities.WalletEntity, err error)
 		GetBalanceInvestment(walletID uuid.UUID) (data entities.WalletInitTransactionInvestment, err error)
 		GetBalanceNonInvestment(walletID uuid.UUID) (data entities.WalletInitTransaction, err error)
+		GetWalletType(walletUUID uuid.UUID) (data entities.WalletEntity, err error)
+		UpdateWalletInformation(UUIDWallet uuid.UUID, request map[string]interface{}) (err error)
 	}
 )
 
@@ -96,4 +98,25 @@ func (r *WalletRepository) GetBalanceNonInvestment(walletID uuid.UUID) (data ent
 		return entities.WalletInitTransaction{}, err
 	}
 	return data, nil
+}
+
+func (r *WalletRepository) GetWalletType(walletUUID uuid.UUID) (data entities.WalletEntity, err error) {
+	if err := r.db.Where("id = ?", walletUUID).First(&data).Error; err != nil {
+		logrus.Error(err.Error())
+		return entities.WalletEntity{}, err
+	}
+	return data, nil
+}
+
+func (r *WalletRepository) UpdateWalletInformation(UUIDWallet uuid.UUID, request map[string]interface{}) (err error) {
+	var model entities.WalletEntity
+
+	// set ID
+	model.ID = UUIDWallet
+
+	if err := r.db.Model(&model).Updates(request).Error; err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+	return nil
 }

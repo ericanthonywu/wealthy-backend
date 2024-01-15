@@ -22,6 +22,7 @@ import (
 	"github.com/wealthy-app/wealthy-backend/api/v1/transactions"
 	"github.com/wealthy-app/wealthy-backend/api/v1/wallets"
 	"github.com/wealthy-app/wealthy-backend/api/v2/categories"
+	transactions2 "github.com/wealthy-app/wealthy-backend/api/v2/transactions"
 	wallets2 "github.com/wealthy-app/wealthy-backend/api/v2/wallets"
 	"gorm.io/gorm"
 )
@@ -138,4 +139,11 @@ func WalletsV2(db *gorm.DB) *wallets2.WalletController {
 	walletUseCase := wallets2.NewWalletUseCase(walletRepository)
 	walletController := wallets2.NewWalletController(walletUseCase)
 	return walletController
+}
+
+func TransactionV2(db *gorm.DB) *transactions2.TransactionController {
+	transactionRepository := transactions2.NewTransactionRepository(db)
+	transactionUseCase := transactions2.NewTransactionUseCase(transactionRepository)
+	transactionController := transactions2.NewTransactionController(transactionUseCase)
+	return transactionController
 }

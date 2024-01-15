@@ -192,7 +192,7 @@ func (s *TransactionUseCase) Add(ctx *gin.Context, request *dtos.TransactionRequ
 		Credit = float64(request.Amount)
 	}
 
-	if request.IDMasterExpenseCategories != "" {
+	if request.IDMasterExpenseCategories != "" && request.IDTravel == "" {
 
 		// if balance is insufficient
 		if dataLastBalance.Balance < float64(request.Amount) {
@@ -271,6 +271,8 @@ func (s *TransactionUseCase) AddInvestmentTransaction(ctx *gin.Context, request 
 
 	// account uuid
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
+
+	// check eligible wallet
 
 	// fetch wallet investment from account ID
 	dataWalletType, err := s.repo.WalletInvestment(accountUUID)

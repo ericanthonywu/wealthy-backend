@@ -311,7 +311,7 @@ func (r *BudgetRepository) GetAmountBudgetSubCategory(accountID, subCategoryID u
 }
 
 func (r *BudgetRepository) GetAmountBudgetCategory(accountUUID, categoryUUID uuid.UUID, month, year string) (data entities.CategoryBudgetInfo, err error) {
-	if err := r.db.Raw(`SELECT tb.amount FROM tbl_budgets tb WHERE tb.id_personal_accounts = ? 
+	if err := r.db.Debug().Raw(`SELECT tb.amount FROM tbl_budgets tb WHERE tb.id_personal_accounts = ? 
         AND tb.id_master_categories = ? AND to_char(tb.created_at, 'MM') = ? AND to_char(tb.created_at, 'YYYY') = ? ORDER BY tb.created_at DESC LIMIT 1`, accountUUID, categoryUUID, month, year).
 		Scan(&data).Error; err != nil {
 		logrus.Error(err.Error())

@@ -1,6 +1,8 @@
 package wallets
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -93,5 +95,30 @@ func (c *WalletController) GetAllWallets(ctx *gin.Context) {
 }
 
 func (c *WalletController) UpdateWallet(ctx *gin.Context) {
+	var (
+		request map[string]interface{}
+		errInfo []string
+	)
 
+	// binding request with request mapping
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		errInfo = errorsinfo.ErrorWrapperArray(errInfo, err.Error())
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	// get wallet id
+	walletID := fmt.Sprintf("%v", ctx.Param("id-wallet"))
+	if walletID == "" {
+		errInfo = errorsinfo.ErrorWrapperArray(errInfo, errors.New("wallet id required in url param").Error())
+	}
+
+	if len(errInfo) > 0 {
+		response.SendBack(ctx, struct{}{}, errInfo, http.StatusBadRequest)
+		return
+	}
+
+	responseData, httpCode, errInfo := c.useCase.UpdateAmount(ctx, walletID, request)
+	response.SendBack(ctx, responseData, errInfo, httpCode)
+	return
 }

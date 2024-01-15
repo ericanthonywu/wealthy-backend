@@ -293,12 +293,11 @@ func (s *BudgetUseCase) LatestMonths(ctx *gin.Context, categoryID uuid.UUID) (re
 
 func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetRequest, purpose string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
 	var (
-		model              entities.BudgetSetEntities
-		dtoResponse        dtos.BudgetSetResponse
-		filename           string
-		targetPath         string
-		imagePath          string
-		isSubCategoryValid bool
+		model       entities.BudgetSetEntities
+		dtoResponse dtos.BudgetSetResponse
+		filename    string
+		targetPath  string
+		imagePath   string
 	)
 
 	accountUUID := ctx.MustGet("accountID").(uuid.UUID)
@@ -364,53 +363,18 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 	if purpose != constants.Travel {
 		model.IDCategory = dtoRequest.IDCategory
 
-		// fetch sub category information by categoryID
-		dataSubCategory, err := s.repo.GetSubCategory(accountUUID, dtoRequest.IDCategory)
-		if err != nil {
-			errInfo = errorsinfo.ErrorWrapper(errInfo, "", err.Error())
-			return struct{}{}, http.StatusInternalServerError, errInfo
-		}
-
-		if len(dataSubCategory) > 0 {
-
-			if dtoRequest.IDSubCategory == uuid.Nil {
-				resp := struct {
-					Message string `json:"message"`
-				}{
-					Message: "sub category id required",
-				}
-				return resp, http.StatusBadRequest, []errorsinfo.Errors{}
-			}
-
-			// check sub category input same as in database
-			for _, v := range dataSubCategory {
-				if dtoRequest.IDSubCategory == v.SubCategoryID {
-					isSubCategoryValid = true
-					break
-				}
-			}
-
-			// is sub category ID valid
-			if !isSubCategoryValid {
-				resp := struct {
-					Message string `json:"message"`
-				}{
-					Message: "sub category id invalid for category id",
-				}
-				return resp, http.StatusBadRequest, []errorsinfo.Errors{}
-			}
-
-			// set id sub category
+		if dtoRequest.IDSubCategory != uuid.Nil {
 			model.IDSubCategory = dtoRequest.IDSubCategory
 		}
 
-		if len(dataSubCategory) == 0 {
+		if dtoRequest.IDSubCategory == uuid.Nil {
 			model.IDSubCategory = uuid.Nil
 		}
-
+		model.Amount = dtoRequest.Amount
+	} else {
+		model.Amount = int64(float64(dtoRequest.Amount) * dtoRequest.ExchangeRate)
 	}
 
-	model.Amount = int64(float64(dtoRequest.Amount) * dtoRequest.ExchangeRate)
 	model.IDPersonalAccount = accountUUID
 	model.ID = uuid.New()
 
@@ -421,14 +385,9 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 		return response, http.StatusInternalServerError, errInfo
 	}
 
-	// if err empty
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
-	}
-
 	dtoResponse.ID = model.ID
 	dtoResponse.Status = true
-	return dtoResponse, httpCode, errInfo
+	return dtoResponse, httpCode, []errorsinfo.Errors{}
 }
 
 func (s *BudgetUseCase) Trends(ctx *gin.Context, IDCategory uuid.UUID, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
