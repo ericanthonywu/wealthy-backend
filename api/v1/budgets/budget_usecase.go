@@ -393,14 +393,9 @@ func (s *BudgetUseCase) Limit(ctx *gin.Context, dtoRequest *dtos.BudgetSetReques
 		return response, http.StatusInternalServerError, errInfo
 	}
 
-	// if err empty
-	if len(errInfo) == 0 {
-		errInfo = []errorsinfo.Errors{}
-	}
-
 	dtoResponse.ID = model.ID
 	dtoResponse.Status = true
-	return dtoResponse, httpCode, errInfo
+	return dtoResponse, httpCode, []errorsinfo.Errors{}
 }
 
 func (s *BudgetUseCase) Trends(ctx *gin.Context, IDCategory uuid.UUID, month, year string) (response interface{}, httpCode int, errInfo []errorsinfo.Errors) {
